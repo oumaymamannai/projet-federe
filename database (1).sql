@@ -24,17 +24,17 @@ DROP TABLE IF EXISTS `documents`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `documents` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `titre` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `description` text COLLATE utf8mb4_unicode_ci,
-  `fichier_path` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `type` enum('template','stage','general') COLLATE utf8mb4_unicode_ci DEFAULT 'general',
+  `titre` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `fichier_path` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `type` enum('template','stage','general') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'general',
   `publie` tinyint(1) DEFAULT '0',
   `uploaded_by` int DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `uploaded_by` (`uploaded_by`),
   CONSTRAINT `documents_ibfk_1` FOREIGN KEY (`uploaded_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -43,7 +43,7 @@ CREATE TABLE `documents` (
 
 LOCK TABLES `documents` WRITE;
 /*!40000 ALTER TABLE `documents` DISABLE KEYS */;
-INSERT INTO `documents` VALUES (1,'Guide de rédaction du rapport','Template officiel pour la rédaction du rapport de soutenance','uploads/template_rapport.pdf','template',1,1,'2026-03-01 15:57:53');
+INSERT INTO `documents` VALUES (1,'Guide de rédaction du rapport','Template officiel pour la rédaction du rapport de soutenance','uploads/template_rapport.pdf','template',1,1,'2026-03-01 15:57:53'),(2,'presentation','','1772567090554-664810147.pdf','template',1,1,'2026-03-03 19:44:50'),(3,'presentation','hhhhh','1772567851624-774019396.pdf','template',1,1,'2026-03-03 19:57:31'),(4,'tt','tt','1772568977116-528392335.pdf','general',1,1,'2026-03-03 20:16:17'),(5,'presentation','presentation projet','1772570028357-609695314.pdf','template',1,1,'2026-03-03 20:33:48');
 /*!40000 ALTER TABLE `documents` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -84,10 +84,10 @@ DROP TABLE IF EXISTS `reclamations`;
 CREATE TABLE `reclamations` (
   `id` int NOT NULL AUTO_INCREMENT,
   `etudiant_id` int NOT NULL,
-  `type` enum('probleme_date','pas_encadreur','autre') COLLATE utf8mb4_unicode_ci NOT NULL,
-  `message` text COLLATE utf8mb4_unicode_ci NOT NULL,
-  `reponse` text COLLATE utf8mb4_unicode_ci,
-  `statut` enum('en_attente','traitee') COLLATE utf8mb4_unicode_ci DEFAULT 'en_attente',
+  `type` enum('probleme_date','pas_encadreur','autre') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `reponse` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `statut` enum('en_attente','traitee') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'en_attente',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `reponse_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -117,15 +117,15 @@ CREATE TABLE `soutenance_jury` (
   `id` int NOT NULL AUTO_INCREMENT,
   `soutenance_id` int NOT NULL,
   `jury_id` int NOT NULL,
-  `role` enum('encadreur','president','3eme_membre') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `role` enum('encadreur','president','3eme_membre') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `note` decimal(4,2) DEFAULT NULL,
-  `remarques` text COLLATE utf8mb4_unicode_ci,
+  `remarques` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   PRIMARY KEY (`id`),
   KEY `soutenance_id` (`soutenance_id`),
   KEY `jury_id` (`jury_id`),
   CONSTRAINT `soutenance_jury_ibfk_1` FOREIGN KEY (`soutenance_id`) REFERENCES `soutenances` (`id`) ON DELETE CASCADE,
   CONSTRAINT `soutenance_jury_ibfk_2` FOREIGN KEY (`jury_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -134,7 +134,7 @@ CREATE TABLE `soutenance_jury` (
 
 LOCK TABLES `soutenance_jury` WRITE;
 /*!40000 ALTER TABLE `soutenance_jury` DISABLE KEYS */;
-INSERT INTO `soutenance_jury` VALUES (1,1,11,'encadreur',NULL,NULL);
+INSERT INTO `soutenance_jury` VALUES (1,1,11,'encadreur',NULL,NULL),(4,1,2,'president',16.00,'tres bien'),(5,1,3,'3eme_membre',NULL,NULL),(6,2,3,'encadreur',NULL,NULL),(7,2,9,'president',NULL,NULL),(8,2,11,'3eme_membre',NULL,NULL);
 /*!40000 ALTER TABLE `soutenance_jury` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -148,10 +148,10 @@ DROP TABLE IF EXISTS `soutenances`;
 CREATE TABLE `soutenances` (
   `id` int NOT NULL AUTO_INCREMENT,
   `etudiant_id` int NOT NULL,
-  `sujet` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `sujet` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `date_soutenance` datetime DEFAULT NULL,
-  `salle` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `statut` enum('en_attente','planifiee','terminee') COLLATE utf8mb4_unicode_ci DEFAULT 'en_attente',
+  `salle` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `statut` enum('en_attente','planifiee','terminee') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'en_attente',
   `note_finale` decimal(4,2) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `encadreur_fige` tinyint(1) DEFAULT '0',
@@ -170,7 +170,7 @@ CREATE TABLE `soutenances` (
 
 LOCK TABLES `soutenances` WRITE;
 /*!40000 ALTER TABLE `soutenances` DISABLE KEYS */;
-INSERT INTO `soutenances` VALUES (1,5,'ljbbj','2026-03-03 09:00:00','Salle A101','planifiee',NULL,'2026-03-02 12:24:00',1,NULL),(2,6,'','2026-03-03 10:30:00','Salle B203','planifiee',NULL,'2026-03-02 12:24:00',0,NULL),(3,7,'','2026-03-03 14:00:00','Amphi 1','planifiee',NULL,'2026-03-02 12:24:00',0,NULL);
+INSERT INTO `soutenances` VALUES (1,5,'ljbbj','2026-03-03 09:00:00','Salle A101','terminee',16.00,'2026-03-02 12:24:00',1,NULL),(2,6,'ia','2026-03-03 10:30:00','Salle B203','planifiee',NULL,'2026-03-02 12:24:00',1,NULL),(3,7,'','2026-03-03 14:00:00','Amphi 1','planifiee',NULL,'2026-03-02 12:24:00',0,NULL);
 /*!40000 ALTER TABLE `soutenances` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -184,21 +184,21 @@ DROP TABLE IF EXISTS `stage_soumissions`;
 CREATE TABLE `stage_soumissions` (
   `id` int NOT NULL AUTO_INCREMENT,
   `etudiant_id` int NOT NULL,
-  `nom_etudiant` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `prenom_etudiant` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `email_contact` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `encadreur` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `societe` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `sujet` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `description` text COLLATE utf8mb4_unicode_ci,
+  `nom_etudiant` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `prenom_etudiant` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `email_contact` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `encadreur` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `societe` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `sujet` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `fichiers` json DEFAULT NULL,
-  `fichier_path` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `statut` enum('soumis','traite') COLLATE utf8mb4_unicode_ci DEFAULT 'soumis',
+  `fichier_path` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `statut` enum('soumis','traite') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'soumis',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `etudiant_id` (`etudiant_id`),
   CONSTRAINT `stage_soumissions_ibfk_1` FOREIGN KEY (`etudiant_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -207,7 +207,7 @@ CREATE TABLE `stage_soumissions` (
 
 LOCK TABLES `stage_soumissions` WRITE;
 /*!40000 ALTER TABLE `stage_soumissions` DISABLE KEYS */;
-INSERT INTO `stage_soumissions` VALUES (1,5,'hh','!!','l','nklnkl','jjkj','ljbbj','::','[\"1772456570261-761778053.pdf\", \"1772456570262-521800443.pdf\"]',NULL,'traite','2026-03-02 13:02:50');
+INSERT INTO `stage_soumissions` VALUES (1,5,'hh','!!','l','nklnkl','jjkj','ljbbj','::','[\"1772456570261-761778053.pdf\", \"1772456570262-521800443.pdf\"]',NULL,'traite','2026-03-02 13:02:50'),(2,6,'youcef','kaci','etudiant2@gradflow.dz','Sara Meziane','vermeg','ia','hhhh','[\"1772547143430-803508540.pdf\", \"1772547143437-561918551.pdf\"]',NULL,'traite','2026-03-03 14:12:23'),(3,7,'Sara ','Meziane','etudiant3@gradflow.dz','Youcef Kaci','Sofrecom','Développement d\'un site web','','[\"1772565750765-375821652.pdf\", \"1772565750779-652046182.docx\", \"1772565750779-728158413.pdf\"]',NULL,'soumis','2026-03-03 19:22:30');
 /*!40000 ALTER TABLE `stage_soumissions` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -220,12 +220,12 @@ DROP TABLE IF EXISTS `users`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `users` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `nom` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `prenom` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `email` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `password` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `role` enum('etudiant','jury','admin') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'etudiant',
-  `specialite` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `nom` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `prenom` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `email` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `role` enum('etudiant','jury','admin') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'etudiant',
+  `specialite` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`)
@@ -251,4 +251,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-03-02 15:53:08
+-- Dump completed on 2026-03-03 23:58:36
