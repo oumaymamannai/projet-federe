@@ -6,7 +6,7 @@ const {
 
 exports.getDashboard = async (req, res) => {
   try {
-    const [[{ totale }]] = await db.query(
+    const [[{ total }]] = await db.query(
       "SELECT COUNT(*) as total FROM soutenances"
     );
     const [[{ planifiees }]] = await db.query(
