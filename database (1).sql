@@ -34,7 +34,7 @@ CREATE TABLE `documents` (
   PRIMARY KEY (`id`),
   KEY `uploaded_by` (`uploaded_by`),
   CONSTRAINT `documents_ibfk_1` FOREIGN KEY (`uploaded_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -43,7 +43,7 @@ CREATE TABLE `documents` (
 
 LOCK TABLES `documents` WRITE;
 /*!40000 ALTER TABLE `documents` DISABLE KEYS */;
-INSERT INTO `documents` VALUES (1,'Guide de rédaction du rapport','Template officiel pour la rédaction du rapport de soutenance','uploads/template_rapport.pdf','template',1,1,'2026-03-01 15:57:53'),(2,'presentation','','1772567090554-664810147.pdf','template',1,1,'2026-03-03 19:44:50'),(3,'presentation','hhhhh','1772567851624-774019396.pdf','template',1,1,'2026-03-03 19:57:31'),(4,'tt','tt','1772568977116-528392335.pdf','general',1,1,'2026-03-03 20:16:17'),(5,'presentation','presentation projet','1772570028357-609695314.pdf','template',1,1,'2026-03-03 20:33:48');
+INSERT INTO `documents` VALUES (1,'Guide de rédaction du rapport','Template officiel pour la rédaction du rapport de soutenance','uploads/template_rapport.pdf','template',1,1,'2026-03-01 15:57:53'),(6,'prisma','','1772715701222-130515027.docx','template',1,1,'2026-03-05 13:01:41'),(7,'guide','','1772716382421-624829618.pdf','stage',1,1,'2026-03-05 13:13:02');
 /*!40000 ALTER TABLE `documents` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -93,7 +93,7 @@ CREATE TABLE `reclamations` (
   PRIMARY KEY (`id`),
   KEY `etudiant_id` (`etudiant_id`),
   CONSTRAINT `reclamations_ibfk_1` FOREIGN KEY (`etudiant_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -102,7 +102,7 @@ CREATE TABLE `reclamations` (
 
 LOCK TABLES `reclamations` WRITE;
 /*!40000 ALTER TABLE `reclamations` DISABLE KEYS */;
-INSERT INTO `reclamations` VALUES (1,5,'pas_encadreur','dd','Encadreur affecté: samir belhaj','traitee','2026-03-02 13:49:13','2026-03-02 14:29:53');
+INSERT INTO `reclamations` VALUES (1,5,'pas_encadreur','dd','Encadreur affecté: samir belhaj','traitee','2026-03-02 13:49:13','2026-03-02 14:29:53'),(2,5,'probleme_date','ll',NULL,'en_attente','2026-03-05 12:44:18',NULL);
 /*!40000 ALTER TABLE `reclamations` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -198,7 +198,7 @@ CREATE TABLE `stage_soumissions` (
   PRIMARY KEY (`id`),
   KEY `etudiant_id` (`etudiant_id`),
   CONSTRAINT `stage_soumissions_ibfk_1` FOREIGN KEY (`etudiant_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -207,7 +207,7 @@ CREATE TABLE `stage_soumissions` (
 
 LOCK TABLES `stage_soumissions` WRITE;
 /*!40000 ALTER TABLE `stage_soumissions` DISABLE KEYS */;
-INSERT INTO `stage_soumissions` VALUES (1,5,'hh','!!','l','nklnkl','jjkj','ljbbj','::','[\"1772456570261-761778053.pdf\", \"1772456570262-521800443.pdf\"]',NULL,'traite','2026-03-02 13:02:50'),(2,6,'youcef','kaci','etudiant2@gradflow.dz','Sara Meziane','vermeg','ia','hhhh','[\"1772547143430-803508540.pdf\", \"1772547143437-561918551.pdf\"]',NULL,'traite','2026-03-03 14:12:23'),(3,7,'Sara ','Meziane','etudiant3@gradflow.dz','Youcef Kaci','Sofrecom','Développement d\'un site web','','[\"1772565750765-375821652.pdf\", \"1772565750779-652046182.docx\", \"1772565750779-728158413.pdf\"]',NULL,'soumis','2026-03-03 19:22:30');
+INSERT INTO `stage_soumissions` VALUES (2,6,'youcef','kaci','etudiant2@gradflow.dz','Sara Meziane','vermeg','ia','hhhh','[\"1772547143430-803508540.pdf\", \"1772547143437-561918551.pdf\"]',NULL,'traite','2026-03-03 14:12:23'),(3,7,'Sara ','Meziane','etudiant3@gradflow.dz','Youcef Kaci','Sofrecom','Développement d\'un site web','','[\"1772565750765-375821652.pdf\", \"1772565750779-652046182.docx\", \"1772565750779-728158413.pdf\"]',NULL,'soumis','2026-03-03 19:22:30'),(4,5,'benali','amina','etudiant1@gradflow.dz','salma masmoudi','Sofrecom','développement mobile','','[\"1772713885709-782400646.docx\", \"1772713885711-669135773.docx\"]',NULL,'soumis','2026-03-05 12:31:25');
 /*!40000 ALTER TABLE `stage_soumissions` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -251,4 +251,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-03-03 23:58:36
+-- Dump completed on 2026-03-05 14:39:22
