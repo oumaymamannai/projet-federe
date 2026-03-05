@@ -6,7 +6,7 @@ const fs = require('fs');
 const getDocuments = async (req, res) => {
   try {
     const { type } = req.query;
-    let query = 'SELECT d.*, u.nom as uploader_nom, u.prenom as uploader_prenom FROM documents d JOIN users u ON d.uploader_id=u.id';
+    let query = 'SELECT d.*, u.nom as uploader_nom, u.prenom as uploader_prenom FROM documents d JOIN users u ON d.uploaded_by=u.id';
     const params = [];
     if (type) { query += ' WHERE d.type=?'; params.push(type); }
     query += ' ORDER BY d.created_at DESC';
@@ -21,10 +21,10 @@ const getDocuments = async (req, res) => {
 const uploadDocument = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ success: false, message: 'Fichier requis.' });
-    const { nom, description, type } = req.body;
+    const { titre, description, type } = req.body;
     const [result] = await pool.query(
-      'INSERT INTO documents (nom, description, fichier_path, fichier_nom, type, uploader_id, taille_fichier, mime_type) VALUES (?,?,?,?,?,?,?,?)',
-      [nom, description || null, req.file.path, req.file.originalname, type || 'autre', req.user.id, req.file.size, req.file.mimetype]
+      'INSERT INTO documents (titre, description, fichier_path, type, uploaded_by) VALUES (?,?,?,?,?)',
+      [titre, description || null, req.file.path, type || 'general', req.user.id]
     );
     res.status(201).json({ success: true, message: 'Document uploadé.', id: result.insertId });
   } catch (error) {
@@ -38,14 +38,15 @@ const downloadDocument = async (req, res) => {
     const [[doc]] = await pool.query('SELECT * FROM documents WHERE id=?', [req.params.id]);
     if (!doc) return res.status(404).json({ success: false, message: 'Document introuvable.' });
 
-    await pool.query('UPDATE documents SET telechargements=telechargements+1 WHERE id=?', [doc.id]);
-    await pool.query('INSERT INTO telechargements_log (document_id, user_id) VALUES (?,?)', [doc.id, req.user.id]);
+    // Check if published or user authenticated
+    if (!doc.publie && !req.user) return res.status(403).json({ success: false, message: 'Accès refusé.' });
 
-    const filePath = path.resolve(doc.fichier_path);
+    const fileName = path.basename(doc.fichier_path);
+    const filePath = path.join(__dirname, '..', 'uploads', fileName);
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ success: false, message: 'Fichier introuvable sur le serveur.' });
     }
-    res.download(filePath, doc.fichier_nom);
+    res.download(filePath, fileName);
   } catch (error) {
     res.status(500).json({ success: false, message: 'Erreur serveur.' });
   }

@@ -15,6 +15,8 @@ app.use('/api/etudiant', require('./routes/etudiant'));
 app.use('/api/jury', require('./routes/jury'));
 app.use('/api/admin', require('./routes/admin'));
 
+app.use('/api/documents', require('./routes/documents'));
+
 app.get('/', (req, res) => res.json({ message: 'GradFlow API v1.0' }));
 
 app.use((err, req, res, next) => {

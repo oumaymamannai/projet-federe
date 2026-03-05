@@ -137,6 +137,7 @@ export default function StudentStage() {
                   <label className="form-label">{l}</label>
                   <input 
                     className="form-control" 
+                    placeholder={"Entrez votre " + l.toLowerCase()}
                     value={form[k]} 
                     onChange={e => setForm({...form, [k]: e.target.value})} 
                     required 
@@ -149,6 +150,7 @@ export default function StudentStage() {
               <label className="form-label">Description</label>
               <textarea 
                 className="form-control" 
+                placeholder="Décrivez votre stage.. "
                 value={form.description} 
                 onChange={e => setForm({...form, description: e.target.value})} 
                 rows={4} 

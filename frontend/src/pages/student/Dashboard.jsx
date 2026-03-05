@@ -1,12 +1,21 @@
 import { useState, useEffect } from "react";
 import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
-import { Calendar, Clock, MapPin, Users, CheckCircle, AlertCircle, FileText } from "lucide-react";
+import { GraduationCap, Calendar, Clock, MapPin, Users, CheckCircle, AlertCircle, FileText } from "lucide-react";
 
-function daysUntil(dateStr) {
+function getCountdownStatus(dateStr) {
   if (!dateStr) return null;
-  const diff = new Date(dateStr) - new Date();
-  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const soutenanceDate = new Date(dateStr);
+  soutenanceDate.setHours(0, 0, 0, 0);
+  
+  const diff = soutenanceDate - today;
+  const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+  
+  if (days === 0) return { status: "today", label: "Aujourd'hui", days: 0 };
+  if (days < 0) return { status: "done", label: "Terminé", days: days };
+  return { status: "pending", label: `-${days} jour${days > 1 ? "s" : ""}`, days: days };
 }
 
 function statusBadge(s) {
@@ -27,7 +36,7 @@ export default function StudentDashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  const days = soutenance?.date_soutenance ? daysUntil(soutenance.date_soutenance) : null;
+  const countdown = soutenance?.date_soutenance ? getCountdownStatus(soutenance.date_soutenance) : null;
 
   if (loading) return <div className="spinner" />;
 
@@ -49,22 +58,37 @@ export default function StudentDashboard() {
           <div className="soutenance-card" style={{ marginBottom: 24 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
               <div>
-                <div className="soutenance-title">📋 {soutenance.sujet || "Soutenance"}</div>
-                {statusBadge(soutenance.statut)}
-              </div>
-              {days !== null && days >= 0 && (
+                <div className="soutenance-header">
+                  <div className="icon">
+                    <GraduationCap size={32} />
+                  </div>
+                  <div>
+                    <div className="soutenance-title">📋 {soutenance.sujet || "Soutenance"}</div>
+                    {statusBadge(soutenance.statut)}
+                  </div>
+                </div>
+              </div>  {/* close inner wrapper */}
+              {countdown !== null && countdown.status === "pending" && (
                 <div className="countdown">
                   <div>
-                    <div className="countdown-number">{days}</div>
-                    <div className="countdown-label">jours restants</div>
+                    <div className="countdown-number">{countdown.label}</div>
+                    <div className="countdown-label">restants</div>
                   </div>
                 </div>
               )}
-              {days !== null && days < 0 && (
+              {countdown !== null && countdown.status === "today" && (
+                <div className="countdown" style={{ background: "linear-gradient(135deg, #3b82f6, #1e40af)" }}>
+                  <div>
+                    <div className="countdown-number">{countdown.label}</div>
+                    <div className="countdown-label">jour J</div>
+                  </div>
+                </div>
+              )}
+              {countdown !== null && countdown.status === "done" && (
                 <div className="countdown" style={{ background: "linear-gradient(135deg, #065f46, #059669)" }}>
                   <div>
                     <CheckCircle size={32} />
-                    <div className="countdown-label">Terminée</div>
+                    <div className="countdown-label">{countdown.label}</div>
                   </div>
                 </div>
               )}

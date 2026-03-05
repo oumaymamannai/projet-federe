@@ -9,13 +9,13 @@ const ensureDir = (dir) => {
 // Storage pour les documents admin
 const documentsStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const dir = path.join(process.env.UPLOAD_PATH || './uploads', 'documents');
+    const dir = process.env.UPLOAD_DIR || './uploads';
     ensureDir(dir);
     cb(null, dir);
   },
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname);
-    const name = `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}${ext}`;
+    const name = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}${ext}`;
     cb(null, name);
   }
 });

@@ -2,9 +2,18 @@ import { useState, useEffect } from "react";
 import api from "../../services/api";
 import { Calendar, Clock, MapPin, Lock } from "lucide-react";
 
-function daysUntil(dateStr) {
-  const diff = new Date(dateStr) - new Date();
-  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+function getCountdownStatus(dateStr) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const soutenanceDate = new Date(dateStr);
+  soutenanceDate.setHours(0, 0, 0, 0);
+  
+  const diff = soutenanceDate - today;
+  const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+  
+  if (days === 0) return { status: "today", label: "Aujourd'hui", days: 0 };
+  if (days < 0) return { status: "done", label: "Terminé", days: days };
+  return { status: "pending", label: `-${days} jour${days > 1 ? "s" : ""}`, days: days };
 }
 
 function roleLabel(r) {
@@ -45,7 +54,7 @@ export default function JuryPlanning() {
           </div>
         ) : (
           soutenances.map(s => {
-            const days = s.date_soutenance ? daysUntil(s.date_soutenance) : null;
+            const countdown = s.date_soutenance ? getCountdownStatus(s.date_soutenance) : null;
             const todayIs = s.date_soutenance ? isToday(s.date_soutenance) : false;
             return (
               <div key={s.id} className="jury-soutenance-card">
@@ -71,7 +80,7 @@ export default function JuryPlanning() {
                         </span>
                       </>}
                     </div>
-                    {s.date_soutenance && !todayIs && days > 0 && (
+                    {s.date_soutenance && !todayIs && countdown.status !== "done" && (
                       <div style={{ marginTop: 8, fontSize: 13, color: "#f59e0b", fontWeight: 600 }}>
                         🔒 Évaluation disponible uniquement le {new Date(s.date_soutenance).toLocaleDateString("fr-FR")}
                       </div>

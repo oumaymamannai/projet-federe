@@ -25,26 +25,23 @@ export default function StudentDocuments() {
           </div>
         ) : (
           <div style={{ display: "grid", gap: 12 }}>
-            {docs.map(d => {
-              const fileUrl = d.fichier_path && d.fichier_path.startsWith('uploads/') ? '/' + d.fichier_path : '/uploads/' + d.fichier_path;
-              return (
-                <div key={d.id} className="card" style={{ display: "flex", alignItems: "center", gap: 16, padding: 20 }}>
-                  <div style={{ width: 48, height: 48, background: "#ede9fe", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <FileText size={24} color="#7c3aed" />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 700, marginBottom: 4 }}>{d.titre}</div>
-                    <div style={{ color: "#6b7280", fontSize: 13 }}>{d.description}</div>
-                    <div style={{ marginTop: 6 }}>
-                      <span className={"badge " + (d.type === "template" ? "badge-purple" : "badge-gray")}>{d.type}</span>
-                    </div>
-                  </div>
-                  <a href={fileUrl} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">
-                    <Download size={14} /> Télécharger
-                  </a>
+            {docs.map(d => (
+              <div key={d.id} className="card" style={{ display: "flex", alignItems: "center", gap: 16, padding: 20 }}>
+                <div style={{ width: 48, height: 48, background: "#ede9fe", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <FileText size={24} color="#7c3aed" />
                 </div>
-              );
-            })}
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, marginBottom: 4 }}>{d.titre}</div>
+                  <div style={{ color: "#6b7280", fontSize: 13 }}>{d.description}</div>
+                  <div style={{ marginTop: 6 }}>
+                    <span className={"badge " + (d.type === "template" ? "badge-purple" : "badge-gray")}>{d.type}</span>
+                  </div>
+                </div>
+                <a href={"/api/documents/" + d.id + "/download?token=" + localStorage.getItem('gradflow_token')} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">
+                  <Download size={14} /> Télécharger
+                </a>
+              </div>
+            ))}
           </div>
         )}
       </div>

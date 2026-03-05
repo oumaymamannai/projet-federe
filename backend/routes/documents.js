@@ -1,9 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { protect } = require('../middleware/auth');
+const { verifyToken } = require('../middleware/auth'); 
 const ctrl = require('../controllers/documentsController');
-
-router.use(protect);
+router.use(verifyToken);
 
 router.get('/', ctrl.getDocuments);
 router.get('/mes-telechargements', ctrl.mestelechargements);
