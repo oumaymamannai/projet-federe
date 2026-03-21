@@ -139,9 +139,9 @@ export default function AdminSoutenances() {
                   <td>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                       <button className="btn btn-secondary btn-sm" onClick={() => openModal(s)}>✏️ Jury</button>
-                      {s.statut !== 'terminee' && (
+                      {s.statut === 'terminee' && (
                         <button className="btn btn-sm" style={{ background: 'var(--success)', color: 'white' }} onClick={() => handleEnvoyerResultats(s.id)}>
-                          📧 Résultats
+                          📧 Envoyer le résultat par email
                         </button>
                       )}
                     </div>

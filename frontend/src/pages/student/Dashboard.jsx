@@ -19,9 +19,10 @@ function getCountdownStatus(dateStr) {
 }
 
 function statusBadge(s) {
-  if (s === "planifiee") return <span className="badge badge-purple">🗓️ Planifiée</span>;
-  if (s === "terminee") return <span className="badge badge-success">✅ Terminée</span>;
-  return <span className="badge badge-warning">⏳ En attente</span>;
+  const pastel = "rgba(167,139,250,0.3)"; // pastel background
+  if (s === "planifiee") return <span className="badge badge-purple" style={{ background: pastel, color: "white", fontSize: 13, padding: "6px 12px" }}>🗓️ Planifiée</span>;
+  if (s === "terminee") return <span className="badge badge-success" style={{ background: pastel, color: "white", fontSize: 13, padding: "6px 12px" }}>✅ Terminée</span>;
+  return <span className="badge badge-warning" style={{ background: pastel, color: "white", fontSize: 13, padding: "6px 12px" }}>⏳ En attente</span>;
 }
 
 export default function StudentDashboard() {
@@ -56,18 +57,16 @@ export default function StudentDashboard() {
           </div>
         ) : (
           <div className="soutenance-card" style={{ marginBottom: 24 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
-              <div>
-                <div className="soutenance-header">
-                  <div className="icon">
-                    <GraduationCap size={32} />
-                  </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24, gap: 16 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+                  <GraduationCap size={32} color="white" />
                   <div>
-                    <div className="soutenance-title">📋 {soutenance.sujet || "Soutenance"}</div>
+                    <div className="soutenance-title">Statut : Soutenance {soutenance.statut === "planifiee" ? "programmée" : soutenance.statut === "terminee" ? "terminée" : "en attente"}</div>
                     {statusBadge(soutenance.statut)}
                   </div>
                 </div>
-              </div>  {/* close inner wrapper */}
+              </div>
               {countdown !== null && countdown.status === "pending" && (
                 <div className="countdown">
                   <div>
@@ -77,58 +76,68 @@ export default function StudentDashboard() {
                 </div>
               )}
               {countdown !== null && countdown.status === "today" && (
-                <div className="countdown" style={{ background: "linear-gradient(135deg, #3b82f6, #1e40af)" }}>
-                  <div>
-                    <div className="countdown-number">{countdown.label}</div>
-                    <div className="countdown-label">jour J</div>
+                <div className="countdown">
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div>
+                      <div className="countdown-number">{countdown.label}</div>
+                      <div className="countdown-label">jour J</div>
+                    </div>
                   </div>
                 </div>
               )}
               {countdown !== null && countdown.status === "done" && (
-                <div className="countdown" style={{ background: "linear-gradient(135deg, #065f46, #059669)" }}>
-                  <div>
-                    <CheckCircle size={32} />
+                <div className="countdown">
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <CheckCircle size={40} />
                     <div className="countdown-label">{countdown.label}</div>
                   </div>
                 </div>
               )}
             </div>
-            <div className="soutenance-meta">
-              {soutenance.date_soutenance && (
-                <div className="meta-item">
-                  <Calendar size={16} color="#7c3aed" />
-                  <strong>{new Date(soutenance.date_soutenance).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</strong>
-                </div>
-              )}
-              {soutenance.date_soutenance && (
-                <div className="meta-item">
-                  <Clock size={16} color="#7c3aed" />
-                  <strong>{new Date(soutenance.date_soutenance).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</strong>
-                </div>
-              )}
-              {soutenance.salle && (
-                <div className="meta-item">
-                  <MapPin size={16} color="#7c3aed" />
-                  <strong>{soutenance.salle}</strong>
-                </div>
-              )}
-              {soutenance.note_finale !== null && soutenance.note_finale !== undefined && (
-                <div className="meta-item">
-                  <CheckCircle size={16} color="#10b981" />
-                  <strong style={{ color: "#10b981" }}>Note finale : {soutenance.note_finale}/20</strong>
-                </div>
-              )}
+
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: 14, opacity: 0.9, marginBottom: 8 }}>Date de soutenance prévue</div>
+              <div style={{ display: "flex", gap: 48, alignItems: "center", flexWrap: "wrap" }}>
+                {soutenance.date_soutenance && (
+                  <div className="meta-item">
+                    <Calendar size={24} color="white" />
+                    <strong style={{ fontSize: 22 }}>{new Date(soutenance.date_soutenance).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</strong>
+                  </div>
+                )}
+                {soutenance.date_soutenance && (
+                  <div className="meta-item">
+                    <Clock size={24} color="white" />
+                    <strong style={{ fontSize: 22 }}>{new Date(soutenance.date_soutenance).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</strong>
+                  </div>
+                )}
+                {soutenance.salle && (
+                  <div className="meta-item">
+                    <MapPin size={24} color="white" />
+                    <strong style={{ fontSize: 22 }}>{soutenance.salle}</strong>
+                  </div>
+                )}
+              </div>
             </div>
+
+            {soutenance.note_finale !== null && soutenance.note_finale !== undefined && (
+              <div style={{ marginBottom: 24 }}>
+                <div className="meta-item">
+                  <CheckCircle size={20} color="#10b981" />
+                  <strong>Note finale : {soutenance.note_finale}/20</strong>
+                </div>
+              </div>
+            )}
+
             {soutenance.jurys?.length > 0 && (
               <>
-                <div className="divider" />
+                <div style={{ height: 1, background: "rgba(255,255,255,0.2)", margin: "24px 0" }} />
                 <div>
-                  <div style={{ fontWeight: 700, marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
-                    <Users size={16} /> Composition du jury
+                  <div style={{ fontWeight: 700, marginBottom: 12, display: "flex", alignItems: "center", gap: 8, color: "white" }}>
+                    <Users size={16} /> Jury assigné ({soutenance.jurys.length} {soutenance.jurys.length > 1 ? "membres" : "membre"})
                   </div>
                   <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                     {soutenance.jurys.map((j, i) => (
-                      <div key={i} className="badge badge-purple" style={{ fontSize: 13 }}>
+                      <div key={i} style={{ background: "rgba(167,139,250,0.3)", color: "white", padding: "6px 12px", borderRadius: 8, fontSize: 13, fontWeight: 600 }}>
                         {j.nom} — {j.role.replace("3eme_membre", "3ème Membre").replace("encadreur", "Encadreur").replace("president", "Président")}
                       </div>
                     ))}

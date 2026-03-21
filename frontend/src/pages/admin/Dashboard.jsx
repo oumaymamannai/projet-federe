@@ -9,6 +9,7 @@ export default function AdminDashboard() {
   const [periodMsg, setPeriodMsg] = useState("");
   const [autoMsg, setAutoMsg] = useState("");
   const [visibleSegments, setVisibleSegments] = useState(0);
+  const [showPeriodForm, setShowPeriodForm] = useState(false);
 
   useEffect(() => {
     api.get("/admin/dashboard").then(r => setData(r.data)).finally(() => setLoading(false));
@@ -67,10 +68,31 @@ export default function AdminDashboard() {
     <div>
       <div className="page-header">
         <div><h1>📊 Tableau de bord</h1><p>Vue d'ensemble de la plateforme GradFlow</p></div>
-        <button className="btn btn-primary" onClick={handleAutoAffect}>
-          🗓️ Affecter les dates automatiquement
-        </button>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <button className="btn btn-primary" onClick={() => setShowPeriodForm(!showPeriodForm)}>
+            📆 Définir la période de soutenances
+          </button>
+          <button className="btn btn-primary" onClick={handleAutoAffect}>
+            🗓️ Affecter les dates automatiquement
+          </button>
+        </div>
       </div>
+      {showPeriodForm && (
+        <div className="card" style={{ marginBottom: 24 }}>
+          {periodMsg && <div className="alert alert-success">✅ {periodMsg}</div>}
+          <form onSubmit={handlePeriod} style={{ display: "flex", gap: 16, alignItems: "flex-end" }}>
+            <div className="form-group" style={{ marginBottom: 0, flex: 1 }}>
+              <label className="form-label">Date début</label>
+              <input type="date" className="form-control" value={period.date_debut} onChange={e => setPeriod({...period, date_debut: e.target.value})} required />
+            </div>
+            <div className="form-group" style={{ marginBottom: 0, flex: 1 }}>
+              <label className="form-label">Date fin</label>
+              <input type="date" className="form-control" value={period.date_fin} onChange={e => setPeriod({...period, date_fin: e.target.value})} required />
+            </div>
+            <button type="submit" className="btn btn-primary">Définir</button>
+          </form>
+        </div>
+      )}
       <div className="page-content">
         {autoMsg && <div className="alert alert-success">✅ {autoMsg}</div>}
         <div className="alert alert-warning" style={{ marginBottom: 24 }}>
@@ -166,22 +188,6 @@ export default function AdminDashboard() {
               </PieChart>
             </ResponsiveContainer>
           </div>
-        </div>
-
-        <div className="card">
-          <h3 style={{ fontWeight: 700, marginBottom: 16 }}>📆 Définir la période de soutenances</h3>
-          {periodMsg && <div className="alert alert-success">✅ {periodMsg}</div>}
-          <form onSubmit={handlePeriod} style={{ display: "flex", gap: 16, alignItems: "flex-end" }}>
-            <div className="form-group" style={{ marginBottom: 0, flex: 1 }}>
-              <label className="form-label">Date début</label>
-              <input type="date" className="form-control" value={period.date_debut} onChange={e => setPeriod({...period, date_debut: e.target.value})} required />
-            </div>
-            <div className="form-group" style={{ marginBottom: 0, flex: 1 }}>
-              <label className="form-label">Date fin</label>
-              <input type="date" className="form-control" value={period.date_fin} onChange={e => setPeriod({...period, date_fin: e.target.value})} required />
-            </div>
-            <button type="submit" className="btn btn-primary">Définir</button>
-          </form>
         </div>
       </div>
     </div>
