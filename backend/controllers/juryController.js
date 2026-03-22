@@ -1,7 +1,18 @@
 const db = require('../config/db');
 
+async function syncSoutenanceStatuts() {
+  await db.query(`
+    UPDATE soutenances 
+    SET statut = 'terminee' 
+    WHERE statut = 'planifiee' 
+      AND date_soutenance IS NOT NULL 
+      AND date_soutenance < NOW()
+  `);
+}
+
 exports.getMesSoutenances = async (req, res) => {
   try {
+    await syncSoutenanceStatuts();
     const [rows] = await db.query(`
       SELECT s.id, s.sujet, s.date_soutenance, s.salle, s.statut, s.note_finale,
         u.nom, u.prenom, u.email,
@@ -22,20 +33,12 @@ exports.evaluer = async (req, res) => {
   const { soutenance_id } = req.params;
   const { note, remarques } = req.body;
   try {
-    // Check if today is the day of the soutenance
     const [sout] = await db.query('SELECT * FROM soutenances WHERE id = ?', [soutenance_id]);
     if (!sout.length) return res.status(404).json({ message: 'Soutenance non trouvée' });
-    
-    const soutenanceDate = new Date(sout[0].date_soutenance);
-    const today = new Date();
-    const sameDay = soutenanceDate.toDateString() === today.toDateString();
-    if (!sameDay) return res.status(403).json({ message: "L'évaluation n'est disponible que le jour de la soutenance" });
 
-    // Get jury role
     const [jrow] = await db.query('SELECT * FROM soutenance_jury WHERE soutenance_id = ? AND jury_id = ?', [soutenance_id, req.user.id]);
     if (!jrow.length) return res.status(403).json({ message: 'Vous n\'êtes pas assigné à cette soutenance' });
     
-    // Only president can give note
     if (note !== undefined && jrow[0].role !== 'president') {
       return res.status(403).json({ message: 'Seul le président peut saisir la note' });
     }
@@ -48,7 +51,6 @@ exports.evaluer = async (req, res) => {
     
     await db.query('UPDATE soutenance_jury SET ? WHERE soutenance_id = ? AND jury_id = ?', [updates, soutenance_id, req.user.id]);
     
-    // If note given by president, update soutenance note_finale and statut
     if (note !== undefined) {
       await db.query('UPDATE soutenances SET note_finale = ?, statut = "terminee" WHERE id = ?', [note, soutenance_id]);
     }

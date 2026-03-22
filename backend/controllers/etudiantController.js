@@ -1,7 +1,18 @@
 const db = require("../config/db");
 
+async function syncSoutenanceStatuts() {
+  await db.query(`
+    UPDATE soutenances 
+    SET statut = 'terminee' 
+    WHERE statut = 'planifiee' 
+      AND date_soutenance IS NOT NULL 
+      AND date_soutenance < NOW()
+  `);
+}
+
 exports.getMaSoutenance = async (req, res) => {
   try {
+    await syncSoutenanceStatuts();
     const [rows] = await db.query(
       `
       SELECT s.*, 

@@ -86,11 +86,24 @@ export default function StudentDashboard() {
                 </div>
               )}
               {countdown !== null && countdown.status === "done" && (
-                <div className="countdown">
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <CheckCircle size={40} />
-                    <div className="countdown-label">{countdown.label}</div>
-                  </div>
+                <div className="countdown" style={{ minWidth: 140, textAlign: "center" }}>
+                  {soutenance.note_finale !== null && soutenance.note_finale !== undefined ? (
+                    <div>
+                      <div style={{ fontSize: 14, opacity: 0.9, marginBottom: 4 }}>Résultat</div>
+                      <div className="countdown-number" style={{ fontSize: 36 }}>
+                        {soutenance.note_finale}<span style={{ fontSize: 18 }}>/20</span>
+                      </div>
+                      <div className="countdown-label" style={{ marginTop: 4, color: soutenance.note_finale >= 10 ? "#86efac" : "#fca5a5" }}>
+                        {soutenance.note_finale >= 10 ? "✅ Admis(e)" : "❌ Non admis(e)"}
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <CheckCircle size={40} />
+                      <div className="countdown-label" style={{ marginTop: 4 }}>Terminé</div>
+                      <div style={{ fontSize: 12, opacity: 0.7, marginTop: 2 }}>En attente de note</div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -156,17 +169,17 @@ export default function StudentDashboard() {
           </div>
           <div className="stat-card">
             <div className="stat-icon">📋</div>
-            <div className="stat-value" style={{ color: soutenance?.statut === "planifiee" ? "#7c3aed" : "#9ca3af" }}>
-              {soutenance?.statut === "planifiee" ? "✓" : "—"}
+            <div className="stat-value" style={{ color: soutenance?.statut === "terminee" ? "#10b981" : soutenance?.statut === "planifiee" ? "#7c3aed" : "#9ca3af" }}>
+              {soutenance?.statut === "terminee" ? "✓" : soutenance?.statut === "planifiee" ? "🗓️" : "—"}
             </div>
-            <div className="stat-label">Soutenance planifiée</div>
+            <div className="stat-label">{soutenance?.statut === "terminee" ? "Soutenance terminée" : soutenance?.statut === "planifiee" ? "Soutenance planifiée" : "Soutenance en attente"}</div>
           </div>
           <div className="stat-card">
             <div className="stat-icon">⭐</div>
-            <div className="stat-value" style={{ color: "#10b981" }}>
-              {soutenance?.note_finale ?? "—"}
+            <div className="stat-value" style={{ color: soutenance?.note_finale != null ? (soutenance.note_finale >= 10 ? "#10b981" : "#ef4444") : "#9ca3af" }}>
+              {soutenance?.note_finale != null ? `${soutenance.note_finale}/20` : "—"}
             </div>
-            <div className="stat-label">Note obtenue</div>
+            <div className="stat-label">{soutenance?.note_finale != null ? (soutenance.note_finale >= 10 ? "Admis(e)" : "Non admis(e)") : "Note en attente"}</div>
           </div>
         </div>
       </div>

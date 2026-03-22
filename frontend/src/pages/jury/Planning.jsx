@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import api from "../../services/api";
-import { Calendar, Clock, MapPin, Lock } from "lucide-react";
+import { Calendar, Clock, MapPin } from "lucide-react";
 
 function getCountdownStatus(dateStr) {
   const today = new Date();
@@ -32,20 +32,14 @@ export default function JuryPlanning() {
     api.get("/jury/soutenances").then(r => setSoutenances(r.data)).finally(() => setLoading(false));
   }, []);
 
-  const isToday = (dateStr) => {
-    const d = new Date(dateStr);
-    const today = new Date();
-    return d.toDateString() === today.toDateString();
-  };
-
   if (loading) return <div className="spinner" />;
 
   return (
     <div>
       <div className="page-header"><div><h1>📅 Planning des soutenances</h1><p>Vos soutenances assignées et le calendrier d'évaluation.</p></div></div>
       <div className="page-content">
-        <div className="alert alert-warning">
-          💡 Le bouton <strong>Évaluer</strong> est activé <strong>uniquement le jour de la soutenance</strong>. Avant la date, il reste verrouillé pour garantir l'intégrité des évaluations.
+        <div className="alert alert-info">
+          💡 Le <strong>Président</strong> peut saisir la note finale. Les autres membres du jury peuvent laisser leurs <strong>remarques</strong>.
         </div>
         {soutenances.length === 0 ? (
           <div className="card" style={{ textAlign: "center", padding: 48 }}>
@@ -55,7 +49,6 @@ export default function JuryPlanning() {
         ) : (
           soutenances.map(s => {
             const countdown = s.date_soutenance ? getCountdownStatus(s.date_soutenance) : null;
-            const todayIs = s.date_soutenance ? isToday(s.date_soutenance) : false;
             return (
               <div key={s.id} className="jury-soutenance-card">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -80,20 +73,11 @@ export default function JuryPlanning() {
                         </span>
                       </>}
                     </div>
-                    {s.date_soutenance && !todayIs && countdown.status !== "done" && (
-                      <div style={{ marginTop: 8, fontSize: 13, color: "#f59e0b", fontWeight: 600 }}>
-                        🔒 Évaluation disponible uniquement le {new Date(s.date_soutenance).toLocaleDateString("fr-FR")}
-                      </div>
-                    )}
                   </div>
                   <div>
-                    {todayIs ? (
-                      <a href="/jury/evaluations" className="btn btn-primary btn-sm">✅ Évaluer</a>
-                    ) : (
-                      <span style={{ display: "flex", alignItems: "center", gap: 6, color: "#9ca3af", fontSize: 14 }}>
-                        <Lock size={14} /> Verrouillé
-                      </span>
-                    )}
+                    <a href={`/jury/evaluations/${s.id}`} className="btn btn-primary btn-sm">
+                      {s.mon_role === "president" ? "📝 Noter" : "💬 Remarques"}
+                    </a>
                   </div>
                 </div>
               </div>

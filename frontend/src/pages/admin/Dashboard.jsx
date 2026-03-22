@@ -50,19 +50,22 @@ export default function AdminDashboard() {
     { icon: "🔔", value: data.reclamations, label: "Réclamations", color: "#ef4444" },
   ];
 
+  const rep = data.notesRepartition || {};
   const notesData = [
-    { note: "<10", valeur: 0, couleur: "#CCCCCC" },
-    { note: "10-12", valeur: 4, couleur: "#4CAF50" },
-    { note: "12-14", valeur: 3, couleur: "#FFC107" },
-    { note: "14-16", valeur: 2, couleur: "#FF5722" },
-    { note: ">16", valeur: 1, couleur: "#F44336" }
+    { note: "<10", valeur: rep.moins_10 || 0, couleur: "#ef4444" },
+    { note: "10-12", valeur: rep.entre_10_12 || 0, couleur: "#f59e0b" },
+    { note: "12-14", valeur: rep.entre_12_14 || 0, couleur: "#3b82f6" },
+    { note: "14-16", valeur: rep.entre_14_16 || 0, couleur: "#8b5cf6" },
+    { note: ">16", valeur: rep.plus_16 || 0, couleur: "#10b981" }
   ];
 
+  const maxNote = Math.max(...notesData.map(d => d.valeur), 1);
+
   const pieData = [
-    { name: 'Terminées', value: 25, color: '#4CAF50' },
-    { name: 'Planifiées', value: 50, color: '#2196F3' },
-    { name: 'En attente', value: 25, color: '#FFC107' },
-  ];
+    { name: 'Terminées', value: data.terminees || 0, color: '#10b981' },
+    { name: 'Planifiées', value: data.planifiees || 0, color: '#7c3aed' },
+    { name: 'En attente', value: data.en_attente || 0, color: '#f59e0b' },
+  ].filter(d => d.value > 0);
 
   return (
     <div>
@@ -114,7 +117,7 @@ export default function AdminDashboard() {
             {[
               { label: "Soutenances terminées", value: data.total ? Math.round(data.terminees/data.total*100) : 0, color: "#10b981" },
               { label: "Taux de réussite", value: data.taux || 0, color: "#7c3aed" },
-              { label: "Documents publiés", value: 15, color: "#f59e0b" },
+              { label: "Documents publiés", value: data.docs > 0 ? Math.min(Math.round(data.docs / 5 * 100), 100) : 0, color: "#f59e0b" },
             ].map((p, i) => (
               <div key={i} style={{ marginBottom: 16 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 14 }}>
@@ -152,7 +155,7 @@ export default function AdminDashboard() {
               <BarChart data={notesData} barGap={4}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="note" type="category" />
-                <YAxis type="number" domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} />
+                <YAxis type="number" domain={[0, maxNote + 1]} allowDecimals={false} />
                 <Tooltip formatter={(value) => [`Étudiants : ${value}`, '']} />
                 <Bar dataKey="valeur" barSize={15} animationDuration={1500}>
                   {notesData.map((entry, index) => (

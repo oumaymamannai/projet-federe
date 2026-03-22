@@ -23,7 +23,6 @@ const studentNav = [
 
 const juryNav = [
   { to: '/jury', icon: <Calendar size={18} />, label: 'Planning' },
-  { to: '/jury/evaluations', icon: <BarChart3 size={18} />, label: 'Évaluations' },
 ];
 
 const adminNav = [

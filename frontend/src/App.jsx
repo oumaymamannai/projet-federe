@@ -49,6 +49,7 @@ function AppRoutes() {
       <Route path="/student/reclamations" element={<ProtectedRoute roles={["etudiant"]}><StudentReclamations /></ProtectedRoute>} />
       <Route path="/jury" element={<ProtectedRoute roles={["jury"]}><JuryPlanning /></ProtectedRoute>} />
       <Route path="/jury/evaluations" element={<ProtectedRoute roles={["jury"]}><JuryEvaluations /></ProtectedRoute>} />
+      <Route path="/jury/evaluations/:soutenanceId" element={<ProtectedRoute roles={["jury"]}><JuryEvaluations /></ProtectedRoute>} />
       <Route path="/admin" element={<ProtectedRoute roles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
       <Route path="/admin/soutenances" element={<ProtectedRoute roles={["admin"]}><AdminSoutenances /></ProtectedRoute>} />
       <Route path="/admin/jury" element={<ProtectedRoute roles={["admin"]}><AdminJury /></ProtectedRoute>} />

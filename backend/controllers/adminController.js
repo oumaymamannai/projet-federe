@@ -4,8 +4,19 @@ const {
   sendReclamationReponse,
 } = require("../config/email");
 
+async function syncSoutenanceStatuts() {
+  await db.query(`
+    UPDATE soutenances 
+    SET statut = 'terminee' 
+    WHERE statut = 'planifiee' 
+      AND date_soutenance IS NOT NULL 
+      AND date_soutenance < NOW()
+  `);
+}
+
 exports.getDashboard = async (req, res) => {
   try {
+    await syncSoutenanceStatuts();
     const [[{ total }]] = await db.query(
       "SELECT COUNT(*) as total FROM soutenances"
     );
@@ -34,6 +45,18 @@ exports.getDashboard = async (req, res) => {
       "SELECT ROUND(AVG(note_finale),2) as moy FROM soutenances WHERE note_finale IS NOT NULL"
     );
 
+    const [repartition] = await db.query(`
+      SELECT 
+        SUM(CASE WHEN note_finale < 10 THEN 1 ELSE 0 END) as moins_10,
+        SUM(CASE WHEN note_finale >= 10 AND note_finale < 12 THEN 1 ELSE 0 END) as entre_10_12,
+        SUM(CASE WHEN note_finale >= 12 AND note_finale < 14 THEN 1 ELSE 0 END) as entre_12_14,
+        SUM(CASE WHEN note_finale >= 14 AND note_finale < 16 THEN 1 ELSE 0 END) as entre_14_16,
+        SUM(CASE WHEN note_finale >= 16 THEN 1 ELSE 0 END) as plus_16
+      FROM soutenances WHERE note_finale IS NOT NULL
+    `);
+
+    const notesRepartition = repartition[0] || {};
+
     res.json({
       total,
       planifiees,
@@ -44,6 +67,13 @@ exports.getDashboard = async (req, res) => {
       docs,
       notes,
       moy,
+      notesRepartition: {
+        moins_10: Number(notesRepartition.moins_10) || 0,
+        entre_10_12: Number(notesRepartition.entre_10_12) || 0,
+        entre_12_14: Number(notesRepartition.entre_12_14) || 0,
+        entre_14_16: Number(notesRepartition.entre_14_16) || 0,
+        plus_16: Number(notesRepartition.plus_16) || 0,
+      },
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -52,6 +82,7 @@ exports.getDashboard = async (req, res) => {
 
 exports.getSoutenances = async (req, res) => {
   try {
+    await syncSoutenanceStatuts();
     const [rows] = await db.query(`
       SELECT s.*, CONCAT(u.prenom,' ',u.nom) as etudiant_nom, u.email as etudiant_email,
         -- include jury id and name so frontend can identify encadreur by id
