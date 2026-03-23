@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 import { 
   LayoutDashboard, 
@@ -9,7 +9,6 @@ import {
   Bell, 
   FileText, 
   LogOut, 
-  BarChart3, 
   ClipboardList,
   CheckCircle
 } from 'lucide-react';
@@ -44,70 +43,130 @@ export default function Sidebar() {
   const { user, logout } = useAuth();
   const location = useLocation();
   const [pendingCount, setPendingCount] = useState(0);
+  const [reclamationsAdminCount, setReclamationsAdminCount] = useState(0);
   const [reclamationsCount, setReclamationsCount] = useState(0);
 
-  // Fonction pour charger les soumissions en attente (admin)
-  const loadPendingCount = () => {
+  const loadPendingCount = useCallback(() => {
     if (user?.role === 'admin') {
       api.get('/admin/soumissions')
         .then(res => {
-          const enAttente = res.data.filter(s => s.statut !== "traite");
+          const enAttente = res.data.filter(s => s.statut !== "traite" && s.statut !== "valide");
           setPendingCount(enAttente.length);
         })
         .catch(err => console.error('Erreur chargement soumissions:', err));
     }
-  };
+  }, [user]);
 
-  // Fonction pour charger les réclamations non lues (étudiant)
-  const loadReclamationsCount = async () => {
+  const loadReclamationsAdminCount = useCallback(() => {
+    if (user?.role === 'admin') {
+      api.get('/admin/reclamations')
+        .then(res => {
+          const enAttente = res.data.filter(r => r.statut === 'en_attente' && !r.reponse);
+          setReclamationsAdminCount(enAttente.length);
+        })
+        .catch(err => console.error('Erreur chargement réclamations admin:', err));
+    }
+  }, [user]);
+
+  const loadReclamationsCount = useCallback(async () => {
     if (user?.role === 'etudiant') {
       try {
         const res = await api.get('/etudiant/reclamations');
         const reclamations = res.data;
         
-        // Récupérer la date de dernière visite
-        const lastVisit = localStorage.getItem('lastReclamationsVisit');
+        // Récupérer les réponses déjà vues
+        const reponsesVues = JSON.parse(localStorage.getItem('reponsesVues') || '{}');
         
-        // Compter les réclamations traitées qui sont postérieures à la dernière visite
-        const newResponses = reclamations.filter(r => {
-          if (r.statut !== 'traitee') return false;
-          if (!lastVisit) return true;
-          const responseDate = new Date(r.reponse_at || r.updated_at || r.created_at);
-          return responseDate > new Date(lastVisit);
+        let newCount = 0;
+        
+        reclamations.forEach(r => {
+          // Si réclamation traitée avec réponse
+          if (r.statut === 'traitee' && r.reponse) {
+            const reponseId = `${r.id}_${r.reponse_at || r.updated_at}`;
+            // Si cette réponse n'a pas encore été vue
+            if (!reponsesVues[reponseId]) {
+              newCount++;
+            }
+          }
         });
         
-        setReclamationsCount(newResponses.length);
+        setReclamationsCount(newCount);
+        
       } catch (error) {
-        console.error('Erreur chargement réclamations:', error);
+        console.error('Erreur chargement réclamations étudiant:', error);
       }
     }
-  };
+  }, [user]);
 
-  // Marquer les réclamations comme lues quand on clique
-  const handleReclamationsClick = () => {
+  const handleReclamationsClick = useCallback(async () => {
     if (reclamationsCount > 0) {
-      localStorage.setItem('lastReclamationsVisit', new Date().toISOString());
-      setReclamationsCount(0);
+      try {
+        // Récupérer toutes les réclamations pour marquer les réponses comme vues
+        const res = await api.get('/etudiant/reclamations');
+        const reclamations = res.data;
+        
+        // Récupérer les réponses déjà vues
+        const reponsesVues = JSON.parse(localStorage.getItem('reponsesVues') || '{}');
+        
+        // Marquer toutes les réponses comme vues
+        reclamations.forEach(r => {
+          if (r.statut === 'traitee' && r.reponse) {
+            const reponseId = `${r.id}_${r.reponse_at || r.updated_at}`;
+            reponsesVues[reponseId] = true;
+          }
+        });
+        
+        // Sauvegarder dans localStorage
+        localStorage.setItem('reponsesVues', JSON.stringify(reponsesVues));
+        
+        // Effacer le badge
+        setReclamationsCount(0);
+        
+      } catch (error) {
+        console.error('Erreur:', error);
+      }
     }
-  };
+  }, [reclamationsCount]);
+
+  const handleAdminReclamationsClick = useCallback(() => {
+    if (reclamationsAdminCount > 0) {
+      setReclamationsAdminCount(0);
+    }
+  }, [reclamationsAdminCount]);
 
   useEffect(() => {
     if (user?.role === 'admin') {
       loadPendingCount();
-      const interval = setInterval(loadPendingCount, 30000);
-      window.addEventListener('submissionUpdated', loadPendingCount);
+      loadReclamationsAdminCount();
+      const interval = setInterval(() => {
+        loadPendingCount();
+        loadReclamationsAdminCount();
+      }, 30000);
+      const handleSubmissionUpdate = () => loadPendingCount();
+      window.addEventListener('submissionUpdated', handleSubmissionUpdate);
       return () => {
         clearInterval(interval);
-        window.removeEventListener('submissionUpdated', loadPendingCount);
+        window.removeEventListener('submissionUpdated', handleSubmissionUpdate);
       };
     }
     
     if (user?.role === 'etudiant') {
       loadReclamationsCount();
       const interval = setInterval(loadReclamationsCount, 30000);
-      return () => clearInterval(interval);
+      
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+          loadReclamationsCount();
+        }
+      };
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      
+      return () => {
+        clearInterval(interval);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      };
     }
-  }, [user]);
+  }, [user, loadPendingCount, loadReclamationsAdminCount, loadReclamationsCount]);
 
   const nav = user?.role === 'etudiant' ? studentNav : 
               user?.role === 'jury' ? juryNav : 
@@ -130,19 +189,29 @@ export default function Sidebar() {
           <Link 
             key={item.to} 
             to={item.to}
-            onClick={item.label === 'Réclamations' && user?.role === 'etudiant' ? handleReclamationsClick : undefined}
-            className={"nav-item " + (location.pathname === item.to ? "active" : "")}
+            onClick={() => {
+              if (item.label === 'Réclamations') {
+                if (user?.role === 'etudiant') {
+                  handleReclamationsClick();
+                }
+                if (user?.role === 'admin') {
+                  handleAdminReclamationsClick();
+                }
+              }
+            }}
+            className={`nav-item ${location.pathname === item.to ? 'active' : ''}`}
             style={{ position: 'relative' }}
           >
             {item.icon}
             {item.label}
-            {/* Badge pour les soumissions (admin) */}
             {item.to === '/admin/submissions' && pendingCount > 0 && (
-              <span className="badge-notification">{pendingCount}</span>
+              <span className="badge-notification">{pendingCount > 99 ? '99+' : pendingCount}</span>
             )}
-            {/* Badge pour les réclamations (étudiant) */}
+            {item.to === '/admin/reclamations' && user?.role === 'admin' && reclamationsAdminCount > 0 && (
+              <span className="badge-notification">{reclamationsAdminCount > 99 ? '99+' : reclamationsAdminCount}</span>
+            )}
             {item.label === 'Réclamations' && user?.role === 'etudiant' && reclamationsCount > 0 && (
-              <span className="badge-notification">{reclamationsCount}</span>
+              <span className="badge-notification">{reclamationsCount > 99 ? '99+' : reclamationsCount}</span>
             )}
           </Link>
         ))}
