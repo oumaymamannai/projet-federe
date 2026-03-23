@@ -427,12 +427,12 @@ exports.repondreReclamation = async (req, res) => {
     }
 
     await db.query("COMMIT");
-
+/*
     // Envoyer l'email
     try {
       await sendReclamationReponse(reclamation.email, reclamation, { reponse });
     } catch {}
-
+*/
     res.json({ message: "Réponse envoyée" });
   } catch (err) {
     await db.query("ROLLBACK");

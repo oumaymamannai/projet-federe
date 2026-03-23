@@ -50,7 +50,8 @@ const sendResultatEmail = async (to, etudiant, soutenance, jurys) => {
       </div>`
   });
 };
-
+//nahyneha lfaza juste tji lreponse fel page mtaa letudiant meghyr ma tetbaath par email 
+/*
 const sendReclamationReponse = async (to, etudiant, reclamation) => {
   await transporter.sendMail({
     from: process.env.EMAIL_FROM,
@@ -71,5 +72,6 @@ const sendReclamationReponse = async (to, etudiant, reclamation) => {
       </div>`
   });
 };
-
 module.exports = { sendResultatEmail, sendReclamationReponse };
+*/
+module.exports = { sendResultatEmail};
