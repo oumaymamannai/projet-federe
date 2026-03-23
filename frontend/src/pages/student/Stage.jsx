@@ -74,7 +74,7 @@ export default function StudentStage() {
       // Ajouter les champs du formulaire
       Object.entries(form).forEach(([k, v]) => fd.append(k, v));
       
-      // ✅ CORRIGÉ : "fichiers" sans crochets
+      // "fichiers" sans crochets
       fichiers.forEach((file) => {
         fd.append("fichiers", file);
       });
@@ -137,10 +137,10 @@ export default function StudentStage() {
                   <label className="form-label">{l}</label>
                   <input 
                     className="form-control" 
-                    placeholder={"Entrez votre " + l.toLowerCase()}
+                    placeholder={k === "encadreur" ? "Nom de votre encadreur (si vous en avez un)" : `Entrez votre ${l.toLowerCase()}`}
                     value={form[k]} 
                     onChange={e => setForm({...form, [k]: e.target.value})} 
-                    required 
+                    required={k !== "encadreur"}
                   />
                 </div>
               ))}
@@ -150,7 +150,7 @@ export default function StudentStage() {
               <label className="form-label">Description</label>
               <textarea 
                 className="form-control" 
-                placeholder="Décrivez votre stage.. "
+                placeholder="Décrivez votre stage..."
                 value={form.description} 
                 onChange={e => setForm({...form, description: e.target.value})} 
                 rows={4} 
@@ -271,7 +271,7 @@ export default function StudentStage() {
           <div className="card">
             <h3 style={{ marginBottom: 16, fontWeight: 700 }}>Mes soumissions</h3>
             <div className="table-wrap">
-              <table>
+              <table className="table">
                 <thead>
                   <tr>
                     <th>Sujet</th>
@@ -287,56 +287,58 @@ export default function StudentStage() {
                     <tr key={s.id}>
                       <td>{s.sujet}</td>
                       <td>{s.societe}</td>
-                      <td>{s.encadreur}</td>
                       <td>
-  {s.fichiers ? (
-    (() => {
-      // ✅ Fonction pour normaliser en tableau
-      const getFilesArray = (data) => {
-        if (Array.isArray(data)) return data;
-        if (typeof data === 'string') {
-          try { 
-            return JSON.parse(data); 
-          } catch { 
-            return []; 
-          }
-        }
-        return [];
-      };
-      
-      const files = getFilesArray(s.fichiers);
-      
-      return files.length > 0 ? (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <span className="badge badge-purple">
-            {files.length} fichier(s)
-          </span>
-          <div style={{ display: "flex", gap: 4 }}>
-            {files.map((f, idx) => (
-              <a 
-                key={idx}
-                href={`http://localhost:5000/uploads/${f}`} 
-                target="_blank" 
-                rel="noreferrer"
-                className="btn btn-outline btn-xs"
-                style={{ minWidth: 32 }}
-              >
-                {idx + 1}
-              </a>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <span className="badge badge-gray">0 fichier</span>
-      );
-    })()
-  ) : (
-    <span className="badge badge-gray">0 fichier</span>
-  )}
-</td>
+                        {s.encadreur && s.encadreur.trim() !== "" ? s.encadreur : "Aucun encadreur"}
+                      </td>
+                      <td>
+                        {s.fichiers ? (
+                          (() => {
+                            // Fonction pour normaliser en tableau
+                            const getFilesArray = (data) => {
+                              if (Array.isArray(data)) return data;
+                              if (typeof data === 'string') {
+                                try { 
+                                  return JSON.parse(data); 
+                                } catch { 
+                                  return []; 
+                                }
+                              }
+                              return [];
+                            };
+                            
+                            const files = getFilesArray(s.fichiers);
+                            
+                            return files.length > 0 ? (
+                              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                                <span className="badge badge-purple">
+                                  {files.length} fichier(s)
+                                </span>
+                                <div style={{ display: "flex", gap: 4 }}>
+                                  {files.map((f, idx) => (
+                                    <a 
+                                      key={idx}
+                                      href={`http://localhost:5000/uploads/${f}`} 
+                                      target="_blank" 
+                                      rel="noreferrer"
+                                      className="btn btn-outline btn-xs"
+                                      style={{ minWidth: 32 }}
+                                    >
+                                      {idx + 1}
+                                    </a>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="badge badge-gray">0 fichier</span>
+                            );
+                          })()
+                        ) : (
+                          <span className="badge badge-gray">0 fichier</span>
+                        )}
+                      </td>
                       <td>
                         <span className={"badge " + (s.statut === "traite" ? "badge-success" : "badge-warning")}>
-                          {s.statut}
+                          {s.statut === "traite" ? "Traité" : "En attente"}
                         </span>
                       </td>
                       <td>{new Date(s.created_at).toLocaleDateString("fr-FR")}</td>
