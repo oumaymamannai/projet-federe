@@ -8,13 +8,25 @@ const app = express();
 app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Servir les fichiers statiques avec affichage inline pour PDF/images
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+  setHeaders: (res, filePath) => {
+    const ext = path.extname(filePath).toLowerCase();
+    if (ext === '.pdf') {
+      res.setHeader('Content-Disposition', 'inline');
+    } else if (['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'].includes(ext)) {
+      res.setHeader('Content-Disposition', 'inline');
+    } else {
+      res.setHeader('Content-Disposition', 'attachment');
+    }
+  }
+}));
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/etudiant', require('./routes/etudiant'));
 app.use('/api/jury', require('./routes/jury'));
 app.use('/api/admin', require('./routes/admin'));
-
 app.use('/api/documents', require('./routes/documents'));
 
 app.get('/', (req, res) => res.json({ message: 'GradFlow API v1.0' }));

@@ -44,43 +44,68 @@ export default function Sidebar() {
   const { user, logout } = useAuth();
   const location = useLocation();
   const [pendingCount, setPendingCount] = useState(0);
+  const [reclamationsCount, setReclamationsCount] = useState(0);
 
-  // Fonction pour charger UNIQUEMENT les soumissions en attente
+  // Fonction pour charger les soumissions en attente (admin)
   const loadPendingCount = () => {
     if (user?.role === 'admin') {
-      // Récupérer TOUTES les soumissions et filtrer côté client
       api.get('/admin/soumissions')
         .then(res => {
-          // NE COMPTER QUE celles qui ne sont PAS "traite"
           const enAttente = res.data.filter(s => s.statut !== "traite");
-          
-          console.log('=== DEBUG SIDEBAR ===');
-          console.log('Total soumissions:', res.data.length);
-          console.log('Statuts:', res.data.map(s => s.statut));
-          console.log('En attente:', enAttente.length);
-          console.log('====================');
-          
           setPendingCount(enAttente.length);
         })
         .catch(err => console.error('Erreur chargement soumissions:', err));
     }
   };
 
+  // Fonction pour charger les réclamations non lues (étudiant)
+  const loadReclamationsCount = async () => {
+    if (user?.role === 'etudiant') {
+      try {
+        const res = await api.get('/etudiant/reclamations');
+        const reclamations = res.data;
+        
+        // Récupérer la date de dernière visite
+        const lastVisit = localStorage.getItem('lastReclamationsVisit');
+        
+        // Compter les réclamations traitées qui sont postérieures à la dernière visite
+        const newResponses = reclamations.filter(r => {
+          if (r.statut !== 'traitee') return false;
+          if (!lastVisit) return true;
+          const responseDate = new Date(r.reponse_at || r.updated_at || r.created_at);
+          return responseDate > new Date(lastVisit);
+        });
+        
+        setReclamationsCount(newResponses.length);
+      } catch (error) {
+        console.error('Erreur chargement réclamations:', error);
+      }
+    }
+  };
+
+  // Marquer les réclamations comme lues quand on clique
+  const handleReclamationsClick = () => {
+    if (reclamationsCount > 0) {
+      localStorage.setItem('lastReclamationsVisit', new Date().toISOString());
+      setReclamationsCount(0);
+    }
+  };
+
   useEffect(() => {
     if (user?.role === 'admin') {
-      // Chargement initial
       loadPendingCount();
-      
-      // Rafraîchir toutes les 30 secondes
       const interval = setInterval(loadPendingCount, 30000);
-      
-      // Écouter l'événement de mise à jour
       window.addEventListener('submissionUpdated', loadPendingCount);
-      
       return () => {
         clearInterval(interval);
         window.removeEventListener('submissionUpdated', loadPendingCount);
       };
+    }
+    
+    if (user?.role === 'etudiant') {
+      loadReclamationsCount();
+      const interval = setInterval(loadReclamationsCount, 30000);
+      return () => clearInterval(interval);
     }
   }, [user]);
 
@@ -105,14 +130,19 @@ export default function Sidebar() {
           <Link 
             key={item.to} 
             to={item.to}
+            onClick={item.label === 'Réclamations' && user?.role === 'etudiant' ? handleReclamationsClick : undefined}
             className={"nav-item " + (location.pathname === item.to ? "active" : "")}
             style={{ position: 'relative' }}
           >
             {item.icon}
             {item.label}
-            {/* Le badge n'apparaît que si pendingCount > 0 */}
+            {/* Badge pour les soumissions (admin) */}
             {item.to === '/admin/submissions' && pendingCount > 0 && (
               <span className="badge-notification">{pendingCount}</span>
+            )}
+            {/* Badge pour les réclamations (étudiant) */}
+            {item.label === 'Réclamations' && user?.role === 'etudiant' && reclamationsCount > 0 && (
+              <span className="badge-notification">{reclamationsCount}</span>
             )}
           </Link>
         ))}
