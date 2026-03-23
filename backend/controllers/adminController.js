@@ -282,46 +282,89 @@ exports.affecterDatesAuto = async (req, res) => {
     if (!periode)
       return res.status(400).json({ message: "Aucune période définie" });
 
-    // ✅ Plus besoin de JSON.parse() ! C'est déjà parsé automatiquement
     const salles = periode.salles;
-
-    const heures = ["09:00", "10:30", "14:00", "15:30", "17:00"];
-
+    
+    // 4 créneaux horaires différents dans la journée
+    const heures = ["08:30", "10:00", "11:30", "14:00"];
+    
+    // Récupérer tous les étudiants sans soutenance ou sans date
     const [students] = await db.query(`
-      SELECT s.id FROM soutenances s WHERE s.date_soutenance IS NULL OR s.statut = 'en_attente'
+      SELECT u.id as etudiant_id 
+      FROM users u
+      LEFT JOIN soutenances s ON u.id = s.etudiant_id
+      WHERE u.role = 'etudiant' 
+        AND (s.id IS NULL OR s.date_soutenance IS NULL OR s.statut = 'en_attente')
     `);
+
+    if (students.length === 0) {
+      return res.json({ message: "Aucun étudiant sans soutenance" });
+    }
 
     const start = new Date(periode.date_debut);
     const end = new Date(periode.date_fin);
     let current = new Date(start);
-    let sIdx = 0,
-      hIdx = 0;
-
-    for (const st of students) {
-      if (current > end) break;
+    let affectedCount = 0;
+    let studentIndex = 0;
+    
+    // Parcourir chaque étudiant
+    while (studentIndex < students.length && current <= end) {
+      // Exclure les weekends
       while (current.getDay() === 0 || current.getDay() === 6) {
         current.setDate(current.getDate() + 1);
       }
-      const dateStr = `${current.toISOString().split("T")[0]} ${
-        heures[hIdx]
-      }:00`;
-      await db.query(
-        'UPDATE soutenances SET date_soutenance=?, salle=?, statut="planifiee" WHERE id=?',
-        [dateStr, salles[sIdx % salles.length], st.id]
-      );
-      hIdx++;
-      sIdx++;
-      if (hIdx >= heures.length) {
-        hIdx = 0;
-        current.setDate(current.getDate() + 1);
+      
+      const dateStr = current.toISOString().split("T")[0];
+      
+      // Pour chaque créneau horaire du jour (4 créneaux maximum)
+      for (let heureIndex = 0; heureIndex < heures.length; heureIndex++) {
+        if (studentIndex >= students.length) break;
+        
+        const heure = heures[heureIndex];
+        const dateTimeStr = `${dateStr} ${heure}:00`;
+        
+        // Choisir une salle (on peut faire tourner les salles)
+        const salle = salles[heureIndex % salles.length];
+        
+        const st = students[studentIndex];
+        
+        // Vérifier si la soutenance existe déjà
+        const [soutenanceExist] = await db.query(
+          "SELECT id FROM soutenances WHERE etudiant_id = ?",
+          [st.etudiant_id]
+        );
+        
+        if (soutenanceExist.length > 0) {
+          await db.query(
+            'UPDATE soutenances SET date_soutenance=?, salle=?, statut="planifiee" WHERE etudiant_id=?',
+            [dateTimeStr, salle, st.etudiant_id]
+          );
+        } else {
+          await db.query(
+            'INSERT INTO soutenances (etudiant_id, sujet, date_soutenance, salle, statut) VALUES (?, "", ?, ?, "planifiee")',
+            [st.etudiant_id, dateTimeStr, salle]
+          );
+        }
+        
+        affectedCount++;
+        studentIndex++;
       }
+      
+      // Après avoir assigné les 4 créneaux du jour, passer au jour suivant
+      current.setDate(current.getDate() + 1);
     }
-    res.json({ message: `${students.length} dates affectées automatiquement` });
+    
+    res.json({ 
+      message: `${affectedCount} dates affectées automatiquement`,
+      details: {
+        etudiants_traites: affectedCount,
+        jours_utilises: Math.ceil(affectedCount / heures.length)
+      }
+    });
   } catch (err) {
+    console.error("Erreur affecterDatesAuto:", err);
     res.status(500).json({ message: err.message });
   }
 };
-
 exports.getReclamations = async (req, res) => {
   try {
     const [rows] = await db.query(`
