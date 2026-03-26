@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import api from "../../services/api";
-import { Calendar, Clock, MapPin } from "lucide-react";
+import { Calendar, Clock, MapPin, CalendarDays } from "lucide-react";
 
 function getCountdownStatus(dateStr) {
   const today = new Date();
@@ -36,10 +36,10 @@ export default function JuryPlanning() {
 
   return (
     <div>
-      <div className="page-header"><div><h1>📅 Planning des soutenances</h1><p>Vos soutenances assignées et le calendrier d'évaluation.</p></div></div>
+      <div className="page-header"><div><h1><span className="icon-squircle page-title-icon" aria-hidden><CalendarDays size={22} /></span> Planning des soutenances</h1><p>Vos soutenances assignées et le calendrier d'évaluation.</p></div></div>
       <div className="page-content">
         <div className="alert alert-info">
-          💡 Le <strong>Président</strong> peut saisir la note finale. Les autres membres du jury peuvent laisser leurs <strong>remarques</strong>.
+          ℹ️ Le <strong>Président</strong> peut saisir la note finale. Les autres membres du jury peuvent laisser leurs <strong>remarques</strong>.
         </div>
         {soutenances.length === 0 ? (
           <div className="card" style={{ textAlign: "center", padding: 48 }}>
@@ -59,7 +59,7 @@ export default function JuryPlanning() {
                         {s.mon_role === "president" ? "⚖️" : s.mon_role === "encadreur" ? "📚" : "👤"} {roleLabel(s.mon_role)}
                       </span>
                     </div>
-                    <div style={{ color: "#6b7280", fontSize: 14, marginBottom: 10 }}>📌 {s.sujet}</div>
+                    <div style={{ color: "#6b7280", fontSize: 14, marginBottom: 10 }}>📄 {s.sujet}</div>
                     <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
                       {s.date_soutenance && <>
                         <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14 }}>

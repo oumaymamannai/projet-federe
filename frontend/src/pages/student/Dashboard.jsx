@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
-import { GraduationCap, Calendar, Clock, MapPin, Users, CheckCircle, AlertCircle, FileText } from "lucide-react";
+import { GraduationCap, Calendar, Clock, MapPin, Users, CheckCircle, AlertCircle, FileText, Star, Hourglass } from "lucide-react";
 
 function getCountdownStatus(dateStr) {
   if (!dateStr) return null;
@@ -19,10 +19,11 @@ function getCountdownStatus(dateStr) {
 }
 
 function statusBadge(s) {
-  const pastel = "rgba(167,139,250,0.3)"; // pastel background
-  if (s === "planifiee") return <span className="badge badge-purple" style={{ background: pastel, color: "white", fontSize: 13, padding: "6px 12px" }}>🗓️ Planifiée</span>;
-  if (s === "terminee") return <span className="badge badge-success" style={{ background: pastel, color: "white", fontSize: 13, padding: "6px 12px" }}>✅ Terminée</span>;
-  return <span className="badge badge-warning" style={{ background: pastel, color: "white", fontSize: 13, padding: "6px 12px" }}>⏳ En attente</span>;
+  const pastel = "rgba(167,139,250,0.3)";
+  const row = { display: "inline-flex", alignItems: "center", gap: 6, background: pastel, color: "white", fontSize: 13, padding: "6px 12px", borderRadius: 20, fontWeight: 600 };
+  if (s === "planifiee") return <span style={row}><Calendar size={14} strokeWidth={2.5} /> Planifiée</span>;
+  if (s === "terminee") return <span style={row}><CheckCircle size={14} strokeWidth={2.5} /> Terminée</span>;
+  return <span style={row}><Hourglass size={14} strokeWidth={2.5} /> En attente</span>;
 }
 
 export default function StudentDashboard() {
@@ -45,7 +46,12 @@ export default function StudentDashboard() {
     <div>
       <div className="page-header">
         <div>
-          <h1>🏠 Bonjour, {user?.prenom} !</h1>
+          <h1>
+            <span className="icon-squircle page-title-icon" aria-hidden>
+              <GraduationCap size={22} />
+            </span>
+            Bonjour, {user?.prenom} !
+          </h1>
           <p>Vue d'ensemble de votre soutenance de fin d'études</p>
         </div>
       </div>
@@ -163,19 +169,19 @@ export default function StudentDashboard() {
 
         <div className="stats-grid">
           <div className="stat-card">
-            <div className="stat-icon"><FileText size={28} color="#7c3aed" /></div>
+            <div className="stat-icon icon-squircle"><FileText size={22} /></div>
             <div className="stat-value" style={{ color: "#7c3aed" }}>{docs.length}</div>
             <div className="stat-label">Documents disponibles</div>
           </div>
           <div className="stat-card">
-            <div className="stat-icon">📋</div>
+            <div className="stat-icon icon-squircle"><Calendar size={22} /></div>
             <div className="stat-value" style={{ color: soutenance?.statut === "terminee" ? "#10b981" : soutenance?.statut === "planifiee" ? "#7c3aed" : "#9ca3af" }}>
-              {soutenance?.statut === "terminee" ? "✓" : soutenance?.statut === "planifiee" ? "🗓️" : "—"}
+              {soutenance?.statut === "terminee" ? "✓" : soutenance?.statut === "planifiee" ? "Oui" : "—"}
             </div>
             <div className="stat-label">{soutenance?.statut === "terminee" ? "Soutenance terminée" : soutenance?.statut === "planifiee" ? "Soutenance planifiée" : "Soutenance en attente"}</div>
           </div>
           <div className="stat-card">
-            <div className="stat-icon">⭐</div>
+            <div className="stat-icon icon-squircle"><Star size={22} /></div>
             <div className="stat-value" style={{ color: soutenance?.note_finale != null ? (soutenance.note_finale >= 10 ? "#10b981" : "#ef4444") : "#9ca3af" }}>
               {soutenance?.note_finale != null ? `${soutenance.note_finale}/20` : "—"}
             </div>

@@ -129,7 +129,7 @@ export default function AdminSoutenances() {
                   <td>{s.salle || <span style={{ color: 'var(--gray-400)' }}>—</span>}</td>
                   <td>
                     <div style={{ fontSize: 12, lineHeight: 1.8 }}>
-                      {s.president_nom ? <div>👑 {s.president_prenom} {s.president_nom}</div> : null}
+                      {s.president_nom ? <div>⚖️ {s.president_prenom} {s.president_nom}</div> : null}
                       {s.encadreur_nom ? <div>📚 {s.encadreur_prenom} {s.encadreur_nom}</div> : null}
                       {s.membre3_nom ? <div>⚖️ {s.membre3_prenom} {s.membre3_nom}</div> : null}
                       {!s.president_nom && !s.encadreur_nom && <span style={{ color: 'var(--gray-400)' }}>Non affecté</span>}

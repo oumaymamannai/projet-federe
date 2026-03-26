@@ -6,7 +6,7 @@ import { Eye, EyeOff } from "lucide-react";
 const roles = [
   { key: "etudiant", icon: "🎓", bg: "#7c3aed", label: "Étudiant", desc: "Consulter les documents, soumettre votre formulaire de stage et gérer vos réclamations." },
   { key: "jury", icon: "⚖️", bg: "#f59e0b", label: "Jury", desc: "Consulter les soutenances assignées et saisir les notes et remarques." },
-  { key: "admin", icon: "👨‍💼", bg: "#7c3aed", label: "Responsable", desc: "Affecter les jurys, envoyer les résultats et répondre aux réclamations." },
+  { key: "admin", icon: "🛡️", bg: "#7c3aed", label: "Responsable", desc: "Affecter les jurys, envoyer les résultats et répondre aux réclamations." },
 ];
 
 export default function LoginPage() {
@@ -23,7 +23,7 @@ export default function LoginPage() {
     e.preventDefault();
     setError(""); setLoading(true);
     try {
-      const user = await login(email, password);
+      const user = await login(email, password, selectedRole);
       navigate(user.role === "admin" ? "/admin" : user.role === "jury" ? "/jury" : "/student");
     } catch (err) {
       setError(err.response?.data?.message || "Erreur de connexion");

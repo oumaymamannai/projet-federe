@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import api from "../../services/api";
-import { Save, Calendar, ArrowLeft } from "lucide-react";
+import { Save, Calendar, ArrowLeft, ClipboardCheck } from "lucide-react";
 
 export default function JuryEvaluations() {
   const { soutenanceId } = useParams();
@@ -38,7 +38,7 @@ export default function JuryEvaluations() {
     <div>
       <div className="page-header">
         <div>
-          <h1>📊 {soutenanceId ? "Évaluation" : "Évaluations"}</h1>
+          <h1><span className="icon-squircle page-title-icon" aria-hidden><ClipboardCheck size={22} /></span> {soutenanceId ? "Évaluation" : "Évaluations"}</h1>
           <p>{soutenanceId ? "Saisissez votre note ou remarques pour cette soutenance" : "Saisissez vos notes et remarques pour les soutenances"}</p>
         </div>
         {soutenanceId && (
@@ -56,7 +56,7 @@ export default function JuryEvaluations() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
                 <div>
                   <strong style={{ fontSize: 17 }}>{s.prenom} {s.nom}</strong>
-                  <div style={{ color: "#6b7280", fontSize: 14 }}>📌 {s.sujet}</div>
+                  <div style={{ color: "#6b7280", fontSize: 14 }}>📄 {s.sujet}</div>
                 </div>
                 {s.date_soutenance && (
                   <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#7c3aed" }}>

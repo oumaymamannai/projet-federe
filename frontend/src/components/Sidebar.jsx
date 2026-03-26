@@ -10,7 +10,7 @@ import {
   FileText, 
   LogOut, 
   ClipboardList,
-  CheckCircle
+  CheckCircle,
 } from 'lucide-react';
 
 const studentNav = [

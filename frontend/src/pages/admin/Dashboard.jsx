@@ -51,12 +51,13 @@ export default function AdminDashboard() {
   ];
 
   const rep = data.notesRepartition || {};
+  /* Dégradé violet uniquement (du plus clair au plus soutenu, lisible sur fond blanc) */
   const notesData = [
-    { note: "<10", valeur: rep.moins_10 || 0, couleur: "#ef4444" },
-    { note: "10-12", valeur: rep.entre_10_12 || 0, couleur: "#f59e0b" },
-    { note: "12-14", valeur: rep.entre_12_14 || 0, couleur: "#3b82f6" },
+    { note: "<10", valeur: rep.moins_10 || 0, couleur: "#ddd6fe" },
+    { note: "10-12", valeur: rep.entre_10_12 || 0, couleur: "#c4b5fd" },
+    { note: "12-14", valeur: rep.entre_12_14 || 0, couleur: "#a78bfa" },
     { note: "14-16", valeur: rep.entre_14_16 || 0, couleur: "#8b5cf6" },
-    { note: ">16", valeur: rep.plus_16 || 0, couleur: "#10b981" }
+    { note: ">16", valeur: rep.plus_16 || 0, couleur: "#6d28d9" }
   ];
 
   const maxNote = Math.max(...notesData.map(d => d.valeur), 1);

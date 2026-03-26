@@ -23,8 +23,8 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const login = async (email, password) => {
-    const res = await api.post('/auth/login', { email, password });
+  const login = async (email, password, expectedRole) => {
+    const res = await api.post('/auth/login', { email, password, expectedRole });
     localStorage.setItem('gradflow_token', res.data.token);
     api.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`;
     setUser(res.data.user);

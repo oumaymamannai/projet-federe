@@ -25,10 +25,10 @@ export default function AdminDashboard() {
       label: 'Note (/20)',
       data: (notesParSoutenance || []).map(n => parseFloat(n.moyenne || 0).toFixed(2)),
       backgroundColor: (notesParSoutenance || []).map(n =>
-        n.moyenne >= 16 ? 'rgba(5, 150, 105, 0.8)' :
-        n.moyenne >= 14 ? 'rgba(59, 130, 246, 0.8)' :
-        n.moyenne >= 10 ? 'rgba(123, 31, 162, 0.8)' :
-        'rgba(220, 38, 38, 0.8)'
+        n.moyenne >= 16 ? 'rgba(109, 40, 217, 0.9)' :
+        n.moyenne >= 14 ? 'rgba(139, 92, 246, 0.9)' :
+        n.moyenne >= 10 ? 'rgba(167, 139, 250, 0.9)' :
+        'rgba(196, 181, 253, 0.95)'
       ),
       borderRadius: 8,
       borderSkipped: false,
@@ -81,7 +81,7 @@ export default function AdminDashboard() {
           <div className="card-header">
             <span className="card-title">📊 Diagramme des Notes</span>
             <div style={{ display: 'flex', gap: 12 }}>
-              {[['#059669', 'Très Bien (≥16)'], ['#3b82f6', 'Bien (≥14)'], ['#7b1fa2', 'Passable (≥10)'], ['#dc2626', 'Ajourné (<10)']].map(([c, l]) => (
+              {[['#6d28d9', 'Très Bien (≥16)'], ['#8b5cf6', 'Bien (≥14)'], ['#a78bfa', 'Passable (≥10)'], ['#c4b5fd', 'Ajourné (<10)']].map(([c, l]) => (
                 <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11 }}>
                   <span style={{ width: 12, height: 12, borderRadius: 3, background: c, display: 'inline-block' }} />
                   {l}
@@ -121,7 +121,7 @@ export default function AdminDashboard() {
 
         <div className="card">
           <div className="card-header">
-            <span className="card-title">🔢 Statistiques rapides</span>
+            <span className="card-title">📋 Statistiques rapides</span>
           </div>
           <div className="card-body">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
