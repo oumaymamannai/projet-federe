@@ -292,24 +292,25 @@ exports.affecterDatesAuto = async (req, res) => {
     const startDate = new Date(periode.date_debut);
     const endDate = new Date(periode.date_fin);
     
-    // Récupérer UNIQUEMENT les étudiants sans soutenance (pas de date)
+    // MODIFICATION ICI : Récupérer les étudiants avec soutenance en attente OU sans soutenance
     const [students] = await db.query(`
-      SELECT u.id as etudiant_id 
+      SELECT u.id as etudiant_id, s.id as soutenance_id
       FROM users u
       LEFT JOIN soutenances s ON u.id = s.etudiant_id
       WHERE u.role = 'etudiant' 
-        AND s.id IS NULL
+        AND (
+          s.id IS NULL 
+          OR (s.statut = 'en_attente' AND s.date_soutenance IS NULL)
+        )
     `);
 
     if (students.length === 0) {
-      return res.json({ message: "Aucun nouvel étudiant à affecter" });
+      return res.json({ message: "Aucun étudiant à affecter" });
     }
 
     let affectedCount = 0;
     let studentIndex = 0;
     let current = new Date(startDate);
-    
-    // Variable pour faire tourner les salles
     let salleRotationIndex = 0;
     
     while (studentIndex < students.length && current <= endDate) {
@@ -366,52 +367,55 @@ exports.affecterDatesAuto = async (req, res) => {
         const heure = heures[heureIndex];
         const timeSlot = heure;
         
-        // Si ce créneau est déjà utilisé, passer au suivant
         if (existingTimes.has(timeSlot)) {
           continue;
         }
         
         const dateTimeStr = `${dateStr} ${heure}:00`;
         
-        // Trouver une salle disponible en faisant tourner l'index
         let salleDisponible = null;
         const sallesOccupees = existingSallesByTime[timeSlot] || [];
         
-        // Essayer les salles en commençant par l'index de rotation
         for (let i = 0; i < salles.length; i++) {
           const salleIndex = (salleRotationIndex + i) % salles.length;
           const salle = salles[salleIndex];
           if (!sallesOccupees.includes(salle)) {
             salleDisponible = salle;
-            // Mettre à jour l'index de rotation pour le prochain créneau
             salleRotationIndex = (salleIndex + 1) % salles.length;
             break;
           }
         }
         
-        // Si toutes les salles sont occupées, passer au créneau suivant
         if (!salleDisponible) {
           continue;
         }
         
         const st = students[studentIndex];
         
-        // Créer la soutenance pour le nouvel étudiant
-        await db.query(
-          'INSERT INTO soutenances (etudiant_id, sujet, date_soutenance, salle, statut) VALUES (?, "", ?, ?, "planifiee")',
-          [st.etudiant_id, dateTimeStr, salleDisponible]
-        );
+        // MODIFICATION ICI : UPDATE si la soutenance existe déjà, INSERT sinon
+        if (st.soutenance_id) {
+          // Mettre à jour la soutenance existante
+          await db.query(
+            'UPDATE soutenances SET date_soutenance=?, salle=?, statut="planifiee" WHERE id=?',
+            [dateTimeStr, salleDisponible, st.soutenance_id]
+          );
+        } else {
+          // Créer une nouvelle soutenance
+          await db.query(
+            'INSERT INTO soutenances (etudiant_id, sujet, date_soutenance, salle, statut) VALUES (?, "", ?, ?, "planifiee")',
+            [st.etudiant_id, dateTimeStr, salleDisponible]
+          );
+        }
         
         affectedCount++;
         studentIndex++;
       }
       
-      // Passer au jour suivant
       current.setDate(current.getDate() + 1);
     }
     
     res.json({ 
-      message: `${affectedCount} nouveaux étudiants affectés`,
+      message: `${affectedCount} étudiants affectés`,
       details: {
         etudiants_affectes: affectedCount,
         etudiants_restants: students.length - affectedCount,
