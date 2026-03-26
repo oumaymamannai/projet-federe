@@ -283,81 +283,134 @@ exports.affecterDatesAuto = async (req, res) => {
       return res.status(400).json({ message: "Aucune période définie" });
 
     const salles = periode.salles;
-    
-    // 4 créneaux horaires différents dans la journée
     const heures = ["08:30", "10:00", "11:30", "14:00"];
+    const startDate = new Date(periode.date_debut);
+    const endDate = new Date(periode.date_fin);
     
-    // Récupérer tous les étudiants sans soutenance ou sans date
+    // Récupérer UNIQUEMENT les étudiants sans soutenance (pas de date)
     const [students] = await db.query(`
       SELECT u.id as etudiant_id 
       FROM users u
       LEFT JOIN soutenances s ON u.id = s.etudiant_id
       WHERE u.role = 'etudiant' 
-        AND (s.id IS NULL OR s.date_soutenance IS NULL OR s.statut = 'en_attente')
+        AND s.id IS NULL
     `);
 
     if (students.length === 0) {
-      return res.json({ message: "Aucun étudiant sans soutenance" });
+      return res.json({ message: "Aucun nouvel étudiant à affecter" });
     }
 
-    const start = new Date(periode.date_debut);
-    const end = new Date(periode.date_fin);
-    let current = new Date(start);
     let affectedCount = 0;
     let studentIndex = 0;
+    let current = new Date(startDate);
     
-    // Parcourir chaque étudiant
-    while (studentIndex < students.length && current <= end) {
+    // Variable pour faire tourner les salles
+    let salleRotationIndex = 0;
+    
+    while (studentIndex < students.length && current <= endDate) {
       // Exclure les weekends
-      while (current.getDay() === 0 || current.getDay() === 6) {
+      if (current.getDay() === 0 || current.getDay() === 6) {
         current.setDate(current.getDate() + 1);
+        continue;
       }
       
-      const dateStr = current.toISOString().split("T")[0];
+      const year = current.getFullYear();
+      const month = String(current.getMonth() + 1).padStart(2, '0');
+      const day = String(current.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
       
-      // Pour chaque créneau horaire du jour (4 créneaux maximum)
+      // Récupérer les soutenances déjà existantes pour ce jour
+      const [existingForDay] = await db.query(
+        `SELECT date_soutenance, salle FROM soutenances 
+         WHERE DATE(date_soutenance) = ? 
+         AND statut != 'annulee'`,
+        [dateStr]
+      );
+      
+      // Créneaux déjà utilisés
+      const existingTimes = new Set();
+      const existingSallesByTime = {};
+      
+      existingForDay.forEach(s => {
+        let timeStr;
+        if (s.date_soutenance instanceof Date) {
+          const hours = String(s.date_soutenance.getHours()).padStart(2, '0');
+          const minutes = String(s.date_soutenance.getMinutes()).padStart(2, '0');
+          timeStr = `${hours}:${minutes}`;
+        } else {
+          timeStr = s.date_soutenance.split(' ')[1]?.substring(0, 5) || s.date_soutenance.substring(11, 16);
+        }
+        
+        existingTimes.add(timeStr);
+        if (!existingSallesByTime[timeStr]) {
+          existingSallesByTime[timeStr] = [];
+        }
+        existingSallesByTime[timeStr].push(s.salle);
+      });
+      
+      // Si tous les 4 créneaux sont déjà pris, passer au jour suivant
+      if (existingTimes.size >= heures.length) {
+        current.setDate(current.getDate() + 1);
+        continue;
+      }
+      
+      // Parcourir les créneaux horaires du jour
       for (let heureIndex = 0; heureIndex < heures.length; heureIndex++) {
         if (studentIndex >= students.length) break;
         
         const heure = heures[heureIndex];
+        const timeSlot = heure;
+        
+        // Si ce créneau est déjà utilisé, passer au suivant
+        if (existingTimes.has(timeSlot)) {
+          continue;
+        }
+        
         const dateTimeStr = `${dateStr} ${heure}:00`;
         
-        // Choisir une salle (on peut faire tourner les salles)
-        const salle = salles[heureIndex % salles.length];
+        // Trouver une salle disponible en faisant tourner l'index
+        let salleDisponible = null;
+        const sallesOccupees = existingSallesByTime[timeSlot] || [];
+        
+        // Essayer les salles en commençant par l'index de rotation
+        for (let i = 0; i < salles.length; i++) {
+          const salleIndex = (salleRotationIndex + i) % salles.length;
+          const salle = salles[salleIndex];
+          if (!sallesOccupees.includes(salle)) {
+            salleDisponible = salle;
+            // Mettre à jour l'index de rotation pour le prochain créneau
+            salleRotationIndex = (salleIndex + 1) % salles.length;
+            break;
+          }
+        }
+        
+        // Si toutes les salles sont occupées, passer au créneau suivant
+        if (!salleDisponible) {
+          continue;
+        }
         
         const st = students[studentIndex];
         
-        // Vérifier si la soutenance existe déjà
-        const [soutenanceExist] = await db.query(
-          "SELECT id FROM soutenances WHERE etudiant_id = ?",
-          [st.etudiant_id]
+        // Créer la soutenance pour le nouvel étudiant
+        await db.query(
+          'INSERT INTO soutenances (etudiant_id, sujet, date_soutenance, salle, statut) VALUES (?, "", ?, ?, "planifiee")',
+          [st.etudiant_id, dateTimeStr, salleDisponible]
         );
-        
-        if (soutenanceExist.length > 0) {
-          await db.query(
-            'UPDATE soutenances SET date_soutenance=?, salle=?, statut="planifiee" WHERE etudiant_id=?',
-            [dateTimeStr, salle, st.etudiant_id]
-          );
-        } else {
-          await db.query(
-            'INSERT INTO soutenances (etudiant_id, sujet, date_soutenance, salle, statut) VALUES (?, "", ?, ?, "planifiee")',
-            [st.etudiant_id, dateTimeStr, salle]
-          );
-        }
         
         affectedCount++;
         studentIndex++;
       }
       
-      // Après avoir assigné les 4 créneaux du jour, passer au jour suivant
+      // Passer au jour suivant
       current.setDate(current.getDate() + 1);
     }
     
     res.json({ 
-      message: `${affectedCount} dates affectées automatiquement`,
+      message: `${affectedCount} nouveaux étudiants affectés`,
       details: {
-        etudiants_traites: affectedCount,
-        jours_utilises: Math.ceil(affectedCount / heures.length)
+        etudiants_affectes: affectedCount,
+        etudiants_restants: students.length - affectedCount,
+        periode: `${periode.date_debut} au ${periode.date_fin}`
       }
     });
   } catch (err) {
