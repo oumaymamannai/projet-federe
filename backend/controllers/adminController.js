@@ -1,8 +1,11 @@
+const bcrypt = require("bcryptjs");
 const db = require("../config/db");
 const {
   sendResultatEmail,
   sendReclamationReponse,
 } = require("../config/email");
+const { DEFAULT_DEV_PASSWORD } = require("../config/defaultPassword");
+const { ensureSoutenanceRowsForEtudiants } = require("../utils/soutenanceHelpers");
 
 async function syncSoutenanceStatuts() {
   await db.query(`
@@ -17,6 +20,7 @@ async function syncSoutenanceStatuts() {
 exports.getDashboard = async (req, res) => {
   try {
     await syncSoutenanceStatuts();
+    await ensureSoutenanceRowsForEtudiants();
     const [[{ total }]] = await db.query(
       "SELECT COUNT(*) as total FROM soutenances"
     );
@@ -83,6 +87,7 @@ exports.getDashboard = async (req, res) => {
 exports.getSoutenances = async (req, res) => {
   try {
     await syncSoutenanceStatuts();
+    await ensureSoutenanceRowsForEtudiants();
     const [rows] = await db.query(`
       SELECT s.*, CONCAT(u.prenom,' ',u.nom) as etudiant_nom, u.email as etudiant_email,
         -- include jury id and name so frontend can identify encadreur by id
@@ -636,6 +641,7 @@ exports.validerSoumission = async (req, res) => {
       if (encadreur.length === 0) {
         const [prenom, ...nomParts] = soumission.encadreur.split(" ");
         const nom = nomParts.join(" ") || prenom;
+        const pwHash = await bcrypt.hash(DEFAULT_DEV_PASSWORD, 12);
 
         const [result] = await db.query(
           'INSERT INTO users (nom, prenom, email, password, role) VALUES (?, ?, ?, ?, "jury")',
@@ -643,7 +649,7 @@ exports.validerSoumission = async (req, res) => {
             nom,
             prenom,
             `${prenom.toLowerCase()}.${nom.toLowerCase()}@gradflow.dz`,
-            "$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p396omMpEcr5qVmBRSMWhe",
+            pwHash,
           ]
         );
         encadreur_id = result.insertId;

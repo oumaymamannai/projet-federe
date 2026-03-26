@@ -23,10 +23,14 @@ export default function LoginPage() {
     e.preventDefault();
     setError(""); setLoading(true);
     try {
-      const user = await login(email, password, selectedRole);
+      const user = await login(email.trim(), password, selectedRole);
       navigate(user.role === "admin" ? "/admin" : user.role === "jury" ? "/jury" : "/student");
     } catch (err) {
-      setError(err.response?.data?.message || "Erreur de connexion");
+      const msg = err.response?.data?.message
+        || (err.code === "ERR_NETWORK" || err.message?.includes("Network")
+          ? "Impossible de joindre le serveur. Lancez le backend (port 5000) et réessayez."
+          : "Erreur de connexion");
+      setError(msg);
     } finally { setLoading(false); }
   };
 

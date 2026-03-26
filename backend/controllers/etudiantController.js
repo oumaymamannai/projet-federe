@@ -1,4 +1,5 @@
 const db = require("../config/db");
+const { ensureSoutenanceRowsForEtudiants } = require("../utils/soutenanceHelpers");
 
 async function syncSoutenanceStatuts() {
   await db.query(`
@@ -13,6 +14,7 @@ async function syncSoutenanceStatuts() {
 exports.getMaSoutenance = async (req, res) => {
   try {
     await syncSoutenanceStatuts();
+    await ensureSoutenanceRowsForEtudiants();
     const [rows] = await db.query(
       `
       SELECT s.*, 

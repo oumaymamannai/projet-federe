@@ -62,18 +62,17 @@ FRONTEND_URL=http://localhost:5173
 
 | Rôle | Email | Mot de passe |
 |------|-------|-------------|
-| Admin | admin@gradflow.dz | Admin@1234 |
-| Jury | jury1@gradflow.dz | Jury@1234 |
-| Étudiant | etudiant1@gradflow.dz | Student@1234 |
+| Admin | admin@gradflow.dz | test |
+| Jury | jury1@gradflow.dz | test |
+| Étudiant | etudiant1@gradflow.dz | test |
 
-> ⚠️ Les mots de passe dans database.sql sont des hashs bcrypt. Pour les utiliser, régénérez-les avec `bcrypt.hash("Admin@1234", 10)` ou utilisez les comptes pré-insérés directement.
+> En démo, **un seul mot de passe** pour tous les comptes : `test` (surchargeable avec la variable d’environnement `TEST_PASSWORD` côté backend). Au démarrage, `ensurePasswords()` réaligne les hash bcrypt si besoin.
 
-**Pour générer de vrais hash bcrypt :**
+**Pour générer un hash bcrypt (ex. autre mot de passe) :**
 ```bash
 cd backend
-node -e "const b=require('bcryptjs'); b.hash('Admin@1234',10).then(h=>console.log(h))"
+node -e "const b=require('bcryptjs'); b.hash('test',10).then(h=>console.log(h))"
 ```
-Puis remplacez dans database.sql.
 
 ---
 

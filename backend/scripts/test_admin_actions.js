@@ -17,7 +17,7 @@ async function main() {
   let [rows] = await db.query("SELECT id, email FROM users WHERE role='admin' LIMIT 1");
   let admin;
   if (!rows.length) {
-    const pw = await bcrypt.hash('admin123', 10);
+    const pw = await bcrypt.hash('test', 10);
     const [res] = await db.query("INSERT INTO users (nom, prenom, email, password, role) VALUES (?, ?, ?, ?, 'admin')", ['Admin', 'Local', 'admin.local@gradflow.test', pw]);
     admin = { id: res.insertId, email: 'admin.local@gradflow.test' };
     console.log('Admin créé:', admin.id);
@@ -62,7 +62,7 @@ async function main() {
   let [jurys] = await db.query("SELECT id FROM users WHERE role='jury' LIMIT 2");
   if (jurys.length < 2) {
     // Créer utilisateurs jury
-    const pw = await bcrypt.hash('jury123', 10);
+    const pw = await bcrypt.hash('test', 10);
     const names = [['Jean','Dupont'],['Marie','Curie']];
     for (const n of names) {
       const [r] = await db.query('INSERT INTO users (nom, prenom, email, password, role) VALUES (?,?,?,?,"jury")', [n[1], n[0], `${n[0].toLowerCase()}.${n[1].toLowerCase()}@gradflow.test`, pw]);

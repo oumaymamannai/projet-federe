@@ -7,17 +7,19 @@ const LOGIN_ROLES = ['etudiant', 'jury', 'admin'];
 
 exports.login = async (req, res) => {
   const { email, password, expectedRole } = req.body;
-  if (!email || !password) return res.status(400).json({ message: 'Champs requis' });
+  const emailNorm = typeof email === 'string' ? email.trim().toLowerCase() : '';
+  const pwd = typeof password === 'string' ? password : '';
+  if (!emailNorm || !pwd) return res.status(400).json({ message: 'Champs requis' });
   if (expectedRole != null && expectedRole !== '' && !LOGIN_ROLES.includes(expectedRole)) {
     return res.status(400).json({ message: 'Rôle de connexion invalide' });
   }
   try {
-    const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+    const [rows] = await db.query('SELECT * FROM users WHERE LOWER(TRIM(email)) = ?', [emailNorm]);
     if (!rows.length) return res.status(401).json({ message: 'Email ou mot de passe incorrect' });
     const user = rows[0];
-    const valid = await bcrypt.compare(password, user.password);
+    const valid = await bcrypt.compare(pwd, user.password);
     if (!valid) return res.status(401).json({ message: 'Email ou mot de passe incorrect' });
-    if (expectedRole && user.role !== expectedRole) {
+    if (expectedRole && String(user.role).trim() !== expectedRole) {
       return res.status(403).json({
         message:
           "Ce compte ne correspond pas à l'espace choisi. Sélectionnez le bon rôle (Étudiant, Jury ou Responsable) ou utilisez les identifiants adaptés.",

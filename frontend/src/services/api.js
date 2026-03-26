@@ -8,7 +8,9 @@ const api = axios.create({
 api.interceptors.response.use(
   res => res,
   err => {
-    if (err.response?.status === 401) {
+    const url = err.config?.url || '';
+    // Ne pas recharger la page sur un échec de connexion (afficher le message d'erreur)
+    if (err.response?.status === 401 && !url.includes('/auth/login')) {
       localStorage.removeItem('gradflow_token');
       window.location.href = '/login';
     }
