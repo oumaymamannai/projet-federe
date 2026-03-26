@@ -610,7 +610,6 @@ exports.validerSoumission = async (req, res) => {
   const { soumission_id } = req.params;
 
   try {
-    // Récupérer la soumission
     const [soumissions] = await db.query(
       "SELECT * FROM stage_soumissions WHERE id = ?",
       [soumission_id]
@@ -630,47 +629,55 @@ exports.validerSoumission = async (req, res) => {
       [soumission.etudiant_id]
     );
 
+    let encadreur_id = null;
+
     if (sout.length > 0) {
       const soutenance_id = sout[0].id;
 
-      // 3. Chercher l'encadreur dans la table users
-      const [encadreur] = await db.query(
-        'SELECT id FROM users WHERE CONCAT(prenom, " ", nom) = ? OR CONCAT(nom, " ", prenom) = ?',
-        [soumission.encadreur, soumission.encadreur]
-      );
-
-      let encadreur_id;
-
-      // 4. Si l'encadreur n'existe pas, le créer
-      if (encadreur.length === 0) {
-        const [prenom, ...nomParts] = soumission.encadreur.split(" ");
-        const nom = nomParts.join(" ") || prenom;
-        const pwHash = await bcrypt.hash(DEFAULT_DEV_PASSWORD, 12);
-
-        const [result] = await db.query(
-          'INSERT INTO users (nom, prenom, email, password, role) VALUES (?, ?, ?, ?, "jury")',
-          [
-            nom,
-            prenom,
-            `${prenom.toLowerCase()}.${nom.toLowerCase()}@gradflow.dz`,
-            pwHash,
-          ]
+      // 3. Vérifier si l'encadreur a été renseigné (non vide)
+      if (soumission.encadreur && soumission.encadreur.trim() !== "") {
+        // Chercher l'encadreur dans la table users
+        const [encadreur] = await db.query(
+          'SELECT id FROM users WHERE CONCAT(prenom, " ", nom) = ? OR CONCAT(nom, " ", prenom) = ?',
+          [soumission.encadreur, soumission.encadreur]
         );
-        encadreur_id = result.insertId;
+
+        // 4. Si l'encadreur n'existe pas, le créer
+        if (encadreur.length === 0) {
+          const [prenom, ...nomParts] = soumission.encadreur.split(" ");
+          const nom = nomParts.join(" ") || prenom;
+
+          const [result] = await db.query(
+            'INSERT INTO users (nom, prenom, email, password, role) VALUES (?, ?, ?, ?, "jury")',
+            [
+              nom,
+              prenom,
+              `${prenom.toLowerCase()}.${nom.toLowerCase()}@gradflow.dz`,
+              "$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p396omMpEcr5qVmBRSMWhe",
+            ]
+          );
+          encadreur_id = result.insertId;
+        } else {
+          encadreur_id = encadreur[0].id;
+        }
+
+        // 5. Ajouter l'encadreur au jury
+        if (encadreur_id) {
+          await db.query(
+            'INSERT INTO soutenance_jury (soutenance_id, jury_id, role) VALUES (?, ?, "encadreur")',
+            [soutenance_id, encadreur_id]
+          );
+
+          await db.query(
+            "UPDATE soutenances SET encadreur_fige = TRUE WHERE id = ?",
+            [soutenance_id]
+          );
+        }
       } else {
-        encadreur_id = encadreur[0].id;
+        // L'étudiant n'a pas renseigné d'encadreur
+        console.log(`Soumission ${soumission_id} : aucun encadreur renseigné`);
+        // encadreur_fige reste FALSE, l'encadreur pourra être ajouté plus tard
       }
-
-      // 5. Ajouter l'encadreur au jury et marquer comme figé
-      await db.query(
-        'INSERT INTO soutenance_jury (soutenance_id, jury_id, role) VALUES (?, ?, "encadreur")',
-        [soutenance_id, encadreur_id]
-      );
-
-      await db.query(
-        "UPDATE soutenances SET encadreur_fige = TRUE WHERE id = ?",
-        [soutenance_id]
-      );
     }
 
     // 6. Marquer la soumission comme traitée
@@ -679,8 +686,13 @@ exports.validerSoumission = async (req, res) => {
       [soumission_id]
     );
 
-    res.json({ message: "Soumission validée avec encadreur" });
+    res.json({ 
+      message: encadreur_id 
+        ? "Soumission validée avec encadreur" 
+        : "Soumission validée (aucun encadreur spécifié - à compléter ultérieurement)"
+    });
   } catch (err) {
+    console.error("Erreur validation soumission:", err);
     res.status(500).json({ message: err.message });
   }
 };
