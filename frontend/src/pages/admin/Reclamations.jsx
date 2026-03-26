@@ -1,15 +1,21 @@
 import { useState, useEffect } from "react";
 import api from "../../services/api";
-import { MessageSquare, CheckCircle, UserPlus } from "lucide-react";
+import { MessageSquare, CheckCircle, UserPlus, Calendar } from "lucide-react";
 
 export default function AdminReclamations() {
   const [reclamations, setReclamations] = useState([]);
-  const [encadreurs, setEncadreurs] = useState([]);        // ← NOUVEAU
+  const [encadreurs, setEncadreurs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null);
-  const [encadreurModal, setEncadreurModal] = useState(null); // ← NOUVEAU
+  const [encadreurModal, setEncadreurModal] = useState(null);
+  const [dateModal, setDateModal] = useState(null);
   const [reponse, setReponse] = useState("");
-  const [selectedEncadreur, setSelectedEncadreur] = useState(""); // ← NOUVEAU
+  const [selectedEncadreur, setSelectedEncadreur] = useState("");
+  const [nouvelleDate, setNouvelleDate] = useState("");
+  const [nouvelleHeure, setNouvelleHeure] = useState("");
+  const [nouvelleSalle, setNouvelleSalle] = useState("");
+  const [sallesDisponibles, setSallesDisponibles] = useState([]);
+  const [loadingSalles, setLoadingSalles] = useState(false);
   const [msg, setMsg] = useState("");
 
   const load = async () => {
@@ -51,6 +57,49 @@ export default function AdminReclamations() {
       load();
     } catch (err) {
       setMsg("❌ " + (err.response?.data?.message || "Erreur"));
+    }
+  };
+
+  const fetchSallesDisponibles = async (date, heure) => {
+    if (!date || !heure) { setSallesDisponibles([]); return; }
+    setLoadingSalles(true);
+    try {
+      const res = await api.get(`/admin/salles-disponibles?date=${date}&heure=${heure}`);
+      setSallesDisponibles(res.data);
+      setNouvelleSalle("");
+    } catch {
+      setSallesDisponibles(["Salle A101", "Salle B203", "Amphi 1"]);
+    } finally {
+      setLoadingSalles(false);
+    }
+  };
+
+  const handleDateChange = (val) => {
+    setNouvelleDate(val);
+    fetchSallesDisponibles(val, nouvelleHeure);
+  };
+
+  const handleHeureChange = (val) => {
+    setNouvelleHeure(val);
+    fetchSallesDisponibles(nouvelleDate, val);
+  };
+
+  const handleChangerDate = async () => {
+    try {
+      const dateTime = `${nouvelleDate} ${nouvelleHeure || "09:00"}:00`;
+      await api.post("/admin/reclamations/" + dateModal.id + "/repondre", {
+        reponse: `Nouvelle date attribuée : ${new Date(dateTime).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })} à ${nouvelleHeure || "09:00"}${nouvelleSalle ? " — Salle : " + nouvelleSalle : ""}`,
+        nouvelle_date: dateTime,
+        nouvelle_salle: nouvelleSalle || null
+      });
+      setMsg("Nouvelle date attribuée !");
+      setDateModal(null);
+      setNouvelleDate("");
+      setNouvelleHeure("");
+      setNouvelleSalle("");
+      load();
+    } catch (err) {
+      setMsg("Erreur : " + (err.response?.data?.message || "Erreur"));
     }
   };
 
@@ -111,8 +160,25 @@ export default function AdminReclamations() {
                           </button>
                         )}
                         
-                        {/* Bouton répondre pour les autres types */}
-                        {r.statut === "en_attente" && r.type !== "pas_encadreur" && (
+                        {r.type === "probleme_date" && r.statut === "en_attente" && (
+                          <>
+                            <button 
+                              className="btn btn-primary btn-sm"
+                              onClick={() => setDateModal(r)}
+                              style={{ background: "#16a34a" }}
+                            >
+                              <Calendar size={12} /> Changer la date
+                            </button>
+                            <button 
+                              className="btn btn-outline btn-sm"
+                              onClick={() => { setModal(r); setReponse(""); }}
+                            >
+                              <MessageSquare size={12} /> Répondre
+                            </button>
+                          </>
+                        )}
+                        
+                        {r.statut === "en_attente" && r.type !== "pas_encadreur" && r.type !== "probleme_date" && (
                           <button 
                             className="btn btn-outline btn-sm" 
                             onClick={() => { setModal(r); setReponse(r.reponse || ""); }}
@@ -198,6 +264,60 @@ export default function AdminReclamations() {
                 style={{ background: "#7c3aed" }}
               >
                 <CheckCircle size={14} /> Confirmer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {dateModal && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>📅 Changer la date de soutenance</h3>
+            <p className="sub">{dateModal.etudiant_nom}</p>
+            
+            <div style={{ background: "#fef3c7", borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 14, color: "#92400e" }}>
+              <strong>Réclamation :</strong> {dateModal.message}
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Nouvelle date</label>
+              <input type="date" className="form-control" value={nouvelleDate} onChange={e => handleDateChange(e.target.value)} required />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Heure</label>
+              <select className="form-control" value={nouvelleHeure} onChange={e => handleHeureChange(e.target.value)}>
+                <option value="">— Choisir —</option>
+                <option value="08:30">08:30</option>
+                <option value="09:00">09:00</option>
+                <option value="10:30">10:30</option>
+                <option value="11:30">11:30</option>
+                <option value="14:00">14:00</option>
+                <option value="15:30">15:30</option>
+                <option value="17:00">17:00</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Salle</label>
+              {!nouvelleDate || !nouvelleHeure ? (
+                <p style={{ fontSize: 13, color: "#9ca3af", margin: 0 }}>Choisissez d'abord une date et une heure</p>
+              ) : loadingSalles ? (
+                <p style={{ fontSize: 13, color: "#9ca3af", margin: 0 }}>Chargement...</p>
+              ) : sallesDisponibles.length === 0 ? (
+                <p style={{ fontSize: 13, color: "#ef4444", margin: 0 }}>Aucune salle disponible pour ce créneau</p>
+              ) : (
+                <select className="form-control" value={nouvelleSalle} onChange={e => setNouvelleSalle(e.target.value)}>
+                  <option value="">— Choisir une salle —</option>
+                  {sallesDisponibles.map(s => (
+                    <option key={s} value={s}>{s} ✅</option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            <div className="modal-actions">
+              <button className="btn btn-outline" onClick={() => { setDateModal(null); setNouvelleDate(""); setNouvelleHeure(""); setNouvelleSalle(""); }}>Annuler</button>
+              <button className="btn btn-primary" onClick={handleChangerDate} disabled={!nouvelleDate || !nouvelleHeure || !nouvelleSalle} style={{ background: "#16a34a" }}>
+                <Calendar size={14} /> Confirmer la nouvelle date
               </button>
             </div>
           </div>

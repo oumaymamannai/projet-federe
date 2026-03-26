@@ -103,12 +103,17 @@ const getFilteredJurys = (role) => {
                     </td>
                     <td>
                       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                        <button className="btn btn-outline btn-sm" onClick={() => {
-                          const encFromJurys = s.jurys?.find(j => j.role === 'encadreur')?.id;
-                          const encId = s.encadreur_id || encFromJurys || "";
-                          setAssignModal(s);
-                          setAssignForm({ encadreur_id: encId, president_id: "", membre3_id: "" });
-                        }}>
+                        <button
+                          className="btn btn-outline btn-sm"
+                          disabled={s.statut === "terminee"}
+                          style={s.statut === "terminee" ? { opacity: 0.5, cursor: "not-allowed" } : {}}
+                          onClick={() => {
+                            if (s.statut === "terminee") return;
+                            const encFromJurys = s.jurys?.find(j => j.role === 'encadreur')?.id;
+                            const encId = s.encadreur_id || encFromJurys || "";
+                            setAssignModal(s);
+                            setAssignForm({ encadreur_id: encId, president_id: "", membre3_id: "" });
+                          }}>
                           <Users size={12} /> Jury
                         </button>
                         {s.statut === "terminee" && (

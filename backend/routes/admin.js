@@ -31,5 +31,6 @@ router.post("/soutenances/completer-jury", ctrl.completerJury);
 // 3. Obtenir la liste des soutenances à compléter
 router.get("/soutenances/a-completer", ctrl.getSoutenancesACompleter);
 router.post("/soumissions/:soumission_id/valider", ctrl.validerSoumission);
+router.get("/salles-disponibles", ctrl.getSallesDisponibles);
 
 module.exports = router;

@@ -380,7 +380,7 @@ exports.getReclamations = async (req, res) => {
 
 exports.repondreReclamation = async (req, res) => {
   const { id } = req.params;
-  const { reponse, affecter_encadreur, encadreur_id } = req.body; // ← NOUVEAUX PARAMÈTRES
+  const { reponse, affecter_encadreur, encadreur_id, nouvelle_date, nouvelle_salle } = req.body;
 
   try {
     const [rows] = await db.query(
@@ -392,16 +392,20 @@ exports.repondreReclamation = async (req, res) => {
 
     const reclamation = rows[0];
 
-    // Démarrer une transaction
     await db.query("START TRANSACTION");
 
-    // 1. Mettre à jour la réclamation
     await db.query(
       'UPDATE reclamations SET reponse=?, statut="traitee", reponse_at=NOW() WHERE id=?',
       [reponse, id]
     );
 
-    // 2. Si c'est une affectation d'encadreur
+    if (nouvelle_date) {
+      await db.query(
+        'UPDATE soutenances SET date_soutenance=?, salle=COALESCE(?, salle), statut="planifiee" WHERE etudiant_id=?',
+        [nouvelle_date, nouvelle_salle || null, reclamation.etudiant_id]
+      );
+    }
+
     if (affecter_encadreur && encadreur_id) {
       // Récupérer la soutenance de l'étudiant
       const [sout] = await db.query(
@@ -613,6 +617,26 @@ exports.validerSoumission = async (req, res) => {
     );
 
     res.json({ message: "Soumission validée avec encadreur" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.getSallesDisponibles = async (req, res) => {
+  const { date, heure } = req.query;
+  if (!date || !heure) return res.status(400).json({ message: "Date et heure requises" });
+
+  const toutesLesSalles = ["Salle A101", "Salle B203", "Amphi 1"];
+
+  try {
+    const dateTime = `${date} ${heure}:00`;
+    const [occupied] = await db.query(
+      "SELECT salle FROM soutenances WHERE date_soutenance = ? AND statut != 'annulee'",
+      [dateTime]
+    );
+    const occupiedSet = new Set(occupied.map(r => r.salle));
+    const disponibles = toutesLesSalles.filter(s => !occupiedSet.has(s));
+    res.json(disponibles);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

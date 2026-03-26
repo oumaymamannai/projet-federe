@@ -17,9 +17,13 @@ export default function StudentStage() {
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [soutenance, setSoutenance] = useState(null);
+
+  const isTerminee = soutenance && soutenance.statut === "terminee";
 
   useEffect(() => {
     api.get("/etudiant/stage/soumissions").then(r => setSoumissions(r.data));
+    api.get("/etudiant/soutenance").then(r => setSoutenance(r.data)).catch(() => {});
   }, []);
 
   const handleFileChange = (e) => {
@@ -120,6 +124,13 @@ export default function StudentStage() {
         {msg && <div className="alert alert-success">✅ {msg}</div>}
         {error && <div className="alert alert-danger">⚠️ {error}</div>}
         
+        {isTerminee ? (
+          <div className="card" style={{ marginBottom: 24, textAlign: "center", padding: 32 }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>🔒</div>
+            <h3 style={{ marginBottom: 8, fontWeight: 700, color: "#6b7280" }}>Dépôt de dossier désactivé</h3>
+            <p style={{ color: "#9ca3af" }}>Votre soutenance est terminée, vous ne pouvez plus déposer de dossier.</p>
+          </div>
+        ) : (
         <div className="card" style={{ marginBottom: 24 }}>
           <h3 style={{ marginBottom: 20, fontWeight: 700 }}>Nouvelle soumission</h3>
           
@@ -266,6 +277,7 @@ export default function StudentStage() {
             </button>
           </form>
         </div>
+        )}
 
         {soumissions.length > 0 && (
           <div className="card">

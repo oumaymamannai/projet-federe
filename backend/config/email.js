@@ -16,7 +16,6 @@ const sendResultatEmail = async (to, etudiant, soutenance, jurys) => {
     <tr>
       <td style="padding:8px;border:1px solid #ddd;">${j.role}</td>
       <td style="padding:8px;border:1px solid #ddd;">${j.prenom} ${j.nom}</td>
-      <td style="padding:8px;border:1px solid #ddd;">${j.note ?? '—'}/20</td>
       <td style="padding:8px;border:1px solid #ddd;">${j.remarques ?? '—'}</td>
     </tr>`).join('');
 
@@ -33,13 +32,14 @@ const sendResultatEmail = async (to, etudiant, soutenance, jurys) => {
         <div style="background:#f8f7ff;padding:24px;border-radius:0 0 8px 8px;">
           <p>Bonjour <strong>${etudiant.prenom} ${etudiant.nom}</strong>,</p>
           <p>Votre soutenance sur le sujet <strong>"${soutenance.sujet}"</strong> est terminée.</p>
-          <p><strong>Note finale : ${soutenance.note_finale ?? 'En cours'}/20</strong></p>
+          <div style="background:#2d1b69;color:#fff;padding:14px 20px;border-radius:8px;margin:16px 0;font-size:18px;text-align:center;">
+            Note finale : <strong>${soutenance.note_finale ?? 'En cours'}/20</strong>
+          </div>
           <table style="width:100%;border-collapse:collapse;margin-top:16px;">
             <thead>
               <tr style="background:#2d1b69;color:#fff;">
                 <th style="padding:8px;text-align:left;">Rôle</th>
                 <th style="padding:8px;text-align:left;">Jury</th>
-                <th style="padding:8px;text-align:left;">Note</th>
                 <th style="padding:8px;text-align:left;">Remarques</th>
               </tr>
             </thead>

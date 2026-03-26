@@ -75,9 +75,19 @@ export default function JuryPlanning() {
                     </div>
                   </div>
                   <div>
-                    <a href={`/jury/evaluations/${s.id}`} className="btn btn-primary btn-sm">
-                      {s.mon_role === "president" ? "📝 Noter" : "💬 Remarques"}
-                    </a>
+                    {s.mon_role === "president" && s.note_finale != null ? (
+                      <span className="btn btn-sm" style={{ background: "#d1fae5", color: "#065f46", cursor: "default" }}>
+                        ✅ Noté : {s.note_finale}/20
+                      </span>
+                    ) : s.mon_role !== "president" && s.mes_remarques ? (
+                      <span className="btn btn-sm" style={{ background: "#d1fae5", color: "#065f46", cursor: "default" }}>
+                        ✅ Remarques envoyées
+                      </span>
+                    ) : (
+                      <a href={`/jury/evaluations/${s.id}`} className="btn btn-primary btn-sm">
+                        {s.mon_role === "president" ? "📝 Noter" : "💬 Remarques"}
+                      </a>
+                    )}
                   </div>
                 </div>
               </div>
