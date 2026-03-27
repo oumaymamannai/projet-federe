@@ -87,21 +87,18 @@ exports.getDashboard = async (req, res) => {
 exports.getSoutenances = async (req, res) => {
   try {
     await syncSoutenanceStatuts();
+    await ensureSoutenanceRowsForEtudiants();
     const [rows] = await db.query(`
-      SELECT s.*, 
-             CONCAT(u.prenom,' ',u.nom) as etudiant_nom, 
-             u.email as etudiant_email,
-             ss.statut as soumission_statut,
-             GROUP_CONCAT(DISTINCT CONCAT(uj.id, '::', uj.prenom, ' ', uj.nom, '|', sj.role) ORDER BY sj.role SEPARATOR ';;') as jury_info
+      SELECT s.*, CONCAT(u.prenom,' ',u.nom) as etudiant_nom, u.email as etudiant_email,
+        -- include jury id and name so frontend can identify encadreur by id
+        GROUP_CONCAT(DISTINCT CONCAT(uj.id, '::', uj.prenom, ' ', uj.nom, '|', sj.role) ORDER BY sj.role SEPARATOR ';;') as jury_info
       FROM soutenances s
       JOIN users u ON u.id = s.etudiant_id
-      LEFT JOIN stage_soumissions ss ON ss.etudiant_id = u.id
       LEFT JOIN soutenance_jury sj ON sj.soutenance_id = s.id
       LEFT JOIN users uj ON uj.id = sj.jury_id
       GROUP BY s.id
       ORDER BY s.date_soutenance ASC
     `);
-    
     rows.forEach((r) => {
       r.jurys = r.jury_info
         ? r.jury_info.split(";;").map((j) => {
@@ -112,12 +109,7 @@ exports.getSoutenances = async (req, res) => {
           })
         : [];
       delete r.jury_info;
-      
-      // Déterminer si le jury est verrouillé
-      // Verrouillé si : soumission_statut != 'traite' (pas encore validée)
-      r.jury_verrouille = !r.soumission_statut || r.soumission_statut !== 'traite';
     });
-    
     res.json(rows);
   } catch (err) {
     res.status(500).json({ message: err.message });
