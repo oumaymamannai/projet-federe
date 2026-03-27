@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import api from "../../services/api";
-import { MessageSquare, CheckCircle, UserPlus, Calendar, FileText, Eye, Download } from "lucide-react";
+import { MessageSquare, CheckCircle, UserPlus, Calendar, FileText, Eye } from "lucide-react";
 
 export default function AdminReclamations() {
   const [reclamations, setReclamations] = useState([]);
@@ -17,7 +17,7 @@ export default function AdminReclamations() {
   const [sallesDisponibles, setSallesDisponibles] = useState([]);
   const [loadingSalles, setLoadingSalles] = useState(false);
   const [msg, setMsg] = useState("");
-  const [fileModal, setFileModal] = useState(null); // Pour afficher le fichier en grand
+  const [fileModal, setFileModal] = useState(null);
 
   const load = async () => {
     try {
@@ -34,24 +34,25 @@ export default function AdminReclamations() {
   
   useEffect(() => { load(); }, []);
 
+  // 🔔 Fonction pour mettre à jour le badge dans la sidebar
+  const updateSidebarBadge = () => {
+    window.dispatchEvent(new Event('reclamations-admin-updated'));
+  };
 
-// Fonction pour obtenir l'URL du fichier joint
-const getFileUrl = (filePath) => {
-  if (!filePath) return null;
-  
-  // Nettoyer pour n'avoir que le nom du fichier
-  let filename = filePath;
-  if (filename.includes('\\') || filename.includes('/')) {
-    filename = filename.split(/[\\/]/).pop();
-  }
-  
-  // Utiliser l'URL de base sans /api
-  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-  // Enlever le /api final
-  const cleanBaseUrl = baseUrl.replace(/\/api$/, '');
-  
-  return `${cleanBaseUrl}/uploads/reclamations/${filename}`;
-};
+  // Fonction pour obtenir l'URL du fichier joint
+  const getFileUrl = (filePath) => {
+    if (!filePath) return null;
+    
+    let filename = filePath;
+    if (filename.includes('\\') || filename.includes('/')) {
+      filename = filename.split(/[\\/]/).pop();
+    }
+    
+    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    const cleanBaseUrl = baseUrl.replace(/\/api$/, '');
+    
+    return `${cleanBaseUrl}/uploads/reclamations/${filename}`;
+  };
 
   // Vérifier si c'est une image
   const isImage = (filename) => {
@@ -63,8 +64,15 @@ const getFileUrl = (filePath) => {
   const handleRepondre = async () => {
     try {
       await api.post("/admin/reclamations/" + modal.id + "/repondre", { reponse });
-      setMsg("Réponse envoyée !"); setModal(null); setReponse(""); load();
-    } catch { setMsg("Erreur"); }
+      setMsg("Réponse envoyée !"); 
+      setModal(null); 
+      setReponse(""); 
+      await load();
+      // 🔔 Mettre à jour le badge
+      updateSidebarBadge();
+    } catch { 
+      setMsg("Erreur"); 
+    }
   };
 
   const handleAffecterEncadreur = async () => {
@@ -80,7 +88,9 @@ const getFileUrl = (filePath) => {
       setMsg("✅ Encadreur affecté avec succès");
       setEncadreurModal(null);
       setSelectedEncadreur("");
-      load();
+      await load();
+      // 🔔 Mettre à jour le badge
+      updateSidebarBadge();
     } catch (err) {
       setMsg("❌ " + (err.response?.data?.message || "Erreur"));
     }
@@ -123,7 +133,9 @@ const getFileUrl = (filePath) => {
       setNouvelleDate("");
       setNouvelleHeure("");
       setNouvelleSalle("");
-      load();
+      await load();
+      // 🔔 Mettre à jour le badge
+      updateSidebarBadge();
     } catch (err) {
       setMsg("Erreur : " + (err.response?.data?.message || "Erreur"));
     }
@@ -193,7 +205,7 @@ const getFileUrl = (filePath) => {
                         </div>
                       )}
                       {!r.piece_jointe && (
-                        <span style={{ fontSize: 12, color: "#9ca3af" }}>Aucune piéce jointe </span>
+                        <span style={{ fontSize: 12, color: "#9ca3af" }}>Aucune pièce jointe</span>
                       )}
                     </td>
                     <td>
@@ -204,7 +216,17 @@ const getFileUrl = (filePath) => {
                     <td style={{ fontSize: 12 }}>{new Date(r.created_at).toLocaleDateString("fr-FR")}</td>
                     <td>
                       <div style={{ display: "flex", gap: 6, flexDirection: "column" }}>
-                        {/* 🔴 BOUTON SPÉCIAL POUR "PAS D'ENCADREUR" */}
+                        {/* BOUTON RÉPONDRE POUR TOUS */}
+                        {r.statut === "en_attente" && (
+                          <button 
+                            className="btn btn-outline btn-sm" 
+                            onClick={() => { setModal(r); setReponse(""); }}
+                          >
+                            <MessageSquare size={12} /> Répondre
+                          </button>
+                        )}
+                        
+                        {/* BOUTON SPÉCIAL POUR "PAS D'ENCADREUR" */}
                         {r.type === "pas_encadreur" && r.statut === "en_attente" && (
                           <button 
                             className="btn btn-primary btn-sm"
@@ -215,30 +237,14 @@ const getFileUrl = (filePath) => {
                           </button>
                         )}
                         
+                        {/* BOUTON SPÉCIAL POUR "PROBLÈME DATE" */}
                         {r.type === "probleme_date" && r.statut === "en_attente" && (
-                          <>
-                            <button 
-                              className="btn btn-primary btn-sm"
-                              onClick={() => setDateModal(r)}
-                              style={{ background: "#16a34a" }}
-                            >
-                              <Calendar size={12} /> Changer la date
-                            </button>
-                            <button 
-                              className="btn btn-outline btn-sm"
-                              onClick={() => { setModal(r); setReponse(""); }}
-                            >
-                              <MessageSquare size={12} /> Répondre
-                            </button>
-                          </>
-                        )}
-                        
-                        {r.statut === "en_attente" && r.type !== "pas_encadreur" && r.type !== "probleme_date" && (
                           <button 
-                            className="btn btn-outline btn-sm" 
-                            onClick={() => { setModal(r); setReponse(r.reponse || ""); }}
+                            className="btn btn-primary btn-sm"
+                            onClick={() => setDateModal(r)}
+                            style={{ background: "#16a34a" }}
                           >
-                            <MessageSquare size={12} /> Répondre
+                            <Calendar size={12} /> Changer la date
                           </button>
                         )}
                         
@@ -264,15 +270,17 @@ const getFileUrl = (filePath) => {
         </div>
       </div>
 
-      {/* Modal pour répondre aux réclamations normales */}
+      {/* Modal pour répondre aux réclamations normales AVEC PIÈCE JOINTE */}
       {modal && (
         <div className="modal-overlay">
           <div className="modal">
             <h3>💬 Répondre à la réclamation</h3>
-            <p className="sub">{modal.etudiant_nom} — {modal.type}</p>
+            <p className="sub">{modal.etudiant_nom} — {typeLabel(modal.type)}</p>
             <div style={{ background: "#f9fafb", borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 14 }}>
-              {modal.message}
+              <strong>Message :</strong>
+              <p style={{ margin: "8px 0 0 0", color: "#374151" }}>{modal.message}</p>
             </div>
+            
             <div className="form-group">
               <label className="form-label">Votre réponse</label>
               <textarea className="form-control" rows={4} value={reponse} onChange={e => setReponse(e.target.value)} />
@@ -329,9 +337,7 @@ const getFileUrl = (filePath) => {
             </div>
 
             <div className="modal-actions">
-              <button className="btn btn-outline" onClick={() => setEncadreurModal(null)}>
-                Annuler
-              </button>
+              <button className="btn btn-outline" onClick={() => setEncadreurModal(null)}>Annuler</button>
               <button 
                 className="btn btn-primary" 
                 onClick={handleAffecterEncadreur}
@@ -355,6 +361,7 @@ const getFileUrl = (filePath) => {
             <div style={{ background: "#fef3c7", borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 14, color: "#92400e" }}>
               <strong>Réclamation :</strong> {dateModal.message}
             </div>
+
             <div className="form-group">
               <label className="form-label">Nouvelle date</label>
               <input type="date" className="form-control" value={nouvelleDate} onChange={e => handleDateChange(e.target.value)} required />
