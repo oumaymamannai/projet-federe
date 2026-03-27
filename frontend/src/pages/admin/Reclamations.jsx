@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import api from "../../services/api";
-import { MessageSquare, CheckCircle, UserPlus, Calendar } from "lucide-react";
+import { MessageSquare, CheckCircle, UserPlus, Calendar, FileText, Eye, Download } from "lucide-react";
 
 export default function AdminReclamations() {
   const [reclamations, setReclamations] = useState([]);
@@ -17,12 +17,13 @@ export default function AdminReclamations() {
   const [sallesDisponibles, setSallesDisponibles] = useState([]);
   const [loadingSalles, setLoadingSalles] = useState(false);
   const [msg, setMsg] = useState("");
+  const [fileModal, setFileModal] = useState(null); // Pour afficher le fichier en grand
 
   const load = async () => {
     try {
       const [reclamationsRes, juryRes] = await Promise.all([
         api.get("/admin/reclamations"),
-        api.get("/admin/jury")  // ← Route existante pour les encadreurs
+        api.get("/admin/jury")
       ]);
       setReclamations(reclamationsRes.data);
       setEncadreurs(juryRes.data);
@@ -32,6 +33,32 @@ export default function AdminReclamations() {
   };
   
   useEffect(() => { load(); }, []);
+
+
+// Fonction pour obtenir l'URL du fichier joint
+const getFileUrl = (filePath) => {
+  if (!filePath) return null;
+  
+  // Nettoyer pour n'avoir que le nom du fichier
+  let filename = filePath;
+  if (filename.includes('\\') || filename.includes('/')) {
+    filename = filename.split(/[\\/]/).pop();
+  }
+  
+  // Utiliser l'URL de base sans /api
+  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  // Enlever le /api final
+  const cleanBaseUrl = baseUrl.replace(/\/api$/, '');
+  
+  return `${cleanBaseUrl}/uploads/reclamations/${filename}`;
+};
+
+  // Vérifier si c'est une image
+  const isImage = (filename) => {
+    if (!filename) return false;
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
+    return imageExtensions.some(ext => filename.toLowerCase().endsWith(ext));
+  };
 
   const handleRepondre = async () => {
     try {
@@ -44,11 +71,10 @@ export default function AdminReclamations() {
     try {
       const encadreur = encadreurs.find(e => e.id == selectedEncadreur);
       
-      // Appeler la même route mais avec des paramètres supplémentaires
       await api.post("/admin/reclamations/" + encadreurModal.id + "/repondre", {
         reponse: `Encadreur affecté: ${encadreur?.prenom} ${encadreur?.nom}`,
-        affecter_encadreur: true,      // ← Indique que c'est une affectation
-        encadreur_id: selectedEncadreur // ← L'ID de l'encadreur choisi
+        affecter_encadreur: true,
+        encadreur_id: selectedEncadreur
       });
       
       setMsg("✅ Encadreur affecté avec succès");
@@ -121,12 +147,13 @@ export default function AdminReclamations() {
         
         <div className="card">
           <div className="table-wrap">
-            <table>
+            <table className="table">
               <thead>
                 <tr>
                   <th>Étudiant</th>
                   <th>Type</th>
                   <th>Message</th>
+                  <th>Pièce jointe</th>
                   <th>Statut</th>
                   <th>Date</th>
                   <th>Action</th>
@@ -141,6 +168,34 @@ export default function AdminReclamations() {
                     </td>
                     <td><span className="badge badge-purple">{typeLabel(r.type)}</span></td>
                     <td style={{ maxWidth: 200, fontSize: 13 }}>{r.message}</td>
+                    <td>
+                      {r.piece_jointe && (
+                        <div>
+                          {isImage(r.piece_jointe) ? (
+                            <button
+                              className="btn btn-sm btn-outline"
+                              onClick={() => setFileModal(r)}
+                              style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
+                            >
+                              <Eye size={14} /> Voir image
+                            </button>
+                          ) : (
+                            <a
+                              href={getFileUrl(r.piece_jointe)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn btn-sm btn-outline"
+                              style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
+                            >
+                              <FileText size={14} /> Voir fichier
+                            </a>
+                          )}
+                        </div>
+                      )}
+                      {!r.piece_jointe && (
+                        <span style={{ fontSize: 12, color: "#9ca3af" }}>Aucune piéce jointe </span>
+                      )}
+                    </td>
                     <td>
                       <span className={"badge " + (r.statut === "traitee" ? "badge-success" : "badge-warning")}>
                         {r.statut}
@@ -198,7 +253,7 @@ export default function AdminReclamations() {
                 ))}
                 {reclamations.length === 0 && (
                   <tr>
-                    <td colSpan={6} style={{ textAlign: "center", color: "#9ca3af", padding: 32 }}>
+                    <td colSpan={7} style={{ textAlign: "center", color: "#9ca3af", padding: 32 }}>
                       Aucune réclamation
                     </td>
                   </tr>
@@ -230,7 +285,27 @@ export default function AdminReclamations() {
         </div>
       )}
 
-      {/* 🔴 NOUVEAU MODAL POUR AFFECTER UN ENCADREUR */}
+      {/* Modal pour voir les images en grand */}
+      {fileModal && (
+        <div className="modal-overlay">
+          <div className="modal" style={{ maxWidth: "90vw", maxHeight: "90vh" }}>
+            <h3>📷 Pièce jointe</h3>
+            <p className="sub">{fileModal.etudiant_nom}</p>
+            <div style={{ textAlign: "center", marginBottom: 16 }}>
+              <img 
+                src={getFileUrl(fileModal.piece_jointe)} 
+                alt="Pièce jointe"
+                style={{ maxWidth: "100%", maxHeight: "70vh", borderRadius: 8 }}
+              />
+            </div>
+            <div className="modal-actions">
+              <button className="btn btn-outline" onClick={() => setFileModal(null)}>Fermer</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal pour affecter un encadreur */}
       {encadreurModal && (
         <div className="modal-overlay">
           <div className="modal">
@@ -269,6 +344,8 @@ export default function AdminReclamations() {
           </div>
         </div>
       )}
+
+      {/* Modal pour changer la date */}
       {dateModal && (
         <div className="modal-overlay">
           <div className="modal">
@@ -278,7 +355,6 @@ export default function AdminReclamations() {
             <div style={{ background: "#fef3c7", borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 14, color: "#92400e" }}>
               <strong>Réclamation :</strong> {dateModal.message}
             </div>
-
             <div className="form-group">
               <label className="form-label">Nouvelle date</label>
               <input type="date" className="form-control" value={nouvelleDate} onChange={e => handleDateChange(e.target.value)} required />
@@ -292,8 +368,6 @@ export default function AdminReclamations() {
                 <option value="10:30">10:30</option>
                 <option value="11:30">11:30</option>
                 <option value="14:00">14:00</option>
-                <option value="15:30">15:30</option>
-                <option value="17:00">17:00</option>
               </select>
             </div>
             <div className="form-group">

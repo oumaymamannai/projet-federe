@@ -1,13 +1,15 @@
 import { useState, useEffect } from "react";
 import api from "../../services/api";
-import { Send, MessageCircle } from "lucide-react";
+import { Send, MessageCircle, Upload, X } from "lucide-react";
 
 export default function StudentReclamations() {
   const [form, setForm] = useState({ type: "probleme_date", message: "" });
+  const [file, setFile] = useState(null);
   const [reclamations, setReclamations] = useState([]);
   const [soutenance, setSoutenance] = useState(null);
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   const isTerminee = soutenance && soutenance.statut === "terminee";
 
@@ -39,19 +41,71 @@ export default function StudentReclamations() {
     api.get("/etudiant/soutenance").then(r => setSoutenance(r.data)).catch(() => {});
   }, []);
 
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
+      // Limiter la taille du fichier à 5MB
+      if (selectedFile.size > 5 * 1024 * 1024) {
+        setError("Le fichier ne doit pas dépasser 5MB");
+        return;
+      }
+      setFile(selectedFile);
+    }
+  };
+
+  const removeFile = () => {
+    setFile(null);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMsg("");
     setError("");
+    setUploading(true);
+
     try {
-      await api.post("/etudiant/reclamation", form);
+      const formData = new FormData();
+      formData.append("type", form.type);
+      formData.append("message", form.message);
+      if (file) {
+        formData.append("piece_jointe", file);
+      }
+
+      await api.post("/etudiant/reclamation", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      
       setMsg("Réclamation soumise avec succès !");
       setForm({ type: "probleme_date", message: "" });
+      setFile(null);
       load();
     } catch (err) {
-      setError(err.response?.data?.message || "Erreur");
+      setError(err.response?.data?.message || "Erreur lors de l'envoi");
+    } finally {
+      setUploading(false);
     }
   };
+
+// Fonction pour obtenir l'URL du fichier joint
+// Fonction pour obtenir l'URL du fichier joint
+const getFileUrl = (filePath) => {
+  if (!filePath) return null;
+  
+  // Nettoyer pour n'avoir que le nom du fichier
+  let filename = filePath;
+  if (filename.includes('\\') || filename.includes('/')) {
+    filename = filename.split(/[\\/]/).pop();
+  }
+  
+  // Utiliser l'URL de base sans /api
+  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  // Enlever le /api final
+  const cleanBaseUrl = baseUrl.replace(/\/api$/, '');
+  
+  return `${cleanBaseUrl}/uploads/reclamations/${filename}`;
+};
 
   return (
     <div>
@@ -98,8 +152,65 @@ export default function StudentReclamations() {
                   placeholder="Décrivez votre problème..." 
                 />
               </div>
-              <button type="submit" className="btn btn-primary">
-                <Send size={16} /> Soumettre
+              <div className="form-group">
+                <label className="form-label">Pièce jointe (Optionnel)</label>
+                <div style={{ 
+                  border: "2px dashed #e5e7eb", 
+                  borderRadius: 8, 
+                  padding: 20, 
+                  textAlign: "center",
+                  backgroundColor: "#f9fafb",
+                  cursor: "pointer"
+                }}>
+                  <input
+                    type="file"
+                    id="file-upload"
+                    style={{ display: "none" }}
+                    onChange={handleFileChange}
+                    accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
+                  />
+                  <label htmlFor="file-upload" style={{ cursor: "pointer", display: "block" }}>
+                    <Upload size={32} color="#7c3aed" style={{ margin: "0 auto 8px" }} />
+                    <p style={{ color: "#6b7280", margin: 0 }}>
+                      Cliquez pour sélectionner un fichier
+                    </p>
+                    <small style={{ color: "#9ca3af" }}>
+                      Formats acceptés: JPG, PNG, PDF, DOC (max 5MB)
+                    </small>
+                  </label>
+                </div>
+                
+                {file && (
+                  <div style={{ 
+                    marginTop: 12, 
+                    padding: 8, 
+                    backgroundColor: "#ede9fe", 
+                    borderRadius: 6,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between"
+                  }}>
+                    <span style={{ fontSize: 14, color: "#5b21b6" }}>
+                      📎 {file.name} ({(file.size / 1024).toFixed(1)} KB)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={removeFile}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        color: "#7c3aed"
+                      }}
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                )}
+              </div>
+              <button type="submit" className="btn btn-primary" disabled={uploading}>
+                <Send size={16} /> 
+                {uploading ? "Envoi en cours..." : "Soumettre"}
               </button>
             </form>
           </div>
@@ -135,6 +246,29 @@ export default function StudentReclamations() {
                     </span>
                   </div>
                   <p style={{ color: "#374151", marginBottom: 8 }}>{r.message}</p>
+                  
+                  {/* Affichage de la pièce jointe */}
+                  {r.piece_jointe && (
+                    <div style={{ background: "#f3f4f6", borderRadius: 6, padding: 8, marginBottom: 12 }}>
+                      <a 
+                        href={getFileUrl(r.piece_jointe)} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        style={{ 
+                          display: "inline-flex", 
+                          alignItems: "center", 
+                          gap: 6,
+                          color: "#7c3aed",
+                          textDecoration: "none",
+                          fontSize: 13
+                        }}
+                      >
+                        <Upload size={14} />
+                        Voir la pièce jointe
+                      </a>
+                    </div>
+                  )}
+                  
                   {r.reponse && (
                     <div style={{ background: "#ede9fe", borderRadius: 8, padding: 12, fontSize: 14 }}>
                       <MessageCircle size={14} color="#7c3aed" style={{ marginRight: 6 }} />

@@ -431,7 +431,8 @@ exports.getReclamations = async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT r.*, CONCAT(u.prenom,' ',u.nom) as etudiant_nom, u.email as etudiant_email
-      FROM reclamations r JOIN users u ON u.id = r.etudiant_id
+      FROM reclamations r 
+      JOIN users u ON u.id = r.etudiant_id
       ORDER BY r.created_at DESC
     `);
     res.json(rows);
@@ -469,7 +470,6 @@ exports.repondreReclamation = async (req, res) => {
     }
 
     if (affecter_encadreur && encadreur_id) {
-      // Récupérer la soutenance de l'étudiant
       const [sout] = await db.query(
         "SELECT id FROM soutenances WHERE etudiant_id = ?",
         [reclamation.etudiant_id]
@@ -478,13 +478,11 @@ exports.repondreReclamation = async (req, res) => {
       if (sout.length > 0) {
         const soutenance_id = sout[0].id;
 
-        // Ajouter l'encadreur au jury
         await db.query(
           'INSERT INTO soutenance_jury (soutenance_id, jury_id, role) VALUES (?, ?, "encadreur")',
           [soutenance_id, encadreur_id]
         );
 
-        // Marquer l'encadreur comme figé
         await db.query(
           "UPDATE soutenances SET encadreur_fige = TRUE WHERE id = ?",
           [soutenance_id]
@@ -493,12 +491,7 @@ exports.repondreReclamation = async (req, res) => {
     }
 
     await db.query("COMMIT");
-/*
-    // Envoyer l'email
-    try {
-      await sendReclamationReponse(reclamation.email, reclamation, { reponse });
-    } catch {}
-*/
+
     res.json({ message: "Réponse envoyée" });
   } catch (err) {
     await db.query("ROLLBACK");
