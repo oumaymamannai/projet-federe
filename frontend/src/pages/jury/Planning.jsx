@@ -16,6 +16,12 @@ function getCountdownStatus(dateStr) {
   return { status: "pending", label: `-${days} jour${days > 1 ? "s" : ""}`, days: days };
 }
 
+function isSoutenanceTimePassed(dateStr) {
+  const now = new Date();
+  const soutenanceDate = new Date(dateStr);
+  return now >= soutenanceDate;
+}
+
 function roleLabel(r) {
   return r === "president" ? "Président" : r === "encadreur" ? "Encadreur" : "3ème Membre";
 }
@@ -83,6 +89,10 @@ export default function JuryPlanning() {
                       <span className="btn btn-sm" style={{ background: "#d1fae5", color: "#065f46", cursor: "default" }}>
                         ✅ Remarques envoyées
                       </span>
+                    ) : s.mon_role === "president" && s.date_soutenance && !isSoutenanceTimePassed(s.date_soutenance) ? (
+                      <button className="btn btn-primary btn-sm" disabled style={{ opacity: 0.5 }}>
+                        📝 Noter
+                      </button>
                     ) : (
                       <a href={`/jury/evaluations/${s.id}`} className="btn btn-primary btn-sm">
                         {s.mon_role === "president" ? "📝 Noter" : "💬 Remarques"}

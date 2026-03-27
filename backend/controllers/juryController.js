@@ -43,6 +43,14 @@ exports.evaluer = async (req, res) => {
       return res.status(403).json({ message: 'Seul le président peut saisir la note' });
     }
 
+    if (note !== undefined && jrow[0].role === 'president') {
+      const now = new Date();
+      const soutenanceDate = new Date(sout[0].date_soutenance);
+      if (now < soutenanceDate) {
+        return res.status(403).json({ message: 'Vous ne pouvez noter qu\'après la date et l\'heure de la soutenance' });
+      }
+    }
+
     const updates = {};
     if (remarques !== undefined) updates.remarques = remarques;
     if (note !== undefined && jrow[0].role === 'president') updates.note = note;
