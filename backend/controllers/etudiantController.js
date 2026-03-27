@@ -97,21 +97,39 @@ exports.getMesSoumissions = async (req, res) => {
 
 exports.creerReclamation = async (req, res) => {
   const { type, message } = req.body;
+  let piece_jointe = null;
+  
+  // Vérifier si un fichier a été uploadé
+  if (req.file) {
+    // Stocker uniquement le nom du fichier ou le chemin relatif sans 'uploads/'
+    // Option 1: Stocker juste le nom du fichier
+    piece_jointe = req.file.filename;
+    
+    // Option 2: Stocker le chemin relatif complet
+    // piece_jointe = req.file.path;
+  }
+  
   try {
     await db.query(
-      "INSERT INTO reclamations (etudiant_id, type, message) VALUES (?,?,?)",
-      [req.user.id, type, message]
+      "INSERT INTO reclamations (etudiant_id, type, message, piece_jointe) VALUES (?,?,?,?)",
+      [req.user.id, type, message, piece_jointe]
     );
-    res.json({ message: "Réclamation soumise" });
+    res.json({ message: "Réclamation soumise avec succès" });
   } catch (err) {
+    // Supprimer le fichier en cas d'erreur
+    if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    console.error("Erreur création réclamation:", err);
     res.status(500).json({ message: err.message });
   }
 };
 
+// Déjà correcte, mais assurez-vous qu'elle retourne le champ piece_jointe
 exports.getMesReclamations = async (req, res) => {
   try {
     const [rows] = await db.query(
-      "SELECT * FROM reclamations WHERE etudiant_id = ? ORDER BY created_at DESC",
+      "SELECT id, type, message, piece_jointe, statut, reponse, created_at, reponse_at FROM reclamations WHERE etudiant_id = ? ORDER BY created_at DESC",
       [req.user.id]
     );
     res.json(rows);

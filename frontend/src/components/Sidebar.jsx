@@ -61,7 +61,8 @@ export default function Sidebar() {
     if (user?.role === 'admin') {
       api.get('/admin/reclamations')
         .then(res => {
-          const enAttente = res.data.filter(r => r.statut === 'en_attente' && !r.reponse);
+          // Compter uniquement les réclamations en attente (statut = 'en_attente')
+          const enAttente = res.data.filter(r => r.statut === 'en_attente');
           setReclamationsAdminCount(enAttente.length);
         })
         .catch(err => console.error('Erreur chargement réclamations admin:', err));
@@ -74,16 +75,13 @@ export default function Sidebar() {
         const res = await api.get('/etudiant/reclamations');
         const reclamations = res.data;
         
-        // Récupérer les réponses déjà vues
         const reponsesVues = JSON.parse(localStorage.getItem('reponsesVues') || '{}');
         
         let newCount = 0;
         
         reclamations.forEach(r => {
-          // Si réclamation traitée avec réponse
           if (r.statut === 'traitee' && r.reponse) {
             const reponseId = `${r.id}_${r.reponse_at || r.updated_at}`;
-            // Si cette réponse n'a pas encore été vue
             if (!reponsesVues[reponseId]) {
               newCount++;
             }
@@ -101,14 +99,11 @@ export default function Sidebar() {
   const handleReclamationsClick = useCallback(async () => {
     if (reclamationsCount > 0) {
       try {
-        // Récupérer toutes les réclamations pour marquer les réponses comme vues
         const res = await api.get('/etudiant/reclamations');
         const reclamations = res.data;
         
-        // Récupérer les réponses déjà vues
         const reponsesVues = JSON.parse(localStorage.getItem('reponsesVues') || '{}');
         
-        // Marquer toutes les réponses comme vues
         reclamations.forEach(r => {
           if (r.statut === 'traitee' && r.reponse) {
             const reponseId = `${r.id}_${r.reponse_at || r.updated_at}`;
@@ -116,10 +111,7 @@ export default function Sidebar() {
           }
         });
         
-        // Sauvegarder dans localStorage
         localStorage.setItem('reponsesVues', JSON.stringify(reponsesVues));
-        
-        // Effacer le badge
         setReclamationsCount(0);
         
       } catch (error) {
@@ -128,25 +120,32 @@ export default function Sidebar() {
     }
   }, [reclamationsCount]);
 
+  // ✅ MODIFICATION : Le compteur doit se recharger depuis le backend, pas juste se mettre à 0
   const handleAdminReclamationsClick = useCallback(() => {
-    if (reclamationsAdminCount > 0) {
-      setReclamationsAdminCount(0);
-    }
-  }, [reclamationsAdminCount]);
+    // Ne pas mettre à 0 immédiatement, laisser le chargement se faire
+    // Le rechargement se fera via l'événement 'reclamations-admin-updated'
+  }, []);
 
   useEffect(() => {
     if (user?.role === 'admin') {
       loadPendingCount();
       loadReclamationsAdminCount();
+      
       const interval = setInterval(() => {
         loadPendingCount();
         loadReclamationsAdminCount();
       }, 30000);
+      
       const handleSubmissionUpdate = () => loadPendingCount();
+      const handleReclamationsUpdate = () => loadReclamationsAdminCount();
+      
       window.addEventListener('submissionUpdated', handleSubmissionUpdate);
+      window.addEventListener('reclamations-admin-updated', handleReclamationsUpdate);
+      
       return () => {
         clearInterval(interval);
         window.removeEventListener('submissionUpdated', handleSubmissionUpdate);
+        window.removeEventListener('reclamations-admin-updated', handleReclamationsUpdate);
       };
     }
     
