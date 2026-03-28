@@ -70,6 +70,25 @@ const getFilteredJurys = (role) => {
     catch { alert("Erreur lors de l'envoi"); }
   };
 
+  const hasStageDossier = (s) =>
+    s.has_stage_dossier === true || s.has_stage_dossier === 1 || s.has_stage_dossier === "1";
+
+  /** Jury : interdit si en attente ; si planifiée, seulement si dossier de stage déposé ; interdit si terminée. */
+  const canAssignJury = (s) => {
+    if (s.statut === "terminee") return false;
+    if (s.statut === "en_attente") return false;
+    if (s.statut === "planifiee") return hasStageDossier(s);
+    return false;
+  };
+
+  const juryButtonTitle = (s) => {
+    if (s.statut === "terminee") return "Soutenance terminée — jury non modifiable.";
+    if (s.statut === "en_attente") return "Planifiez la soutenance (date et statut) avant d'affecter le jury.";
+    if (s.statut === "planifiee" && !hasStageDossier(s))
+      return "L'étudiant doit d'abord déposer un dossier de stage.";
+    return "Affecter ou modifier le jury";
+  };
+
   const statusBadge = (s) => {
     if (s === "planifiee") return <span className="badge badge-purple">📅 Planifiée</span>;
     if (s === "terminee") return <span className="badge badge-success">✅ Terminée</span>;
@@ -104,11 +123,13 @@ const getFilteredJurys = (role) => {
                     <td>
                       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                         <button
+                          type="button"
                           className="btn btn-outline btn-sm"
-                          disabled={s.statut === "terminee"}
-                          style={s.statut === "terminee" ? { opacity: 0.5, cursor: "not-allowed" } : {}}
+                          disabled={!canAssignJury(s)}
+                          title={juryButtonTitle(s)}
+                          style={!canAssignJury(s) ? { opacity: 0.5, cursor: "not-allowed" } : {}}
                           onClick={() => {
-                            if (s.statut === "terminee") return;
+                            if (!canAssignJury(s)) return;
                             const encFromJurys = s.jurys?.find(j => j.role === 'encadreur')?.id;
                             const encId = s.encadreur_id || encFromJurys || "";
                             setAssignModal(s);

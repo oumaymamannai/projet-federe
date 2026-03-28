@@ -17,6 +17,45 @@ async function syncSoutenanceStatuts() {
   `);
 }
 
+/** Règles : pas de jury si en_attente ; si planifiee, au moins une soumission stage pour l'étudiant. */
+async function assertJuryAssignmentAllowed(soutenance_id) {
+  const [rows] = await db.query(
+    `SELECT s.statut,
+     (SELECT COUNT(*) FROM stage_soumissions ss WHERE ss.etudiant_id = s.etudiant_id) AS nb_stage
+     FROM soutenances s WHERE s.id = ?`,
+    [soutenance_id]
+  );
+  if (!rows.length) {
+    return { ok: false, status: 404, message: "Soutenance introuvable" };
+  }
+  const { statut, nb_stage } = rows[0];
+  const nb = Number(nb_stage);
+  if (statut === "en_attente") {
+    return {
+      ok: false,
+      status: 400,
+      message:
+        "Impossible d'affecter un jury tant que la soutenance est en attente. Planifiez d'abord la date.",
+    };
+  }
+  if (statut === "terminee") {
+    return {
+      ok: false,
+      status: 400,
+      message: "Impossible de modifier le jury d'une soutenance terminée.",
+    };
+  }
+  if (statut === "planifiee" && nb === 0) {
+    return {
+      ok: false,
+      status: 400,
+      message:
+        "L'étudiant doit avoir déposé un dossier de stage avant l'affectation du jury.",
+    };
+  }
+  return { ok: true };
+}
+
 exports.getDashboard = async (req, res) => {
   try {
     await syncSoutenanceStatuts();
@@ -90,6 +129,7 @@ exports.getSoutenances = async (req, res) => {
     await ensureSoutenanceRowsForEtudiants();
     const [rows] = await db.query(`
       SELECT s.*, CONCAT(u.prenom,' ',u.nom) as etudiant_nom, u.email as etudiant_email,
+        (SELECT COUNT(*) FROM stage_soumissions ss WHERE ss.etudiant_id = s.etudiant_id) > 0 AS has_stage_dossier,
         -- include jury id and name so frontend can identify encadreur by id
         GROUP_CONCAT(DISTINCT CONCAT(uj.id, '::', uj.prenom, ' ', uj.nom, '|', sj.role) ORDER BY sj.role SEPARATOR ';;') as jury_info
       FROM soutenances s
@@ -135,6 +175,10 @@ exports.affecterJury = async (req, res) => {
   const { soutenance_id } = req.params;
   const { encadreur_id, president_id, membre3_id } = req.body;
   try {
+    const check = await assertJuryAssignmentAllowed(soutenance_id);
+    if (!check.ok) {
+      return res.status(check.status).json({ message: check.message });
+    }
     // If encadreur_id is provided, replace whole jury (including encadreur).
     // If not provided, keep existing encadreur and only (re)assign president and 3eme_membre.
     if (encadreur_id) {
@@ -213,6 +257,10 @@ exports.completerJury = async (req, res) => {
   const { soutenance_id, president_id, membre3_id } = req.body;
 
   try {
+    const check = await assertJuryAssignmentAllowed(soutenance_id);
+    if (!check.ok) {
+      return res.status(check.status).json({ message: check.message });
+    }
     // Vérifier que l'encadreur est bien figé
     const [soutenance] = await db.query(
       "SELECT encadreur_fige FROM soutenances WHERE id = ?",
