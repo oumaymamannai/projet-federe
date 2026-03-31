@@ -1,8 +1,12 @@
 import { useState, useEffect } from "react";
 import api from "../../services/api";
 import { Upload, Send, FileText, X } from "lucide-react";
+import { useAuth } from '../../context/AuthContext';
+import { Link } from 'react-router-dom';
 
 export default function StudentStage() {
+  const { user, loading: authLoading } = useAuth();
+  
   const [form, setForm] = useState({ 
     nom_etudiant: "", 
     prenom_etudiant: "", 
@@ -12,24 +16,60 @@ export default function StudentStage() {
     sujet: "", 
     description: "" 
   });
-  const [fichiers, setFichiers] = useState([]); // Tableau de fichiers
+  
+  const [fichiers, setFichiers] = useState([]);
   const [soumissions, setSoumissions] = useState([]);
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [soutenance, setSoutenance] = useState(null);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   const isTerminee = soutenance && soutenance.statut === "terminee";
 
+  // Mettre à jour le formulaire quand user est chargé
   useEffect(() => {
-    api.get("/etudiant/stage/soumissions").then(r => setSoumissions(r.data));
-    api.get("/etudiant/soutenance").then(r => setSoutenance(r.data)).catch(() => {});
+    if (user) {
+      setForm(prev => ({
+        ...prev,
+        nom_etudiant: user.nom || "",
+        prenom_etudiant: user.prenom || "",
+        email_contact: user.email || "",
+      }));
+    }
+  }, [user]);
+
+  // Charger les données
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setInitialLoading(true);
+        const [soumissionsRes, soutenanceRes] = await Promise.all([
+          api.get("/etudiant/stage/soumissions").catch(err => {
+            console.error("Erreur chargement soumissions:", err);
+            return { data: [] };
+          }),
+          api.get("/etudiant/soutenance").catch(err => {
+            console.error("Erreur chargement soutenance:", err);
+            return { data: null };
+          })
+        ]);
+        setSoumissions(soumissionsRes.data || []);
+        setSoutenance(soutenanceRes.data);
+      } catch (error) {
+        console.error("Erreur lors du chargement des données:", error);
+        setError("Erreur de chargement des données");
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+    
+    fetchData();
   }, []);
 
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
     
-    // Validation par extension (plus fiable)
     const allowedExtensions = ['pdf', 'doc', 'docx'];
     const invalidFiles = selectedFiles.filter(file => {
       const extension = file.name.split('.').pop().toLowerCase();
@@ -41,7 +81,6 @@ export default function StudentStage() {
       return;
     }
 
-    // Limite de taille (10MB)
     const maxSize = 10 * 1024 * 1024;
     const oversizedFiles = selectedFiles.filter(file => file.size > maxSize);
     
@@ -50,9 +89,8 @@ export default function StudentStage() {
       return;
     }
 
-    // Ajouter les nouveaux fichiers
     setFichiers(prevFichiers => [...prevFichiers, ...selectedFiles]);
-    setError(""); // Effacer les erreurs
+    setError("");
     e.target.value = '';
   };
 
@@ -74,26 +112,22 @@ export default function StudentStage() {
     
     try {
       const fd = new FormData();
-      
-      // Ajouter les champs du formulaire
       Object.entries(form).forEach(([k, v]) => fd.append(k, v));
-      
-      // "fichiers" sans crochets
       fichiers.forEach((file) => {
         fd.append("fichiers", file);
       });
   
-      const response = await api.post("/etudiant/stage", fd, { 
+      await api.post("/etudiant/stage", fd, { 
         headers: { "Content-Type": "multipart/form-data" } 
       });
       
       setMsg("Formulaire soumis avec succès !");
       
       // Réinitialiser le formulaire
-      setForm({ 
-        nom_etudiant: "", 
-        prenom_etudiant: "", 
-        email_contact: "", 
+      setForm({
+        nom_etudiant: user?.nom || "",
+        prenom_etudiant: user?.prenom || "",
+        email_contact: user?.email || "",
         encadreur: "", 
         societe: "", 
         sujet: "", 
@@ -101,6 +135,7 @@ export default function StudentStage() {
       });
       setFichiers([]);
       
+      // Recharger les soumissions
       const r = await api.get("/etudiant/stage/soumissions");
       setSoumissions(r.data);
     } catch (err) { 
@@ -110,6 +145,18 @@ export default function StudentStage() {
       setLoading(false); 
     }
   };
+
+  // Afficher un loader pendant le chargement initial
+  if (authLoading || initialLoading) {
+    return (
+      <div className="page-content">
+        <div className="card" style={{ textAlign: "center", padding: 40 }}>
+          <div className="spinner"></div>
+          <p>Chargement...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -131,152 +178,163 @@ export default function StudentStage() {
             <p style={{ color: "#9ca3af" }}>Votre soutenance est terminée, vous ne pouvez plus déposer de dossier.</p>
           </div>
         ) : (
-        <div className="card" style={{ marginBottom: 24 }}>
-          <h3 style={{ marginBottom: 20, fontWeight: 700 }}>Nouvelle soumission</h3>
-          
-          <form onSubmit={handleSubmit}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-              {[
-                ["nom_etudiant","Nom"],
-                ["prenom_etudiant","Prénom"],
-                ["email_contact","Email"],
-                ["encadreur","Encadreur"],
-                ["societe","Société"],
-                ["sujet","Sujet"]
-              ].map(([k, l]) => (
-                <div className="form-group" key={k}>
-                  <label className="form-label">{l}</label>
-                  <input 
-                    className="form-control" 
-                    placeholder={k === "encadreur" ? "Nom de votre encadreur (si vous en avez un)" : `Entrez votre ${l.toLowerCase()}`}
-                    value={form[k]} 
-                    onChange={e => setForm({...form, [k]: e.target.value})} 
-                    required={k !== "encadreur"}
-                  />
-                </div>
-              ))}
-            </div>
+          <div className="card" style={{ marginBottom: 24 }}>
+            <h3 style={{ marginBottom: 20, fontWeight: 700 }}>Nouvelle soumission</h3>
             
-            <div className="form-group">
-              <label className="form-label">Description</label>
-              <textarea 
-                className="form-control" 
-                placeholder="Décrivez votre stage..."
-                value={form.description} 
-                onChange={e => setForm({...form, description: e.target.value})} 
-                rows={4} 
-              />
-            </div>
-            
-            <div className="form-group">
-              <label className="form-label">
-                Pièces jointes (PDF, Word) - {fichiers.length} fichier(s) sélectionné(s)
-              </label>
-              
-              {/* Zone de sélection des fichiers */}
-              <div 
-                style={{ 
-                  border: "2px dashed #ddd6fe", 
-                  borderRadius: 10, 
-                  padding: 20, 
-                  textAlign: "center", 
-                  cursor: "pointer", 
-                  background: "#faf9ff",
-                  marginBottom: 16
-                }}
-                onClick={() => document.getElementById('files-upload').click()}
-              >
-                <Upload size={24} color="#7c3aed" style={{ margin: "0 auto 8px", display: "block" }} />
-                <input 
-                  type="file" 
-                  accept=".pdf,.doc,.docx" 
-                  onChange={handleFileChange} 
-                  style={{ display: "none" }} 
-                  id="files-upload"
-                  multiple
-                />
-                <span style={{ cursor: "pointer", color: "#7c3aed", fontWeight: 600 }}>
-                  Cliquez pour sélectionner plusieurs fichiers
-                </span>
-                <p style={{ fontSize: 12, color: "#9ca3af", marginTop: 8 }}>
-                  Vous pouvez sélectionner plusieurs fichiers en maintenant Ctrl (Cmd sur Mac)
-                </p>
+            <form onSubmit={handleSubmit}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                {[
+                  ["nom_etudiant","Nom"],
+                  ["prenom_etudiant","Prénom"],
+                  ["email_contact","Email"],
+                  ["encadreur","Encadreur"],
+                  ["societe","Société"],
+                  ["sujet","Sujet"]
+                ].map(([k, l]) => (
+                  <div className="form-group" key={k}>
+                    <label className="form-label">{l}</label>
+                    <input 
+                      className="form-control" 
+                      placeholder={k === "encadreur" ? "Nom de votre encadreur (si vous en avez un)" : `Entrez votre ${l.toLowerCase()}`}
+                      value={form[k]} 
+                      onChange={e => setForm({...form, [k]: e.target.value})} 
+                      required={k !== "encadreur"}
+                      readOnly={["nom_etudiant", "prenom_etudiant", "email_contact"].includes(k)}
+                      style={["nom_etudiant", "prenom_etudiant", "email_contact"].includes(k) ? { background: "#f3f0ff", color: "#6b7280" } : {}}
+                    />
+                    {k === "encadreur" && (
+                      <p style={{ fontSize: 12, color: "#7c3aed", marginTop: 4 }}>
+                        ⚠️ Si vous n'avez pas d'encadreur, veuillez soumettre une réclamation depuis la page{' '}
+                        <Link 
+                          to="/student/reclamations"
+                          style={{ color: "#7c3aed", textDecoration: "underline" }}
+                        >
+                          Réclamations
+                        </Link>
+                      </p>
+                    )}
+                  </div>
+                ))}
               </div>
-
-              {/* Liste des fichiers sélectionnés */}
-              {fichiers.length > 0 && (
-                <div style={{ 
-                  border: "1px solid #e5e7eb", 
-                  borderRadius: 8, 
-                  padding: 12,
-                  background: "#f9fafb"
-                }}>
-                  <p style={{ fontWeight: 600, marginBottom: 12 }}>
-                    Fichiers sélectionnés :
+              
+              <div className="form-group">
+                <label className="form-label">Description</label>
+                <textarea 
+                  className="form-control" 
+                  placeholder="Décrivez votre stage..."
+                  value={form.description} 
+                  onChange={e => setForm({...form, description: e.target.value})} 
+                  rows={4} 
+                />
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">
+                  Pièces jointes (PDF, Word) - {fichiers.length} fichier(s) sélectionné(s)
+                </label>
+                
+                <div 
+                  style={{ 
+                    border: "2px dashed #ddd6fe", 
+                    borderRadius: 10, 
+                    padding: 20, 
+                    textAlign: "center", 
+                    cursor: "pointer", 
+                    background: "#faf9ff",
+                    marginBottom: 16
+                  }}
+                  onClick={() => document.getElementById('files-upload').click()}
+                >
+                  <Upload size={24} color="#7c3aed" style={{ margin: "0 auto 8px", display: "block" }} />
+                  <input 
+                    type="file" 
+                    accept=".pdf,.doc,.docx" 
+                    onChange={handleFileChange} 
+                    style={{ display: "none" }} 
+                    id="files-upload"
+                    multiple
+                  />
+                  <span style={{ cursor: "pointer", color: "#7c3aed", fontWeight: 600 }}>
+                    Cliquez pour sélectionner plusieurs fichiers
+                  </span>
+                  <p style={{ fontSize: 12, color: "#9ca3af", marginTop: 8 }}>
+                    Vous pouvez sélectionner plusieurs fichiers en maintenant Ctrl (Cmd sur Mac)
                   </p>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {fichiers.map((file, index) => (
-                      <div 
-                        key={index}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 12,
-                          padding: "8px 12px",
-                          background: "white",
-                          borderRadius: 6,
-                          border: "1px solid #e5e7eb"
-                        }}
-                      >
-                        <FileText size={20} color="#7c3aed" />
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ 
-                            fontWeight: 500, 
-                            fontSize: 14,
-                            whiteSpace: "nowrap",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis"
-                          }}>
-                            {file.name}
-                          </div>
-                          <div style={{ fontSize: 12, color: "#6b7280" }}>
-                            {formatFileSize(file.size)}
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => removeFile(index)}
+                </div>
+
+                {fichiers.length > 0 && (
+                  <div style={{ 
+                    border: "1px solid #e5e7eb", 
+                    borderRadius: 8, 
+                    padding: 12,
+                    background: "#f9fafb"
+                  }}>
+                    <p style={{ fontWeight: 600, marginBottom: 12 }}>
+                      Fichiers sélectionnés :
+                    </p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {fichiers.map((file, index) => (
+                        <div 
+                          key={index}
                           style={{
-                            background: "none",
-                            border: "none",
-                            cursor: "pointer",
-                            padding: 4,
-                            color: "#9ca3af",
                             display: "flex",
                             alignItems: "center",
-                            justifyContent: "center"
+                            gap: 12,
+                            padding: "8px 12px",
+                            background: "white",
+                            borderRadius: 6,
+                            border: "1px solid #e5e7eb"
                           }}
                         >
-                          <X size={16} />
-                        </button>
-                      </div>
-                    ))}
+                          <FileText size={20} color="#7c3aed" />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ 
+                              fontWeight: 500, 
+                              fontSize: 14,
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis"
+                            }}>
+                              {file.name}
+                            </div>
+                            <div style={{ fontSize: 12, color: "#6b7280" }}>
+                              {formatFileSize(file.size)}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeFile(index)}
+                            style={{
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              padding: 4,
+                              color: "#9ca3af",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center"
+                            }}
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-            
-            <button 
-              type="submit" 
-              className="btn btn-primary" 
-              disabled={loading || fichiers.length === 0}
-              style={{ marginTop: 16 }}
-            >
-              <Send size={16} /> 
-              {loading ? "Envoi en cours..." : "Soumettre"}
-            </button>
-          </form>
-        </div>
+                )}
+              </div>
+              
+              <button 
+                type="submit" 
+                className="btn btn-primary" 
+                disabled={loading || fichiers.length === 0}
+                style={{ marginTop: 16 }}
+              >
+                <Send size={16} /> 
+                {loading ? "Envoi en cours..." : "Soumettre"}
+              </button>
+            </form>
+          </div>
         )}
 
         {soumissions.length > 0 && (
@@ -305,7 +363,6 @@ export default function StudentStage() {
                       <td>
                         {s.fichiers ? (
                           (() => {
-                            // Fonction pour normaliser en tableau
                             const getFilesArray = (data) => {
                               if (Array.isArray(data)) return data;
                               if (typeof data === 'string') {
@@ -364,4 +421,7 @@ export default function StudentStage() {
       </div>
     </div>
   );
+
+
+  
 }
