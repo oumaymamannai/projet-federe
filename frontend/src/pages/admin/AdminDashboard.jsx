@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { adminAPI } from '../../services/api'
 import { Bar } from 'react-chartjs-2'
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js'
+import PlanificationWizard from './PlanificationWizard'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
@@ -54,10 +55,13 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      <div className="page-header">
-        <h1>Tableau de bord</h1>
-        <p>Vue d'ensemble de la plateforme GradFlow</p>
-      </div>
+      <div className="page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+  <div>
+    <h1>Tableau de bord</h1>
+    <p>Vue d'ensemble de la plateforme GradFlow</p>
+  </div>
+  <PlanificationWizard onDone={() => adminAPI.getDashboard().then(r => setData(r.data.data))} />
+</div>
 
       <div className="stat-grid">
         {[

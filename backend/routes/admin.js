@@ -11,7 +11,9 @@ router.post("/soutenances", ctrl.creerSoutenance);
 router.get("/jury", ctrl.getJuryMembers);
 router.post("/jury/:soutenance_id", ctrl.affecterJury);
 router.post("/periode", ctrl.setPeriode);
+router.get('/periode', ctrl.getPeriode);
 router.post("/affecter-dates", ctrl.affecterDatesAuto);
+router.post("/affecter-dates-auto", ctrl.affecterDatesAuto); // alias pour compatibilité frontend
 router.get("/reclamations", ctrl.getReclamations);
 router.post("/reclamations/:id/repondre", ctrl.repondreReclamation);
 router.post("/resultat/:soutenance_id/envoyer", ctrl.envoyerResultats);

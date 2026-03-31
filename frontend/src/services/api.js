@@ -30,4 +30,7 @@ export const adminAPI = {
   affecterJury: (soutenance_id, payload) => api.post(`/admin/jury/${soutenance_id}`, payload),
   envoyerResultats: (soutenance_id) => api.post(`/admin/resultat/${soutenance_id}/envoyer`),
   getDashboard: () => api.get('/admin/dashboard'),
+  getPeriode: () => api.get('/admin/periode'),
+  setPeriode: (data) => api.post('/admin/periode', data),
+  affecterDatesAuto: () => api.post('/admin/affecter-dates'), // route principale déjà en backend
 };
