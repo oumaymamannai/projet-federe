@@ -1,10 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const { verifyToken, requireRole } = require('../middleware/auth');
-const ctrl = require('../controllers/juryController');
+const JuryController = require('../../controllers/JuryController');
+const authMiddleware = require('../../middlewares/authMiddleware');
 
-router.use(verifyToken, requireRole('jury'));
-router.get('/soutenances', ctrl.getMesSoutenances);
-router.post('/evaluer/:soutenance_id', ctrl.evaluer);
+// Appliquer le middleware d'authentification à toutes les routes
+router.use(authMiddleware);
+
+// GET /api/admin/jury - Récupérer tous les membres du jury
+router.get('/', JuryController.getAllJuryMembers);
+
+// POST /api/admin/jury/contact - Envoyer un email à un membre du jury
+router.post('/contact', JuryController.sendEmailToMember);
 
 module.exports = router;
