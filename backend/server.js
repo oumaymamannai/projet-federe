@@ -88,7 +88,8 @@ app.use('/api/etudiant', require('./routes/etudiant'));
 app.use('/api/jury', require('./routes/jury'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/documents', require('./routes/documents'));
-
+// Après vos autres routes existantes
+app.use('/api/messages', require('./routes/messageRoutes'));
 app.get('/', (req, res) => res.json({ message: 'GradFlow API v1.0' }));
 
 // Middleware de gestion des erreurs
@@ -106,6 +107,7 @@ app.use((err, req, res, next) => {
   
   res.status(500).json({ message: err.message || 'Erreur interne du serveur' });
 });
+
 
 /** Réaligne les mots de passe si le dump SQL a d'anciens hash (sinon connexion impossible). Tous les rôles : mot de passe unique (voir config/defaultPassword.js). */
 async function ensurePasswords() {

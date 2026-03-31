@@ -11,6 +11,7 @@ import {
   LogOut, 
   ClipboardList,
   CheckCircle,
+  MessageSquare, 
 } from 'lucide-react';
 
 const studentNav = [
@@ -18,12 +19,14 @@ const studentNav = [
   { to: '/student/stage', icon: <FileText size={18} />, label: 'Depot dossier' },
   { to: '/student/documents', icon: <ClipboardList size={18} />, label: 'Documents' },
   { to: '/student/reclamations', icon: <Bell size={18} />, label: 'Réclamations' },
+  { to: '/student/messages', icon: <MessageSquare size={18} />, label: 'Messages' },
 ];
 
 // ✅ Menu jury : Dashboard + Planning (Évaluations supprimé car redondant)
 const juryNav = [
   { to: '/jury/dashboard', icon: <LayoutDashboard size={18} />, label: 'Dashboard' },
   { to: '/jury', icon: <Calendar size={18} />, label: 'Planning' },
+  { to: '/jury/messages', icon: <MessageSquare size={18} />, label: 'Messages' },
 ];
 
 const adminNav = [
@@ -47,6 +50,7 @@ export default function Sidebar() {
   const [pendingCount, setPendingCount] = useState(0);
   const [reclamationsAdminCount, setReclamationsAdminCount] = useState(0);
   const [reclamationsCount, setReclamationsCount] = useState(0);
+  const [messagesNonLus, setMessagesNonLus] = useState(0);
 
   const loadPendingCount = useCallback(() => {
     if (user?.role === 'admin') {
@@ -149,21 +153,45 @@ export default function Sidebar() {
     }
     
     if (user?.role === 'etudiant') {
+  loadReclamationsCount();
+
+  // Badge messages non lus
+  const fetchNonLusEtudiant = () => {
+    api.get('/messages/non-lus')
+      .then(res => setMessagesNonLus(res.data.non_lus || 0))
+      .catch(() => {});
+  };
+  fetchNonLusEtudiant();
+
+  const interval = setInterval(() => {
+    loadReclamationsCount();
+    fetchNonLusEtudiant();
+  }, 30000);
+
+  const handleVisibilityChange = () => {
+    if (document.visibilityState === 'visible') {
       loadReclamationsCount();
-      const interval = setInterval(loadReclamationsCount, 30000);
-      
-      const handleVisibilityChange = () => {
-        if (document.visibilityState === 'visible') {
-          loadReclamationsCount();
-        }
-      };
-      document.addEventListener('visibilitychange', handleVisibilityChange);
-      
-      return () => {
-        clearInterval(interval);
-        document.removeEventListener('visibilitychange', handleVisibilityChange);
-      };
+      fetchNonLusEtudiant();
     }
+  };
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+
+  return () => {
+    clearInterval(interval);
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
+  };
+}
+    // Dans useEffect, ajouter ce bloc après le bloc if (user?.role === 'etudiant')
+if (user?.role === 'jury') {
+  const fetchNonLus = () => {
+    api.get('/messages/non-lus')
+      .then(res => setMessagesNonLus(res.data.non_lus || 0))
+      .catch(() => {});
+  };
+  fetchNonLus();
+  const interval = setInterval(fetchNonLus, 30000);
+  return () => clearInterval(interval);
+}
   }, [user, loadPendingCount, loadReclamationsAdminCount, loadReclamationsCount]);
 
   const nav = user?.role === 'etudiant' ? studentNav : 
@@ -211,6 +239,16 @@ export default function Sidebar() {
             {item.label === 'Réclamations' && user?.role === 'etudiant' && reclamationsCount > 0 && (
               <span className="badge-notification">{reclamationsCount > 99 ? '99+' : reclamationsCount}</span>
             )}
+            {item.to === '/jury/messages' && messagesNonLus > 0 && (
+              <span className="badge-notification">
+                {messagesNonLus > 99 ? '99+' : messagesNonLus}
+              </span>
+            )}
+            {item.to === '/student/messages' && messagesNonLus > 0 && (
+  <span className="badge-notification">
+    {messagesNonLus > 99 ? '99+' : messagesNonLus}
+  </span>
+)}
           </Link>
         ))}
       </nav>
@@ -221,4 +259,5 @@ export default function Sidebar() {
       </div>
     </aside>
   );
+  
 }
