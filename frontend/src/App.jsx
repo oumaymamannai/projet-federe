@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import LoginPage from "./pages/LoginPage";
 import Sidebar from "./components/Sidebar";
-import { Toaster } from 'react-hot-toast'; // 👈 AJOUTEZ CETTE LIGNE
+import { Toaster } from 'react-hot-toast';
 
 // Student pages
 import StudentDashboard from "./pages/student/Dashboard";
@@ -11,6 +11,7 @@ import StudentDocuments from "./pages/student/Documents";
 import StudentReclamations from "./pages/student/Reclamations";
 
 // Jury pages
+import JuryDashboard from "./pages/jury/JuryDashboard";  // ← NOUVEAU
 import JuryPlanning from "./pages/jury/Planning";
 import JuryEvaluations from "./pages/jury/Evaluations";
 
@@ -41,16 +42,23 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/" element={
-        user ? <Navigate to={user.role === "admin" ? "/admin" : user.role === "jury" ? "/jury" : "/student"} />
+        user ? <Navigate to={user.role === "admin" ? "/admin" : user.role === "jury" ? "/jury/dashboard" : "/student"} />
              : <Navigate to="/login" />
       } />
+      
+      {/* Student routes */}
       <Route path="/student" element={<ProtectedRoute roles={["etudiant"]}><StudentDashboard /></ProtectedRoute>} />
       <Route path="/student/stage" element={<ProtectedRoute roles={["etudiant"]}><StudentStage /></ProtectedRoute>} />
       <Route path="/student/documents" element={<ProtectedRoute roles={["etudiant"]}><StudentDocuments /></ProtectedRoute>} />
       <Route path="/student/reclamations" element={<ProtectedRoute roles={["etudiant"]}><StudentReclamations /></ProtectedRoute>} />
+      
+      {/* Jury routes */}
+      <Route path="/jury/dashboard" element={<ProtectedRoute roles={["jury"]}><JuryDashboard /></ProtectedRoute>} />  {/* ← NOUVEAU */}
       <Route path="/jury" element={<ProtectedRoute roles={["jury"]}><JuryPlanning /></ProtectedRoute>} />
       <Route path="/jury/evaluations" element={<ProtectedRoute roles={["jury"]}><JuryEvaluations /></ProtectedRoute>} />
       <Route path="/jury/evaluations/:soutenanceId" element={<ProtectedRoute roles={["jury"]}><JuryEvaluations /></ProtectedRoute>} />
+      
+      {/* Admin routes */}
       <Route path="/admin" element={<ProtectedRoute roles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
       <Route path="/admin/soutenances" element={<ProtectedRoute roles={["admin"]}><AdminSoutenances /></ProtectedRoute>} />
       <Route path="/admin/jury" element={<ProtectedRoute roles={["admin"]}><AdminJury /></ProtectedRoute>} />
