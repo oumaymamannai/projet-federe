@@ -747,3 +747,41 @@ exports.getSallesDisponibles = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+const fs = require('fs');
+const path = require('path');
+
+// Supprimer un document
+exports.deleteDocument = async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    // 1. Récupérer le document pour avoir le chemin du fichier
+    const [documents] = await db.query(
+      'SELECT fichier_path FROM documents WHERE id = ?',
+      [id]
+    );
+    
+    if (documents.length === 0) {
+      return res.status(404).json({ message: 'Document non trouvé' });
+    }
+    
+    const fichier_path = documents[0].fichier_path;
+    
+    // 2. Supprimer le fichier physique s'il existe
+    if (fichier_path) {
+      const filePath = path.join(__dirname, '../uploads', fichier_path);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    }
+    
+    // 3. Supprimer l'entrée en base de données
+    await db.query('DELETE FROM documents WHERE id = ?', [id]);
+    
+    res.json({ message: 'Document supprimé avec succès' });
+  } catch (err) {
+    console.error('Erreur lors de la suppression du document:', err);
+    res.status(500).json({ message: err.message });
+  }
+};

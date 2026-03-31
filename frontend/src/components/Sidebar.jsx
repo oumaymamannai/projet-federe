@@ -11,6 +11,7 @@ import {
   LogOut, 
   ClipboardList,
   CheckCircle,
+  BarChart3
 } from 'lucide-react';
 
 const studentNav = [
@@ -21,7 +22,9 @@ const studentNav = [
 ];
 
 const juryNav = [
+  { to: '/jury/dashboard', icon: <LayoutDashboard size={18} />, label: 'JuryDashboard' },  // ← NOUVEAU
   { to: '/jury', icon: <Calendar size={18} />, label: 'Planning' },
+  { to: '/jury/evaluations', icon: <BarChart3 size={18} />, label: 'Évaluations' },   // ← NOUVEAU
 ];
 
 const adminNav = [
@@ -61,7 +64,6 @@ export default function Sidebar() {
     if (user?.role === 'admin') {
       api.get('/admin/reclamations')
         .then(res => {
-          // Compter uniquement les réclamations en attente (statut = 'en_attente')
           const enAttente = res.data.filter(r => r.statut === 'en_attente');
           setReclamationsAdminCount(enAttente.length);
         })
@@ -120,10 +122,8 @@ export default function Sidebar() {
     }
   }, [reclamationsCount]);
 
-  // ✅ MODIFICATION : Le compteur doit se recharger depuis le backend, pas juste se mettre à 0
   const handleAdminReclamationsClick = useCallback(() => {
     // Ne pas mettre à 0 immédiatement, laisser le chargement se faire
-    // Le rechargement se fera via l'événement 'reclamations-admin-updated'
   }, []);
 
   useEffect(() => {
