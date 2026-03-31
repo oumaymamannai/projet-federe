@@ -8,7 +8,11 @@ router.use(verifyToken, requireRole("admin"));
 router.get("/dashboard", ctrl.getDashboard);
 router.get("/soutenances", ctrl.getSoutenances);
 router.post("/soutenances", ctrl.creerSoutenance);
-router.get("/jury", ctrl.getJuryMembers);
+router.get("/jury/members", ctrl.getJuryMembers);
+// ========== GESTION DES MEMBRES DU JURY ==========       // GET /api/admin/jury/members
+router.post("/jury/contact", ctrl.sendEmailToMember);       // POST /api/admin/jury/contact
+router.post("/jury/contact-all", ctrl.sendEmailToAllJury);  // POST /api/admin/jury/contact-all
+
 router.post("/jury/:soutenance_id", ctrl.affecterJury);
 router.post("/periode", ctrl.setPeriode);
 router.get('/periode', ctrl.getPeriode);
@@ -37,5 +41,7 @@ router.get("/salles-disponibles", ctrl.getSallesDisponibles);
 
 // Pour la suppression d'un document
 router.delete("/documents/:id", ctrl.deleteDocument);
+
+
 module.exports = router;
 

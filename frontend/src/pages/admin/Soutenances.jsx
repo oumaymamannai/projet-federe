@@ -10,10 +10,19 @@ export default function AdminSoutenances() {
   const [assignForm, setAssignForm] = useState({ encadreur_id: "", president_id: "", membre3_id: "" });
   const [msg, setMsg] = useState("");
 
-  const load = () => Promise.all([api.get("/admin/soutenances"), api.get("/admin/jury")])
-    .then(([s, j]) => { setSoutenances(s.data); setJurys(j.data); }).finally(() => setLoading(false));
+  const load = () => Promise.all([api.get("/admin/soutenances"), api.get("/admin/jury/members")])
+    .then(([s, j]) => { 
+      console.log("Soutenances chargées:", s.data.length);
+      console.log("Jurys chargés:", j.data.length);
+      setSoutenances(s.data); 
+      setJurys(j.data); 
+    })
+    .catch(err => console.error("Erreur chargement:", err))
+    .finally(() => setLoading(false));
+    
   useEffect(() => { load(); }, []);
 
+  // Fonction corrigée pour affecter le jury
   const handleAssign = async () => {
     // Vérifier que les 3 sont différents
     if (assignForm.encadreur_id && assignForm.president_id && assignForm.membre3_id) {
@@ -26,54 +35,62 @@ export default function AdminSoutenances() {
     }
     
     try {
-      // Envoyer uniquement président et 3ème membre — l'encadreur est figé côté serveur
-      await api.post("/admin/jury/" + assignModal.id, {
+      // CORRECTION: Utiliser la bonne route pour compléter le jury
+      await api.post("/admin/soutenances/completer-jury", {
+        soutenance_id: assignModal.id,
         president_id: assignForm.president_id,
         membre3_id: assignForm.membre3_id
       });
-      setMsg("✅ Jury affecté !"); 
+      setMsg("✅ Jury affecté avec succès !"); 
       setAssignModal(null); 
-      load();
+      load(); // Recharger la liste
     } catch (err) { 
-      setMsg(err.response?.data?.message || "Erreur"); 
+      console.error("Erreur lors de l'affectation:", err.response?.data);
+      setMsg(err.response?.data?.message || "Erreur lors de l'affectation du jury"); 
     }
   };
-// Filtrer les jurys pour éviter les doublons
-const getFilteredJurys = (role) => {
-  const selectedValues = {
-    encadreur: parseInt(assignForm.encadreur_id) || null,
-    president: parseInt(assignForm.president_id) || null,
-    membre3: parseInt(assignForm.membre3_id) || null
+
+  // Filtrer les jurys pour éviter les doublons
+  const getFilteredJurys = (role) => {
+    const selectedValues = {
+      encadreur: parseInt(assignForm.encadreur_id) || null,
+      president: parseInt(assignForm.president_id) || null,
+      membre3: parseInt(assignForm.membre3_id) || null
+    };
+    const encadreurId = parseInt(assignForm.encadreur_id) || (assignModal?.encadreur_id ? parseInt(assignModal.encadreur_id) : null);
+
+    return jurys.filter(j => {
+      // 1. Exclure l'admin (GradFlow Admin a généralement id=1)
+      if (j.id === 1) return false;
+      // 2. Exclure l'encadreur figé
+      if (encadreurId && j.id === encadreurId) return false;
+
+      if (role === 'encadreur') {
+        return j.id !== selectedValues.president && j.id !== selectedValues.membre3;
+      }
+      if (role === 'president') {
+        return j.id !== encadreurId && j.id !== selectedValues.membre3;
+      }
+      if (role === 'membre3') {
+        return j.id !== encadreurId && j.id !== selectedValues.president;
+      }
+      return true;
+    });
   };
-  const encadreurId = parseInt(assignForm.encadreur_id) || (assignModal?.encadreur_id ? parseInt(assignModal.encadreur_id) : null);
 
-  return jurys.filter(j => {
-    // 1. Exclure l'admin (GradFlow Admin a généralement id=1)
-    if (j.id === 1) return false;
-    // 2. Exclure l'encadreur figé
-    if (encadreurId && j.id === encadreurId) return false;
-
-    if (role === 'encadreur') {
-      return j.id !== selectedValues.president && j.id !== selectedValues.membre3;
-    }
-    if (role === 'president') {
-      return j.id !== encadreurId && j.id !== selectedValues.membre3;
-    }
-    if (role === 'membre3') {
-      return j.id !== encadreurId && j.id !== selectedValues.president;
-    }
-    return true;
-  });
-};
   const handleSendResult = async (id) => {
-    try { await api.post("/admin/resultat/" + id + "/envoyer"); alert("Email envoyé !"); }
-    catch { alert("Erreur lors de l'envoi"); }
+    try { 
+      await api.post("/admin/resultat/" + id + "/envoyer"); 
+      alert("Email envoyé avec succès !"); 
+    } catch (err) { 
+      console.error("Erreur envoi email:", err);
+      alert("Erreur lors de l'envoi de l'email"); 
+    }
   };
 
   const hasStageDossier = (s) =>
     s.has_stage_dossier === true || s.has_stage_dossier === 1 || s.has_stage_dossier === "1";
 
-  /** Jury : interdit si en attente ; si planifiée, seulement si dossier de stage déposé ; interdit si terminée. */
   const canAssignJury = (s) => {
     if (s.statut === "terminee") return false;
     if (s.statut === "en_attente") return false;
@@ -99,25 +116,53 @@ const getFilteredJurys = (role) => {
 
   return (
     <div>
-      <div className="page-header"><div><h1>🎓 Soutenances</h1><p>Gestion des soutenances et affectation des jurys</p></div></div>
+      <div className="page-header">
+        <div>
+          <h1>🎓 Soutenances</h1>
+          <p>Gestion des soutenances et affectation des jurys</p>
+        </div>
+      </div>
       <div className="page-content">
         {msg && <div className="alert alert-success">✅ {msg}</div>}
         <div className="card">
           <div className="table-wrap">
             <table>
-              <thead><tr><th>Étudiant</th><th>Sujet</th><th>Date</th><th>Salle</th><th>Statut</th><th>Note</th><th>Jury</th><th>Actions</th></tr></thead>
+              <thead>
+                <tr>
+                  <th>Étudiant</th>
+                  <th>Sujet</th>
+                  <th>Date</th>
+                  <th>Salle</th>
+                  <th>Statut</th>
+                  <th>Note</th>
+                  <th>Jury</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
               <tbody>
                 {soutenances.map(s => (
                   <tr key={s.id}>
-                    <td><strong>{s.etudiant_nom}</strong><br /><small style={{color:"#9ca3af"}}>{s.etudiant_email}</small></td>
-                    <td style={{ maxWidth: 180 }}>{s.sujet}</td>
-                    <td>{s.date_soutenance ? new Date(s.date_soutenance).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—"}</td>
+                    <td>
+                      <strong>{s.etudiant_nom}</strong>
+                      <br /><small style={{color:"#9ca3af"}}>{s.etudiant_email}</small>
+                    </td>
+                    <td style={{ maxWidth: 180 }}>{s.sujet || "—"}</td>
+                    <td>
+                      {s.date_soutenance ? new Date(s.date_soutenance).toLocaleString("fr-FR", { 
+                        day: "2-digit", 
+                        month: "2-digit", 
+                        hour: "2-digit", 
+                        minute: "2-digit" 
+                      }) : "—"}
+                    </td>
                     <td>{s.salle || "—"}</td>
                     <td>{statusBadge(s.statut)}</td>
                     <td><strong>{s.note_finale != null ? s.note_finale + "/20" : "—"}</strong></td>
                     <td>
                       {s.jurys?.length > 0 ? s.jurys.map((j, i) => (
-                        <div key={i} style={{ fontSize: 12 }}>{j.nom} <span style={{color:"#9ca3af"}}>({j.role})</span></div>
+                        <div key={i} style={{ fontSize: 12 }}>
+                          {j.nom} <span style={{color:"#9ca3af"}}>({j.role})</span>
+                        </div>
                       )) : <span style={{color:"#9ca3af"}}>Non assigné</span>}
                     </td>
                     <td>
@@ -138,7 +183,10 @@ const getFilteredJurys = (role) => {
                           <Users size={12} /> Jury
                         </button>
                         {s.statut === "terminee" && (
-                          <button className="btn btn-sm" style={{ background: "#10b981", color: "white" }} onClick={() => handleSendResult(s.id)}>
+                          <button 
+                            className="btn btn-sm" 
+                            style={{ background: "#10b981", color: "white" }} 
+                            onClick={() => handleSendResult(s.id)}>
                             <Send size={12} /> Email
                           </button>
                         )}
@@ -146,6 +194,13 @@ const getFilteredJurys = (role) => {
                     </td>
                   </tr>
                 ))}
+                {soutenances.length === 0 && (
+                  <tr>
+                    <td colSpan={8} style={{ textAlign: "center", padding: "40px", color: "#9ca3af" }}>
+                      Aucune soutenance trouvée
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -153,62 +208,62 @@ const getFilteredJurys = (role) => {
       </div>
 
       {assignModal && (
-  <div className="modal-overlay">
-    <div className="modal">
-      <h3>👥 Affecter le jury</h3>
-      <p className="sub">Soutenance de {assignModal.etudiant_nom} — {assignModal.sujet}</p>
-      
-      {/* Encadreur (figé — extrait de la soumission) */}
-      <div className="form-group">
-        <label className="form-label">Encadreur</label>
-        <input
-          className="form-control"
-          value={(() => {
-            const e = assignModal.jurys?.find(j => j.role === 'encadreur')
-            return e ? e.nom : (assignModal.encadreur || '— Aucun encadreur')
-          })()}
-          readOnly
-          disabled
-        />
-      </div>
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>👥 Affecter le jury</h3>
+            <p className="sub">Soutenance de {assignModal.etudiant_nom} — {assignModal.sujet || "Sujet non défini"}</p>
+            
+            {/* Encadreur (figé) */}
+            <div className="form-group">
+              <label className="form-label">Encadreur</label>
+              <input
+                className="form-control"
+                value={(() => {
+                  const e = assignModal.jurys?.find(j => j.role === 'encadreur')
+                  return e ? e.nom : (assignModal.encadreur || '— Aucun encadreur')
+                })()}
+                readOnly
+                disabled
+              />
+            </div>
 
-      {/* Président */}
-      <div className="form-group">
-        <label className="form-label">Président</label>
-        <select 
-          className="form-control" 
-          value={assignForm.president_id} 
-          onChange={e => setAssignForm({...assignForm, president_id: e.target.value})}
-        >
-          <option value="">— Choisir —</option>
-          {getFilteredJurys('president').map(j => (
-            <option key={j.id} value={j.id}>{j.prenom} {j.nom}</option>
-          ))}
-        </select>
-      </div>
+            {/* Président */}
+            <div className="form-group">
+              <label className="form-label">Président</label>
+              <select 
+                className="form-control" 
+                value={assignForm.president_id} 
+                onChange={e => setAssignForm({...assignForm, president_id: e.target.value})}
+              >
+                <option value="">— Choisir —</option>
+                {getFilteredJurys('president').map(j => (
+                  <option key={j.id} value={j.id}>{j.prenom} {j.nom}</option>
+                ))}
+              </select>
+            </div>
 
-      {/* 3ème Membre */}
-      <div className="form-group">
-        <label className="form-label">3ème Membre</label>
-        <select 
-          className="form-control" 
-          value={assignForm.membre3_id} 
-          onChange={e => setAssignForm({...assignForm, membre3_id: e.target.value})}
-        >
-          <option value="">— Choisir —</option>
-          {getFilteredJurys('membre3').map(j => (
-            <option key={j.id} value={j.id}>{j.prenom} {j.nom}</option>
-          ))}
-        </select>
-      </div>
+            {/* 3ème Membre */}
+            <div className="form-group">
+              <label className="form-label">3ème Membre</label>
+              <select 
+                className="form-control" 
+                value={assignForm.membre3_id} 
+                onChange={e => setAssignForm({...assignForm, membre3_id: e.target.value})}
+              >
+                <option value="">— Choisir —</option>
+                {getFilteredJurys('membre3').map(j => (
+                  <option key={j.id} value={j.id}>{j.prenom} {j.nom}</option>
+                ))}
+              </select>
+            </div>
 
-      <div className="modal-actions">
-        <button className="btn btn-outline" onClick={() => setAssignModal(null)}>Annuler</button>
-        <button className="btn btn-primary" onClick={handleAssign}>Confirmer</button>
-      </div>
-    </div>
-  </div>
-)}
+            <div className="modal-actions">
+              <button className="btn btn-outline" onClick={() => setAssignModal(null)}>Annuler</button>
+              <button className="btn btn-primary" onClick={handleAssign}>Confirmer</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
