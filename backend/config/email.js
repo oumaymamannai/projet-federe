@@ -74,4 +74,7 @@ const sendReclamationReponse = async (to, etudiant, reclamation) => {
 };
 module.exports = { sendResultatEmail, sendReclamationReponse };
 */
-module.exports = { sendResultatEmail};
+module.exports = { 
+  sendResultatEmail,
+  transporter  // Ajoutez cette ligne
+};

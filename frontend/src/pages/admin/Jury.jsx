@@ -11,7 +11,8 @@ function Modal({ member, onClose }) {
     if (!subject.trim() || !message.trim()) return;
     setSending(true);
     try {
-      await api.post("/admin/jury/contact", {
+      // MODIFICATION ICI : /admin/jury/contact -> /jury/contact
+      await api.post("/jury/contact", {
         memberId: member.id,
         subject,
         message
@@ -192,7 +193,8 @@ export default function JuryPage() {
   useEffect(() => {
     const loadJuryMembers = async () => {
       try {
-        const response = await api.get("/admin/jury");
+        // MODIFICATION ICI : /admin/jury -> /jury/members
+        const response = await api.get("/jury/members");
         const members = response.data.map((member, index) => ({
           id: member.id,
           nom: member.nom,
@@ -218,9 +220,9 @@ export default function JuryPage() {
     if (!allSubject.trim() || !allMessage.trim()) return;
     setAllSending(true);
     try {
-      // Envoyer à chaque membre individuellement
+      // MODIFICATION ICI : /admin/jury/contact -> /jury/contact
       const promises = juryMembers.map(member => 
-        api.post("/admin/jury/contact", {
+        api.post("/jury/contact", {
           memberId: member.id,
           subject: allSubject,
           message: allMessage
@@ -338,7 +340,7 @@ export default function JuryPage() {
                   whiteSpace: "nowrap"
                 }}>{h}</th>
               ))}
-             </tr>
+              </tr>
           </thead>
           <tbody>
             {filtered.map((member, i) => (
@@ -420,7 +422,7 @@ export default function JuryPage() {
         <Modal member={selected} onClose={() => setSelected(null)} />
       )}
 
-      {/* Contact All Modal - Pour tous les membres AVEC GESTION DES ÉTATS */}
+      {/* Contact All Modal - Pour tous les membres */}
       {selected?.isAll && (
         <div
           style={{

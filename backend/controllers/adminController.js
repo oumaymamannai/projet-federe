@@ -785,3 +785,163 @@ exports.deleteDocument = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+// ==================== GESTION DES EMAILS DU JURY ====================
+
+// Récupérer tous les membres du jury (version améliorée pour le front)
+exports.getAllJuryMembers = async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT id, nom, prenom, email
+      FROM users
+      WHERE role = 'jury' OR (role = 'admin' AND email != 'admin@gradflow.dz')
+      ORDER BY nom, prenom
+    `);
+    res.json(rows);
+  } catch (err) {
+    console.error("ERREUR getAllJuryMembers:", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Envoyer un email à un membre du jury
+exports.sendEmailToMember = async (req, res) => {
+  const { memberId, subject, message } = req.body;
+  
+  try {
+    // Validation
+    if (!memberId || !subject || !message) {
+      return res.status(400).json({ 
+        message: 'Tous les champs sont requis: memberId, subject, message' 
+      });
+    }
+
+    // Récupérer les infos du membre
+    const [rows] = await db.query(`
+      SELECT id, nom, prenom, email 
+      FROM users 
+      WHERE id = ? AND (role = 'jury' OR role = 'admin')
+    `, [memberId]);
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'Membre du jury non trouvé' });
+    }
+    
+    const member = rows[0];
+    
+    // Importer le transporteur d'email
+    const { transporter } = require('../config/email');
+    
+    // Envoyer l'email
+    await transporter.sendMail({
+      from: process.env.EMAIL_FROM,
+      to: member.email,
+      subject: subject,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #4c3db5, #6b5ce7); padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+            <h1 style="color: white; margin: 0;">🎓 GradFlow</h1>
+            <p style="color: rgba(255,255,255,0.9); margin: 5px 0 0;">Soutenances académiques</p>
+          </div>
+          <div style="padding: 30px; background: #fff; border: 1px solid #ede9fe; border-top: none; border-radius: 0 0 8px 8px;">
+            <p style="font-size: 16px; color: #333;">Bonjour <strong>${member.prenom} ${member.nom}</strong>,</p>
+            <div style="margin: 20px 0; padding: 15px; background: #f8f7ff; border-left: 4px solid #6b5ce7; border-radius: 4px;">
+              <p style="margin: 0; white-space: pre-wrap;">${message.replace(/\n/g, '<br>')}</p>
+            </div>
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+            <p style="color: #6b7280; font-size: 12px; text-align: center;">
+              Cet email a été envoyé automatiquement par GradFlow.<br>
+              Merci de ne pas y répondre directement.
+            </p>
+          </div>
+        </div>
+      `,
+      text: `Bonjour ${member.prenom} ${member.nom},\n\n${message}\n\n---\nCet email a été envoyé automatiquement par GradFlow.`
+    });
+    
+    console.log(`✅ Email envoyé à ${member.email}`);
+    res.json({ 
+      success: true, 
+      message: 'Email envoyé avec succès' 
+    });
+    
+  } catch (err) {
+    console.error('❌ Erreur lors de l\'envoi de l\'email:', err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Envoyer un email à tous les membres du jury
+exports.sendEmailToAllJury = async (req, res) => {
+  const { subject, message } = req.body;
+  
+  try {
+    // Validation
+    if (!subject || !message) {
+      return res.status(400).json({ 
+        message: 'Tous les champs sont requis: subject, message' 
+      });
+    }
+
+    // Récupérer tous les membres du jury
+    const [members] = await db.query(`
+      SELECT id, nom, prenom, email 
+      FROM users 
+      WHERE role = 'jury' OR (role = 'admin' AND email != 'admin@gradflow.dz')
+    `);
+    
+    if (members.length === 0) {
+      return res.status(404).json({ message: 'Aucun membre du jury trouvé' });
+    }
+    
+    const { transporter } = require('../config/email');
+    const results = [];
+    
+    // Envoyer les emails à tous
+    for (const member of members) {
+      try {
+        await transporter.sendMail({
+          from: process.env.EMAIL_FROM,
+          to: member.email,
+          subject: subject,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <div style="background: linear-gradient(135deg, #4c3db5, #6b5ce7); padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+                <h1 style="color: white; margin: 0;">🎓 GradFlow</h1>
+                <p style="color: rgba(255,255,255,0.9); margin: 5px 0 0;">Soutenances académiques</p>
+              </div>
+              <div style="padding: 30px; background: #fff; border: 1px solid #ede9fe; border-top: none; border-radius: 0 0 8px 8px;">
+                <p style="font-size: 16px; color: #333;">Bonjour <strong>${member.prenom} ${member.nom}</strong>,</p>
+                <div style="margin: 20px 0; padding: 15px; background: #f8f7ff; border-left: 4px solid #6b5ce7; border-radius: 4px;">
+                  <p style="margin: 0; white-space: pre-wrap;">${message.replace(/\n/g, '<br>')}</p>
+                </div>
+                <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+                <p style="color: #6b7280; font-size: 12px; text-align: center;">
+                  Cet email a été envoyé automatiquement par GradFlow.<br>
+                  Merci de ne pas y répondre directement.
+                </p>
+              </div>
+            </div>
+          `,
+          text: `Bonjour ${member.prenom} ${member.nom},\n\n${message}\n\n---\nCet email a été envoyé automatiquement par GradFlow.`
+        });
+        results.push({ email: member.email, status: 'success' });
+        console.log(`✅ Email envoyé à ${member.email}`);
+      } catch (error) {
+        results.push({ email: member.email, status: 'failed', error: error.message });
+        console.error(`❌ Erreur envoi à ${member.email}:`, error);
+      }
+    }
+    
+    const successCount = results.filter(r => r.status === 'success').length;
+    
+    res.json({ 
+      success: true, 
+      message: `Emails envoyés à ${successCount} membres sur ${members.length}`,
+      results: results
+    });
+    
+  } catch (err) {
+    console.error('❌ Erreur lors de l\'envoi des emails groupés:', err);
+    res.status(500).json({ message: err.message });
+  }
+};
