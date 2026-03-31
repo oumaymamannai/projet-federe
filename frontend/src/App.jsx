@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import LoginPage from "./pages/LoginPage";
 import Sidebar from "./components/Sidebar";
+import { Toaster } from 'react-hot-toast'; // 👈 AJOUTEZ CETTE LIGNE
 
 // Student pages
 import StudentDashboard from "./pages/student/Dashboard";
@@ -55,11 +56,11 @@ function AppRoutes() {
       <Route path="/admin/jury" element={<ProtectedRoute roles={["admin"]}><AdminJury /></ProtectedRoute>} />
       <Route path="/admin/reclamations" element={<ProtectedRoute roles={["admin"]}><AdminReclamations /></ProtectedRoute>} />
       <Route path="/admin/documents" element={<ProtectedRoute roles={["admin"]}><AdminDocuments /></ProtectedRoute>} />
-      <Route path="/admin/submissions" element={ // NOUVELLE ROUTE
-            <ProtectedRoute allowedRoles={['admin']}>
-              <AdminSubmissions />
-            </ProtectedRoute>
-          } />
+      <Route path="/admin/submissions" element={
+        <ProtectedRoute roles={["admin"]}>
+          <AdminSubmissions />
+        </ProtectedRoute>
+      } />
     </Routes>
   );
 }
@@ -68,6 +69,30 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <Toaster 
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: '#363636',
+              color: '#fff',
+            },
+            success: {
+              duration: 3000,
+              style: {
+                background: '#10b981',
+                color: '#fff',
+              },
+            },
+            error: {
+              duration: 4000,
+              style: {
+                background: '#ef4444',
+                color: '#fff',
+              },
+            },
+          }}
+        />
         <AppRoutes />
       </AuthProvider>
     </BrowserRouter>
