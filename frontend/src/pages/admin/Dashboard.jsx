@@ -1,15 +1,12 @@
 import { useState, useEffect } from "react";
 import api from "../../services/api";
+import PlanificationWizard from './PlanificationWizard';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
 export default function AdminDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState({ date_debut: "", date_fin: "" });
-  const [periodMsg, setPeriodMsg] = useState("");
-  const [autoMsg, setAutoMsg] = useState("");
   const [visibleSegments, setVisibleSegments] = useState(0);
-  const [showPeriodForm, setShowPeriodForm] = useState(false);
 
   useEffect(() => {
     api.get("/admin/dashboard").then(r => setData(r.data)).finally(() => setLoading(false));
@@ -22,22 +19,6 @@ export default function AdminDashboard() {
     return () => clearInterval(timer);
   }, []);
 
-  const handlePeriod = async (e) => {
-    e.preventDefault();
-    try {
-      await api.post("/admin/periode", period);
-      setPeriodMsg("Période définie !");
-    } catch {}
-  };
-
-  const handleAutoAffect = async () => {
-    try {
-      const r = await api.post("/admin/affecter-dates");
-      setAutoMsg(r.data.message);
-      const d = await api.get("/admin/dashboard");
-      setData(d.data);
-    } catch (err) { setAutoMsg(err.response?.data?.message || "Erreur"); }
-  };
 
   if (loading) return <div className="spinner" />;
 
@@ -70,37 +51,13 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      <div className="page-header">
+      <div className="page-header" style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
         <div><h1>📊 Tableau de bord</h1><p>Vue d'ensemble de la plateforme GradFlow</p></div>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          <button className="btn btn-primary" onClick={() => setShowPeriodForm(!showPeriodForm)}>
-            📆 Définir la période de soutenances
-          </button>
-          <button className="btn btn-primary" onClick={handleAutoAffect}>
-            🗓️ Affecter les dates automatiquement
-          </button>
-        </div>
+        <PlanificationWizard onDone={() => api.get("/admin/dashboard").then(r => setData(r.data)).catch(() => {})} />
       </div>
-      {showPeriodForm && (
-        <div className="card" style={{ marginBottom: 24 }}>
-          {periodMsg && <div className="alert alert-success">✅ {periodMsg}</div>}
-          <form onSubmit={handlePeriod} style={{ display: "flex", gap: 16, alignItems: "flex-end" }}>
-            <div className="form-group" style={{ marginBottom: 0, flex: 1 }}>
-              <label className="form-label">Date début</label>
-              <input type="date" className="form-control" value={period.date_debut} onChange={e => setPeriod({...period, date_debut: e.target.value})} required />
-            </div>
-            <div className="form-group" style={{ marginBottom: 0, flex: 1 }}>
-              <label className="form-label">Date fin</label>
-              <input type="date" className="form-control" value={period.date_fin} onChange={e => setPeriod({...period, date_fin: e.target.value})} required />
-            </div>
-            <button type="submit" className="btn btn-primary">Définir</button>
-          </form>
-        </div>
-      )}
       <div className="page-content">
-        {autoMsg && <div className="alert alert-success">✅ {autoMsg}</div>}
-        <div className="alert alert-warning" style={{ marginBottom: 24 }}>
-          💡 Utilisez le bouton <strong>"Affecter les dates automatiquement"</strong> pour générer des dates de soutenance aléatoires pour tous les étudiants sans date planifiée.
+        <div className="alert alert-info" style={{ marginBottom: 24 }}>
+          💡 Appuyez sur "Commencer" pour ouvrir le wizard, définir la période de soutenances, puis affecter automatiquement les dates.
         </div>
         <div className="stats-grid" style={{ marginBottom: 24 }}>
           {stats.map((s, i) => (

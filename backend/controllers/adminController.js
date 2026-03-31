@@ -17,7 +17,6 @@ async function syncSoutenanceStatuts() {
   `);
 }
 
-/** Règles : pas de jury si en_attente ; si planifiee, au moins une soumission stage pour l'étudiant. */
 async function assertJuryAssignmentAllowed(soutenance_id) {
   const [rows] = await db.query(
     `SELECT s.statut,
@@ -130,7 +129,6 @@ exports.getSoutenances = async (req, res) => {
     const [rows] = await db.query(`
       SELECT s.*, CONCAT(u.prenom,' ',u.nom) as etudiant_nom, u.email as etudiant_email,
         (SELECT COUNT(*) FROM stage_soumissions ss WHERE ss.etudiant_id = s.etudiant_id) > 0 AS has_stage_dossier,
-        -- include jury id and name so frontend can identify encadreur by id
         GROUP_CONCAT(DISTINCT CONCAT(uj.id, '::', uj.prenom, ' ', uj.nom, '|', sj.role) ORDER BY sj.role SEPARATOR ';;') as jury_info
       FROM soutenances s
       JOIN users u ON u.id = s.etudiant_id
@@ -179,8 +177,6 @@ exports.affecterJury = async (req, res) => {
     if (!check.ok) {
       return res.status(check.status).json({ message: check.message });
     }
-    // If encadreur_id is provided, replace whole jury (including encadreur).
-    // If not provided, keep existing encadreur and only (re)assign president and 3eme_membre.
     if (encadreur_id) {
       await db.query("DELETE FROM soutenance_jury WHERE soutenance_id = ?", [soutenance_id]);
     } else {
@@ -205,8 +201,7 @@ exports.affecterJury = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-// À AJOUTER à la fin de adminController.js
-// Pour quand un étudiant n'a pas d'encadreur (via réclamation)
+
 exports.traiterReclamationAvecJury = async (req, res) => {
   const {
     reclamation_id,
@@ -219,20 +214,17 @@ exports.traiterReclamationAvecJury = async (req, res) => {
   } = req.body;
 
   try {
-    // 1. Marquer la réclamation comme traitée
     await db.query(
       'UPDATE reclamations SET statut = "traitee", reponse = ?, reponse_at = NOW() WHERE id = ?',
       [reponse, reclamation_id]
     );
 
-    // 2. Créer la soutenance
     const [result] = await db.query(
       'INSERT INTO soutenances (etudiant_id, sujet, encadreur_id, encadreur_fige, statut) VALUES (?, ?, ?, false, "planifiee")',
       [etudiant_id, sujet, encadreur_id]
     );
     const soutenance_id = result.insertId;
 
-    // 3. Ajouter tous les membres du jury
     await db.query(
       'INSERT INTO soutenance_jury (soutenance_id, jury_id, role) VALUES (?, ?, "encadreur")',
       [soutenance_id, encadreur_id]
@@ -252,7 +244,6 @@ exports.traiterReclamationAvecJury = async (req, res) => {
   }
 };
 
-// Pour quand un étudiant a déjà un encadreur (figé)
 exports.completerJury = async (req, res) => {
   const { soutenance_id, president_id, membre3_id } = req.body;
 
@@ -261,7 +252,6 @@ exports.completerJury = async (req, res) => {
     if (!check.ok) {
       return res.status(check.status).json({ message: check.message });
     }
-    // Vérifier que l'encadreur est bien figé
     const [soutenance] = await db.query(
       "SELECT encadreur_fige FROM soutenances WHERE id = ?",
       [soutenance_id]
@@ -271,7 +261,6 @@ exports.completerJury = async (req, res) => {
       return res.status(400).json({ message: "L'encadreur n'est pas figé" });
     }
 
-    // Ajouter président et 3ème membre
     if (president_id) {
       await db.query(
         'INSERT INTO soutenance_jury (soutenance_id, jury_id, role) VALUES (?, ?, "president")',
@@ -290,7 +279,7 @@ exports.completerJury = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-// 3. Obtenir la liste des soutenances à compléter
+
 exports.getSoutenancesACompleter = async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -312,6 +301,7 @@ exports.getSoutenancesACompleter = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
 exports.setPeriode = async (req, res) => {
   const { date_debut, date_fin, salles } = req.body;
   try {
@@ -328,6 +318,22 @@ exports.setPeriode = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+exports.getPeriode = async (req, res) => {
+  try {
+    const [[periode]] = await db.query(
+      "SELECT * FROM periode_soutenances ORDER BY id DESC LIMIT 1"
+    );
+    if (!periode) return res.json(null);
+    const salles = typeof periode.salles === "string"
+      ? JSON.parse(periode.salles)
+      : periode.salles;
+    res.json({ ...periode, salles });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 exports.affecterDatesAuto = async (req, res) => {
   try {
     const [[periode]] = await db.query(
@@ -340,8 +346,7 @@ exports.affecterDatesAuto = async (req, res) => {
     const heures = ["08:30", "10:00", "11:30", "14:00"];
     const startDate = new Date(periode.date_debut);
     const endDate = new Date(periode.date_fin);
-    
-    // MODIFICATION ICI : Récupérer les étudiants avec soutenance en attente OU sans soutenance
+
     const [students] = await db.query(`
       SELECT u.id as etudiant_id, s.id as soutenance_id
       FROM users u
@@ -361,31 +366,28 @@ exports.affecterDatesAuto = async (req, res) => {
     let studentIndex = 0;
     let current = new Date(startDate);
     let salleRotationIndex = 0;
-    
+
     while (studentIndex < students.length && current <= endDate) {
-      // Exclure les weekends
       if (current.getDay() === 0 || current.getDay() === 6) {
         current.setDate(current.getDate() + 1);
         continue;
       }
-      
+
       const year = current.getFullYear();
       const month = String(current.getMonth() + 1).padStart(2, '0');
       const day = String(current.getDate()).padStart(2, '0');
       const dateStr = `${year}-${month}-${day}`;
-      
-      // Récupérer les soutenances déjà existantes pour ce jour
+
       const [existingForDay] = await db.query(
         `SELECT date_soutenance, salle FROM soutenances 
          WHERE DATE(date_soutenance) = ? 
          AND statut != 'annulee'`,
         [dateStr]
       );
-      
-      // Créneaux déjà utilisés
+
       const existingTimes = new Set();
       const existingSallesByTime = {};
-      
+
       existingForDay.forEach(s => {
         let timeStr;
         if (s.date_soutenance instanceof Date) {
@@ -395,36 +397,34 @@ exports.affecterDatesAuto = async (req, res) => {
         } else {
           timeStr = s.date_soutenance.split(' ')[1]?.substring(0, 5) || s.date_soutenance.substring(11, 16);
         }
-        
+
         existingTimes.add(timeStr);
         if (!existingSallesByTime[timeStr]) {
           existingSallesByTime[timeStr] = [];
         }
         existingSallesByTime[timeStr].push(s.salle);
       });
-      
-      // Si tous les 4 créneaux sont déjà pris, passer au jour suivant
+
       if (existingTimes.size >= heures.length) {
         current.setDate(current.getDate() + 1);
         continue;
       }
-      
-      // Parcourir les créneaux horaires du jour
+
       for (let heureIndex = 0; heureIndex < heures.length; heureIndex++) {
         if (studentIndex >= students.length) break;
-        
+
         const heure = heures[heureIndex];
         const timeSlot = heure;
-        
+
         if (existingTimes.has(timeSlot)) {
           continue;
         }
-        
+
         const dateTimeStr = `${dateStr} ${heure}:00`;
-        
+
         let salleDisponible = null;
         const sallesOccupees = existingSallesByTime[timeSlot] || [];
-        
+
         for (let i = 0; i < salles.length; i++) {
           const salleIndex = (salleRotationIndex + i) % salles.length;
           const salle = salles[salleIndex];
@@ -434,36 +434,33 @@ exports.affecterDatesAuto = async (req, res) => {
             break;
           }
         }
-        
+
         if (!salleDisponible) {
           continue;
         }
-        
+
         const st = students[studentIndex];
-        
-        // MODIFICATION ICI : UPDATE si la soutenance existe déjà, INSERT sinon
+
         if (st.soutenance_id) {
-          // Mettre à jour la soutenance existante
           await db.query(
             'UPDATE soutenances SET date_soutenance=?, salle=?, statut="planifiee" WHERE id=?',
             [dateTimeStr, salleDisponible, st.soutenance_id]
           );
         } else {
-          // Créer une nouvelle soutenance
           await db.query(
             'INSERT INTO soutenances (etudiant_id, sujet, date_soutenance, salle, statut) VALUES (?, "", ?, ?, "planifiee")',
             [st.etudiant_id, dateTimeStr, salleDisponible]
           );
         }
-        
+
         affectedCount++;
         studentIndex++;
       }
-      
+
       current.setDate(current.getDate() + 1);
     }
-    
-    res.json({ 
+
+    res.json({
       message: `${affectedCount} étudiants affectés`,
       details: {
         etudiants_affectes: affectedCount,
@@ -476,6 +473,7 @@ exports.affecterDatesAuto = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
 exports.getReclamations = async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -636,7 +634,7 @@ exports.getEtudiants = async (req, res) => {
 };
 
 exports.creerSoutenance = async (req, res) => {
-  const { etudiant_id } = req.body; // ← PLUS de sujet !
+  const { etudiant_id } = req.body;
   try {
     await db.query(
       "INSERT INTO soutenances (etudiant_id, sujet, statut) VALUES (?, '', 'en_attente')",
@@ -647,7 +645,7 @@ exports.creerSoutenance = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-// Nouvelle fonction : Valider une soumission et ajouter le sujet à la soutenance et lencadreur
+
 exports.validerSoumission = async (req, res) => {
   const { soumission_id } = req.params;
 
@@ -659,13 +657,11 @@ exports.validerSoumission = async (req, res) => {
 
     const soumission = soumissions[0];
 
-    // 1. Mettre à jour la soutenance avec le sujet
     await db.query("UPDATE soutenances SET sujet = ? WHERE etudiant_id = ?", [
       soumission.sujet,
       soumission.etudiant_id,
     ]);
 
-    // 2. Récupérer l'ID de la soutenance
     const [sout] = await db.query(
       "SELECT id FROM soutenances WHERE etudiant_id = ?",
       [soumission.etudiant_id]
@@ -676,15 +672,12 @@ exports.validerSoumission = async (req, res) => {
     if (sout.length > 0) {
       const soutenance_id = sout[0].id;
 
-      // 3. Vérifier si l'encadreur a été renseigné (non vide)
       if (soumission.encadreur && soumission.encadreur.trim() !== "") {
-        // Chercher l'encadreur dans la table users
         const [encadreur] = await db.query(
           'SELECT id FROM users WHERE CONCAT(prenom, " ", nom) = ? OR CONCAT(nom, " ", prenom) = ?',
           [soumission.encadreur, soumission.encadreur]
         );
 
-        // 4. Si l'encadreur n'existe pas, le créer
         if (encadreur.length === 0) {
           const [prenom, ...nomParts] = soumission.encadreur.split(" ");
           const nom = nomParts.join(" ") || prenom;
@@ -703,7 +696,6 @@ exports.validerSoumission = async (req, res) => {
           encadreur_id = encadreur[0].id;
         }
 
-        // 5. Ajouter l'encadreur au jury
         if (encadreur_id) {
           await db.query(
             'INSERT INTO soutenance_jury (soutenance_id, jury_id, role) VALUES (?, ?, "encadreur")',
@@ -716,21 +708,18 @@ exports.validerSoumission = async (req, res) => {
           );
         }
       } else {
-        // L'étudiant n'a pas renseigné d'encadreur
         console.log(`Soumission ${soumission_id} : aucun encadreur renseigné`);
-        // encadreur_fige reste FALSE, l'encadreur pourra être ajouté plus tard
       }
     }
 
-    // 6. Marquer la soumission comme traitée
     await db.query(
       'UPDATE stage_soumissions SET statut = "traite" WHERE id = ?',
       [soumission_id]
     );
 
-    res.json({ 
-      message: encadreur_id 
-        ? "Soumission validée avec encadreur" 
+    res.json({
+      message: encadreur_id
+        ? "Soumission validée avec encadreur"
         : "Soumission validée (aucun encadreur spécifié - à compléter ultérieurement)"
     });
   } catch (err) {
