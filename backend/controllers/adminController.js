@@ -786,23 +786,6 @@ exports.deleteDocument = async (req, res) => {
   }
 };
 // ==================== GESTION DES EMAILS DU JURY ====================
-
-// Récupérer tous les membres du jury (version améliorée pour le front)
-exports.getAllJuryMembers = async (req, res) => {
-  try {
-    const [rows] = await db.query(`
-      SELECT id, nom, prenom, email
-      FROM users
-      WHERE role = 'jury' OR (role = 'admin' AND email != 'admin@gradflow.dz')
-      ORDER BY nom, prenom
-    `);
-    res.json(rows);
-  } catch (err) {
-    console.error("ERREUR getAllJuryMembers:", err);
-    res.status(500).json({ message: err.message });
-  }
-};
-
 // Envoyer un email à un membre du jury
 exports.sendEmailToMember = async (req, res) => {
   const { memberId, subject, message } = req.body;

@@ -11,8 +11,8 @@ function Modal({ member, onClose }) {
     if (!subject.trim() || !message.trim()) return;
     setSending(true);
     try {
-      // MODIFICATION ICI : /admin/jury/contact -> /jury/contact
-      await api.post("/jury/contact", {
+      // CORRECTION: Utiliser la bonne route avec /admin/
+      await api.post("/admin/jury/contact", {
         memberId: member.id,
         subject,
         message
@@ -21,6 +21,7 @@ function Modal({ member, onClose }) {
       setSent(true);
     } catch (error) {
       console.error("Erreur lors de l'envoi:", error);
+      alert("Erreur lors de l'envoi du message");
     } finally {
       setSending(false);
     }
@@ -180,7 +181,6 @@ export default function JuryPage() {
   const [hovered, setHovered] = useState(null);
   const [search, setSearch] = useState("");
   
-  // États pour le modal "Contacter tous"
   const [allSubject, setAllSubject] = useState("");
   const [allMessage, setAllMessage] = useState("");
   const [allSent, setAllSent] = useState(false);
@@ -193,8 +193,8 @@ export default function JuryPage() {
   useEffect(() => {
     const loadJuryMembers = async () => {
       try {
-        // MODIFICATION ICI : /admin/jury -> /jury/members
-        const response = await api.get("/jury/members");
+        const response = await api.get("/admin/jury/members");
+        console.log("Membres jury reçus:", response.data);
         const members = response.data.map((member, index) => ({
           id: member.id,
           nom: member.nom,
@@ -215,24 +215,22 @@ export default function JuryPage() {
     loadJuryMembers();
   }, []);
 
-  // Fonction pour envoyer à tous
+  // CORRECTION: Fonction pour envoyer à tous
   const handleSendToAll = async () => {
     if (!allSubject.trim() || !allMessage.trim()) return;
     setAllSending(true);
     try {
-      // MODIFICATION ICI : /admin/jury/contact -> /jury/contact
-      const promises = juryMembers.map(member => 
-        api.post("/jury/contact", {
-          memberId: member.id,
-          subject: allSubject,
-          message: allMessage
-        })
-      );
-      await Promise.all(promises);
+      // CORRECTION: Utiliser la bonne route avec /admin/
+      const response = await api.post("/admin/jury/contact-all", {
+        subject: allSubject,
+        message: allMessage
+      });
+      console.log("Envoi groupé réussi:", response.data);
       await new Promise((r) => setTimeout(r, 500));
       setAllSent(true);
     } catch (error) {
       console.error("Erreur lors de l'envoi à tous:", error);
+      alert("Erreur lors de l'envoi des messages");
     } finally {
       setAllSending(false);
     }
@@ -262,7 +260,6 @@ export default function JuryPage() {
       width: "100%",
       boxSizing: "border-box"
     }}>
-      {/* Page header */}
       <div style={{ marginBottom: 28, display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 26, fontWeight: 700, color: "#1a1a2e", display: "flex", alignItems: "center", gap: 10 }}>
@@ -280,7 +277,6 @@ export default function JuryPage() {
         </div>
       </div>
 
-      {/* Search & toolbar */}
       <div style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
         <div style={{ flex: 1, minWidth: 200, position: "relative" }}>
           <span style={{
@@ -313,7 +309,6 @@ export default function JuryPage() {
         </button>
       </div>
 
-      {/* Table */}
       <div style={{ 
         background: "#fff", 
         borderRadius: 14, 
@@ -340,7 +335,7 @@ export default function JuryPage() {
                   whiteSpace: "nowrap"
                 }}>{h}</th>
               ))}
-              </tr>
+            </tr>
           </thead>
           <tbody>
             {filtered.map((member, i) => (
@@ -417,12 +412,10 @@ export default function JuryPage() {
         {filtered.length} membre{filtered.length > 1 ? "s" : ""} affiché{filtered.length > 1 ? "s" : ""}
       </div>
 
-      {/* Contact Modal - Pour un seul membre */}
       {selected && !selected.isAll && (
         <Modal member={selected} onClose={() => setSelected(null)} />
       )}
 
-      {/* Contact All Modal - Pour tous les membres */}
       {selected?.isAll && (
         <div
           style={{
