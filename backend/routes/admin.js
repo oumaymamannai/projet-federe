@@ -33,4 +33,7 @@ router.get("/soutenances/a-completer", ctrl.getSoutenancesACompleter);
 router.post("/soumissions/:soumission_id/valider", ctrl.validerSoumission);
 router.get("/salles-disponibles", ctrl.getSallesDisponibles);
 
+// Pour la suppression d'un document
+router.delete("/documents/:id", ctrl.deleteDocument);
 module.exports = router;
+
