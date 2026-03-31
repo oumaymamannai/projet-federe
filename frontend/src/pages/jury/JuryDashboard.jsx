@@ -7,18 +7,32 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
-  TrendingUp,
   Users,
-  FileText,
-  ChevronRight,
   Award,
-  Zap,
   BarChart2,
   Star,
+  ChevronRight,
 } from 'lucide-react';
 
-/* ─── Animated counter hook ─── */
-function useCountUp(target, duration = 900) {
+/* ─── Animated progress bar ─── */
+function ProgressBar({ value, color = '#7c3aed', height = 8, delay = 0 }) {
+  const [width, setWidth] = useState(0);
+  useEffect(() => {
+    const t = setTimeout(() => setWidth(value), 120 + delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return (
+    <div style={{ height, background: '#f0edf8', borderRadius: 99, overflow: 'hidden' }}>
+      <div style={{
+        height: '100%', width: `${width}%`, background: color,
+        borderRadius: 99, transition: 'width 1s cubic-bezier(0.4,0,0.2,1)',
+      }} />
+    </div>
+  );
+}
+
+/* ─── Animated counter ─── */
+function useCountUp(target, duration = 800) {
   const [val, setVal] = useState(0);
   const started = useRef(false);
   useEffect(() => {
@@ -36,49 +50,32 @@ function useCountUp(target, duration = 900) {
   return val;
 }
 
-/* ─── Animated progress bar ─── */
-function ProgressBar({ value, color = '#7c3aed', height = 8, delay = 0 }) {
-  const [width, setWidth] = useState(0);
-  useEffect(() => {
-    const t = setTimeout(() => setWidth(value), 100 + delay);
-    return () => clearTimeout(t);
-  }, [value, delay]);
-  return (
-    <div style={{
-      height, background: '#f0edf8', borderRadius: 99, overflow: 'hidden'
-    }}>
-      <div style={{
-        height: '100%', width: `${width}%`, background: color,
-        borderRadius: 99, transition: 'width 1s cubic-bezier(0.4,0,0.2,1)',
-      }} />
-    </div>
-  );
-}
-
 /* ─── Stat card ─── */
-function StatCard({ icon: Icon, value, label, color, sub, delay = 0 }) {
-  const animated = useCountUp(value, 900);
+function StatCard({ icon: Icon, value, label, color, badge, delay = 0 }) {
+  const animated = useCountUp(value, 800);
   return (
     <div className="stat-card" style={{
-      '--card-accent': color,
-      animation: `fadeSlideUp 0.5s ease both`,
+      transition: 'all 0.2s',
+      animation: 'fadeSlideUp 0.4s ease both',
       animationDelay: `${delay}ms`,
     }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
         <div style={{
           width: 44, height: 44, borderRadius: 12,
-          background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: `${color}18`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           <Icon size={20} color={color} strokeWidth={2} />
         </div>
-        {sub !== undefined && (
+        {badge && (
           <span style={{
-            fontSize: 11, fontWeight: 600, color, background: `${color}15`,
+            fontSize: 11, fontWeight: 700,
+            background: badge.bg, color: badge.color,
             padding: '2px 8px', borderRadius: 99,
-          }}>{sub}</span>
+          }}>{badge.label}</span>
         )}
       </div>
-      <div style={{ fontSize: 30, fontWeight: 800, color, lineHeight: 1.1, marginBottom: 4 }}>
+      <div style={{ fontSize: 32, fontWeight: 800, color, lineHeight: 1, marginBottom: 5 }}>
         {animated}
       </div>
       <div style={{ fontSize: 13, color: '#6b7280', fontWeight: 500 }}>{label}</div>
@@ -88,16 +85,22 @@ function StatCard({ icon: Icon, value, label, color, sub, delay = 0 }) {
 
 /* ─── Timeline item ─── */
 function TimelineItem({ soutenance, index }) {
-  const date = new Date(soutenance.date_soutenance);
+  const date    = new Date(soutenance.date_soutenance);
   const isToday = date.toDateString() === new Date().toDateString();
-  const isSoon = (date - new Date()) < 1000 * 60 * 60 * 24 * 2;
+  const isSoon  = !isToday && (date - new Date()) < 1000 * 60 * 60 * 48;
+  const deja_note = soutenance.ma_note !== null && soutenance.ma_note !== undefined;
+
+  /* Sujet vide ou valeur brute d'1 caractère → fallback lisible en italique gris */
+  const sujet = soutenance.sujet && soutenance.sujet.trim().length > 1
+    ? soutenance.sujet
+    : null;
 
   return (
     <div style={{
       display: 'flex', gap: 14, padding: '12px 0',
       borderBottom: '1px solid #f0edf8',
-      animation: `fadeSlideUp 0.4s ease both`,
-      animationDelay: `${index * 60}ms`,
+      animation: 'fadeSlideUp 0.4s ease both',
+      animationDelay: `${index * 55}ms`,
     }}>
       {/* Date badge */}
       <div style={{
@@ -112,48 +115,57 @@ function TimelineItem({ soutenance, index }) {
           {date.toLocaleDateString('fr-FR', { month: 'short' })}
         </div>
       </div>
+
       {/* Info */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3, flexWrap: 'wrap' }}>
           <span style={{ fontWeight: 700, fontSize: 14, color: '#1a1033' }}>
             {soutenance.prenom} {soutenance.nom}
           </span>
           {isToday && (
-            <span style={{
-              fontSize: 10, fontWeight: 700, background: '#fef3c7', color: '#d97706',
-              padding: '1px 6px', borderRadius: 99,
-            }}>Aujourd'hui</span>
+            <span style={{ fontSize: 10, fontWeight: 700, background: '#fef3c7', color: '#d97706', padding: '1px 6px', borderRadius: 99 }}>
+              Aujourd'hui
+            </span>
           )}
-          {isSoon && !isToday && (
-            <span style={{
-              fontSize: 10, fontWeight: 700, background: '#fee2e2', color: '#dc2626',
-              padding: '1px 6px', borderRadius: 99,
-            }}>Bientôt</span>
+          {isSoon && (
+            <span style={{ fontSize: 10, fontWeight: 700, background: '#fee2e2', color: '#dc2626', padding: '1px 6px', borderRadius: 99 }}>
+              Bientôt
+            </span>
           )}
         </div>
-        <div style={{ fontSize: 12, color: '#6b7280', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {soutenance.sujet || 'Sujet non défini'}
+
+        {/* Sujet : fallback explicite si vide */}
+        <div style={{
+          fontSize: 12,
+          color: sujet ? '#6b7280' : '#d1d5db',
+          fontStyle: sujet ? 'normal' : 'italic',
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+        }}>
+          {sujet ?? 'Sujet non renseigné'}
         </div>
-        <div style={{ fontSize: 11, color: '#9d5eff', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+
+        <div style={{ fontSize: 11, color: '#9d5eff', marginTop: 3, display: 'flex', alignItems: 'center', gap: 4 }}>
           <Clock size={11} />
           {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
           {soutenance.salle && ` · Salle ${soutenance.salle}`}
         </div>
       </div>
-      {/* Action */}
+
+      {/* Bouton action */}
       <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
         <Link
-          to={`/jury/evaluations`}
+          to="/jury"
           style={{
-            display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px',
-            background: soutenance.ma_note !== null ? '#f0fdf4' : '#f5f3ff',
-            color: soutenance.ma_note !== null ? '#10b981' : '#7c3aed',
-            borderRadius: 8, fontSize: 12, fontWeight: 600,
-            border: `1px solid ${soutenance.ma_note !== null ? '#d1fae5' : '#e8e0ff'}`,
-            textDecoration: 'none', transition: 'all 0.15s',
+            display: 'flex', alignItems: 'center', gap: 4,
+            padding: '6px 12px', borderRadius: 8,
+            fontSize: 12, fontWeight: 600, textDecoration: 'none',
+            transition: 'all 0.15s',
+            background: deja_note ? '#f0fdf4' : '#f5f3ff',
+            color:      deja_note ? '#10b981' : '#7c3aed',
+            border: `1px solid ${deja_note ? '#d1fae5' : '#e8e0ff'}`,
           }}
         >
-          {soutenance.ma_note !== null
+          {deja_note
             ? <><CheckCircle size={13} /> Noté</>
             : <><Star size={13} /> Évaluer</>
           }
@@ -163,63 +175,59 @@ function TimelineItem({ soutenance, index }) {
   );
 }
 
-/* ─── Main dashboard ─── */
+/* ══════════════════════════════════════════
+   Dashboard principal
+══════════════════════════════════════════ */
 export default function JuryDashboard() {
   const { user } = useAuth();
-  const [stats, setStats] = useState(null);
+  const [stats, setStats]                             = useState(null);
   const [soutenancesRecentes, setSoutenancesRecentes] = useState([]);
-  const [urgentes, setUrgentes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [greeting, setGreeting] = useState('');
+  const [urgentes, setUrgentes]                       = useState([]);
+  const [loading, setLoading]                         = useState(true);
+  const [error, setError]                             = useState('');
+  const [greeting, setGreeting]                       = useState('');
 
   useEffect(() => {
     const h = new Date().getHours();
-    if (h < 12) setGreeting('Bonjour');
-    else if (h < 18) setGreeting('Bon après-midi');
-    else setGreeting('Bonsoir');
+    setGreeting(h < 12 ? 'Bonjour' : h < 18 ? 'Bon après-midi' : 'Bonsoir');
     loadDashboardData();
   }, []);
 
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/jury/soutenances');
+      const res         = await api.get('/jury/soutenances');
       const soutenances = res.data;
-      const now = new Date();
-      const aujourd_hui = now.toDateString();
+      const now         = new Date();
 
-      const totalAssignees = soutenances.length;
-      const evaluees = soutenances.filter(s => s.ma_note !== null && s.ma_note !== undefined).length;
-      const enAttenteNote = soutenances.filter(s => s.statut === 'planifiee' && (!s.ma_note || s.ma_note === null)).length;
-      const aVenir = soutenances.filter(s => new Date(s.date_soutenance) > now && !s.ma_note).length;
-      const aujourdhuiCount = soutenances.filter(s => new Date(s.date_soutenance).toDateString() === aujourd_hui).length;
-      const avecRemarques = soutenances.filter(s => s.mes_remarques && s.mes_remarques.trim() !== '').length;
-      const notesMoyenne = evaluees > 0
-        ? (soutenances.filter(s => s.ma_note).reduce((acc, s) => acc + parseFloat(s.ma_note), 0) / evaluees).toFixed(1)
-        : null;
+      const totalAssignees  = soutenances.length;
+      const evaluees        = soutenances.filter(s => s.ma_note !== null && s.ma_note !== undefined).length;
+      const enAttenteNote   = soutenances.filter(s => !s.ma_note).length;
+      const aujourdhuiCount = soutenances.filter(
+        s => new Date(s.date_soutenance).toDateString() === now.toDateString()
+      ).length;
 
       setStats({
-        totalAssignees, evaluees, enAttenteNote, aVenir,
-        aujourdhuiCount, avecRemarques, notesMoyenne,
+        totalAssignees, evaluees, enAttenteNote, aujourdhuiCount,
         tauxEvaluation: totalAssignees > 0 ? Math.round((evaluees / totalAssignees) * 100) : 0,
-        tauxRemarques: totalAssignees > 0 ? Math.round((avecRemarques / totalAssignees) * 100) : 0,
       });
 
-      const prochaines = soutenances
-        .filter(s => s.date_soutenance && new Date(s.date_soutenance) >= now)
-        .sort((a, b) => new Date(a.date_soutenance) - new Date(b.date_soutenance))
-        .slice(0, 6);
-      setSoutenancesRecentes(prochaines);
+      /* 3 prochaines uniquement — règle mémoire court terme (7±2) */
+      setSoutenancesRecentes(
+        soutenances
+          .filter(s => s.date_soutenance && new Date(s.date_soutenance) >= now)
+          .sort((a, b) => new Date(a.date_soutenance) - new Date(b.date_soutenance))
+          .slice(0, 3)
+      );
 
-      // Soutenances urgentes = dans les 48h sans note
-      const urg = soutenances.filter(s => {
-        const d = new Date(s.date_soutenance);
-        return d > now && (d - now) < 1000 * 60 * 60 * 48 && !s.ma_note;
-      });
-      setUrgentes(urg);
-
-    } catch (err) {
+      /* Urgentes : < 48 h, sans note */
+      setUrgentes(
+        soutenances.filter(s => {
+          const d = new Date(s.date_soutenance);
+          return d > now && (d - now) < 1000 * 60 * 60 * 48 && !s.ma_note;
+        })
+      );
+    } catch {
       setError('Erreur lors du chargement des données');
     } finally {
       setLoading(false);
@@ -234,26 +242,30 @@ export default function JuryDashboard() {
   );
   if (error) return <div className="alert alert-danger">{error}</div>;
 
-  const pct = stats?.tauxEvaluation ?? 0;
+  const pct     = stats?.tauxEvaluation ?? 0;
+  const termine = pct === 100;
 
   return (
     <>
       <style>{`
         @keyframes fadeSlideUp {
-          from { opacity: 0; transform: translateY(14px); }
+          from { opacity: 0; transform: translateY(12px); }
           to   { opacity: 1; transform: translateY(0); }
         }
-        .dash-stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(124,58,237,0.12) !important; }
-        .action-btn:hover { filter: brightness(0.93); transform: translateY(-1px); }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(124,58,237,0.10) !important; }
         .section-card { animation: fadeSlideUp 0.5s ease both; }
       `}</style>
 
       <div>
-        {/* ── Header ── */}
+        {/* ══ Header ══ */}
         <div className="page-header" style={{ paddingBottom: 24 }}>
           <div>
             <h1 style={{ fontSize: 24, fontWeight: 800, color: '#1a1033', display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(135deg,#7c3aed,#9d5eff)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: 12,
+                background: 'linear-gradient(135deg,#7c3aed,#9d5eff)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
                 <Award size={20} color="white" />
               </div>
               {greeting}, {user?.prenom} 👋
@@ -262,203 +274,116 @@ export default function JuryDashboard() {
               {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
             </p>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Link to="/jury" className="btn btn-outline" style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Calendar size={15} /> Planning
-            </Link>
-            {stats?.enAttenteNote > 0 && (
-              <Link to="/jury/evaluations" className="btn btn-primary" style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Zap size={15} /> Évaluer ({stats.enAttenteNote})
-              </Link>
-            )}
-          </div>
         </div>
 
         <div className="page-content" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-          {/* ── Alerte urgence ── */}
+          {/* ══ Alerte urgence ══ */}
           {urgentes.length > 0 && (
             <div style={{
-              background: 'linear-gradient(135deg,#fff7ed,#fef3c7)', border: '1px solid #fde68a',
-              borderRadius: 14, padding: '14px 18px', display: 'flex', alignItems: 'center',
-              gap: 12, animation: 'fadeSlideUp 0.35s ease both',
+              background: '#fffbeb', border: '1px solid #fde68a',
+              borderRadius: 14, padding: '14px 18px',
+              display: 'flex', alignItems: 'center', gap: 12,
+              animation: 'fadeSlideUp 0.3s ease both',
             }}>
-              <AlertCircle size={20} color="#d97706" />
+              <AlertCircle size={20} color="#d97706" style={{ flexShrink: 0 }} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 700, fontSize: 14, color: '#92400e' }}>
-                  {urgentes.length} soutenance{urgentes.length > 1 ? 's' : ''} dans les 48h sans évaluation
+                  {urgentes.length} soutenance{urgentes.length > 1 ? 's' : ''} dans les 48 h sans évaluation
                 </div>
                 <div style={{ fontSize: 12, color: '#b45309', marginTop: 2 }}>
                   {urgentes.map(u => `${u.prenom} ${u.nom}`).join(' · ')}
                 </div>
               </div>
-              <Link to="/jury/evaluations" style={{
+              <Link to="/jury" style={{
                 fontSize: 12, fontWeight: 700, color: '#d97706',
                 background: 'white', border: '1px solid #fde68a',
-                padding: '6px 12px', borderRadius: 8, textDecoration: 'none', whiteSpace: 'nowrap',
+                padding: '6px 14px', borderRadius: 8,
+                textDecoration: 'none', whiteSpace: 'nowrap',
               }}>
                 Évaluer maintenant →
               </Link>
             </div>
           )}
 
-          {/* ── Stat cards ── */}
-          <div className="stats-grid">
-            <div className="stat-card dash-stat-card" style={{ transition: 'all 0.2s', animation: 'fadeSlideUp 0.4s ease both', animationDelay: '0ms' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: '#ede9fe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Users size={20} color="#7c3aed" />
-                </div>
-              </div>
-              <div style={{ fontSize: 30, fontWeight: 800, color: '#7c3aed', lineHeight: 1.1, marginBottom: 4 }}>{stats?.totalAssignees}</div>
-              <div style={{ fontSize: 13, color: '#6b7280', fontWeight: 500 }}>Soutenances assignées</div>
-            </div>
-
-            <div className="stat-card dash-stat-card" style={{ transition: 'all 0.2s', animation: 'fadeSlideUp 0.4s ease both', animationDelay: '60ms' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: '#d1fae5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <CheckCircle size={20} color="#10b981" />
-                </div>
-                <span style={{ fontSize: 11, fontWeight: 700, background: '#d1fae5', color: '#10b981', padding: '2px 8px', borderRadius: 99 }}>
-                  {stats?.tauxEvaluation}%
-                </span>
-              </div>
-              <div style={{ fontSize: 30, fontWeight: 800, color: '#10b981', lineHeight: 1.1, marginBottom: 4 }}>{stats?.evaluees}</div>
-              <div style={{ fontSize: 13, color: '#6b7280', fontWeight: 500 }}>Évaluations terminées</div>
-            </div>
-
-            <div className="stat-card dash-stat-card" style={{ transition: 'all 0.2s', animation: 'fadeSlideUp 0.4s ease both', animationDelay: '120ms' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Clock size={20} color="#f59e0b" />
-                </div>
-              </div>
-              <div style={{ fontSize: 30, fontWeight: 800, color: '#f59e0b', lineHeight: 1.1, marginBottom: 4 }}>{stats?.enAttenteNote}</div>
-              <div style={{ fontSize: 13, color: '#6b7280', fontWeight: 500 }}>En attente de note</div>
-            </div>
-
-            <div className="stat-card dash-stat-card" style={{ transition: 'all 0.2s', animation: 'fadeSlideUp 0.4s ease both', animationDelay: '180ms' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Calendar size={20} color="#3b82f6" />
-                </div>
-                {stats?.aujourdhuiCount > 0 && (
-                  <span style={{ fontSize: 11, fontWeight: 700, background: '#fee2e2', color: '#dc2626', padding: '2px 8px', borderRadius: 99 }}>
-                    Aujourd'hui
-                  </span>
-                )}
-              </div>
-              <div style={{ fontSize: 30, fontWeight: 800, color: '#3b82f6', lineHeight: 1.1, marginBottom: 4 }}>{stats?.aVenir}</div>
-              <div style={{ fontSize: 13, color: '#6b7280', fontWeight: 500 }}>À venir</div>
-            </div>
-
-            <div className="stat-card dash-stat-card" style={{ transition: 'all 0.2s', animation: 'fadeSlideUp 0.4s ease both', animationDelay: '240ms' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: '#ede9fe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <FileText size={20} color="#8b5cf6" />
-                </div>
-              </div>
-              <div style={{ fontSize: 30, fontWeight: 800, color: '#8b5cf6', lineHeight: 1.1, marginBottom: 4 }}>{stats?.avecRemarques}</div>
-              <div style={{ fontSize: 13, color: '#6b7280', fontWeight: 500 }}>Avec remarques</div>
-            </div>
-
-            <div className="stat-card dash-stat-card" style={{ transition: 'all 0.2s', animation: 'fadeSlideUp 0.4s ease both', animationDelay: '300ms' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: '#d1fae5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <TrendingUp size={20} color="#10b981" />
-                </div>
-              </div>
-              <div style={{ fontSize: 30, fontWeight: 800, color: '#10b981', lineHeight: 1.1, marginBottom: 4 }}>
-                {stats?.notesMoyenne ?? '—'}
-              </div>
-              <div style={{ fontSize: 13, color: '#6b7280', fontWeight: 500 }}>Note moyenne /20</div>
-            </div>
+          {/* ══ 3 stat cards ══
+              Assignées · Évaluées · En attente
+              "À venir" et "Avec remarques" supprimés : redondants ou non actionnables.
+              "Aujourd'hui" intégré comme badge sur la carte "En attente".          */}
+          <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+            <StatCard
+              icon={Users}
+              value={stats?.totalAssignees ?? 0}
+              label="Soutenances assignées"
+              color="#7c3aed"
+              delay={0}
+            />
+            <StatCard
+              icon={CheckCircle}
+              value={stats?.evaluees ?? 0}
+              label="Évaluations terminées"
+              color="#10b981"
+              badge={{ label: `${pct} %`, bg: '#d1fae5', color: '#059669' }}
+              delay={60}
+            />
+            <StatCard
+              icon={Clock}
+              value={stats?.enAttenteNote ?? 0}
+              label="En attente de note"
+              color={stats?.enAttenteNote > 0 ? '#f59e0b' : '#9ca3af'}
+              badge={
+                stats?.enAttenteNote > 0 && stats?.aujourdhuiCount > 0
+                  ? { label: `${stats.aujourdhuiCount} aujourd'hui`, bg: '#fee2e2', color: '#dc2626' }
+                  : undefined
+              }
+              delay={120}
+            />
           </div>
 
-          {/* ── Barres de progression ── */}
-          <div className="card section-card" style={{ animationDelay: '200ms' }}>
+          {/* ══ 1 seule barre de progression ══
+              Les 4 barres secondaires ont été supprimées car :
+              - "En attente" pleine à 100 % = barre pleine = signal de succès
+                dans toute convention UX, mais ici c'est l'inverse voulu.
+              - Redondance directe avec les 3 stat cards ci-dessus.          */}
+          <div className="card section-card" style={{ animationDelay: '180ms' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div className="icon-squircle"><BarChart2 size={18} /></div>
                 <div>
                   <div style={{ fontWeight: 700, fontSize: 15, color: '#1a1033' }}>Avancement des évaluations</div>
-                  <div style={{ fontSize: 12, color: '#9ca3af' }}>Vue d'ensemble de votre progression</div>
+                  <div style={{ fontSize: 12, color: '#9ca3af' }}>
+                    {stats?.evaluees} évaluation{stats?.evaluees !== 1 ? 's' : ''} complétée{stats?.evaluees !== 1 ? 's' : ''} sur {stats?.totalAssignees}
+                  </div>
                 </div>
               </div>
+              <div style={{ fontSize: 30, fontWeight: 800, color: termine ? '#10b981' : '#7c3aed' }}>
+                {pct} %
+              </div>
+            </div>
+
+            <ProgressBar value={pct} color={termine ? '#10b981' : '#7c3aed'} height={12} />
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
+              <span style={{ fontSize: 12, color: '#10b981', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <CheckCircle size={13} />
+                {stats?.evaluees} évaluée{stats?.evaluees !== 1 ? 's' : ''}
+              </span>
+              {stats?.enAttenteNote > 0 && (
+                <span style={{ fontSize: 12, color: '#f59e0b', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Clock size={13} />
+                  {stats.enAttenteNote} en attente
+                </span>
+              )}
+            </div>
+
+            {/* Félicitations */}
+            {termine && (
               <div style={{
-                fontSize: 28, fontWeight: 800, color: pct === 100 ? '#10b981' : '#7c3aed',
-              }}>
-                {pct}%
-              </div>
-            </div>
-
-            {/* Barre principale */}
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span style={{ fontSize: 13, color: '#374151', fontWeight: 600 }}>Évaluations complétées</span>
-                <span style={{ fontSize: 13, color: '#6b7280' }}>{stats?.evaluees} / {stats?.totalAssignees}</span>
-              </div>
-              <ProgressBar
-                value={pct}
-                color={pct === 100 ? '#10b981' : 'linear-gradient(90deg,#7c3aed,#9d5eff)'}
-                height={10}
-              />
-            </div>
-
-            {/* Barres secondaires */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px 24px' }}>
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <span style={{ fontSize: 12, color: '#6b7280' }}>En attente de note</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#f59e0b' }}>{stats?.enAttenteNote}</span>
-                </div>
-                <ProgressBar
-                  value={stats?.totalAssignees > 0 ? Math.round((stats.enAttenteNote / stats.totalAssignees) * 100) : 0}
-                  color="#f59e0b" height={6} delay={100}
-                />
-              </div>
-
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <span style={{ fontSize: 12, color: '#6b7280' }}>Soutenances à venir</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#3b82f6' }}>{stats?.aVenir}</span>
-                </div>
-                <ProgressBar
-                  value={stats?.totalAssignees > 0 ? Math.round((stats.aVenir / stats.totalAssignees) * 100) : 0}
-                  color="#3b82f6" height={6} delay={200}
-                />
-              </div>
-
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <span style={{ fontSize: 12, color: '#6b7280' }}>Avec remarques</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#8b5cf6' }}>{stats?.avecRemarques}</span>
-                </div>
-                <ProgressBar
-                  value={stats?.tauxRemarques}
-                  color="#8b5cf6" height={6} delay={300}
-                />
-              </div>
-
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <span style={{ fontSize: 12, color: '#6b7280' }}>Aujourd'hui</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#10b981' }}>{stats?.aujourdhuiCount}</span>
-                </div>
-                <ProgressBar
-                  value={stats?.totalAssignees > 0 ? Math.round((stats.aujourdhuiCount / stats.totalAssignees) * 100) : 0}
-                  color="#10b981" height={6} delay={400}
-                />
-              </div>
-            </div>
-
-            {/* Badge de félicitation */}
-            {pct === 100 && (
-              <div style={{
-                marginTop: 16, padding: '10px 14px', background: 'linear-gradient(135deg,#d1fae5,#a7f3d0)',
+                marginTop: 16, padding: '10px 14px',
+                background: '#f0fdf4', border: '1px solid #d1fae5',
                 borderRadius: 10, display: 'flex', alignItems: 'center', gap: 10,
               }}>
-                <span style={{ fontSize: 20 }}>🎉</span>
+                <span style={{ fontSize: 18 }}>🎉</span>
                 <div>
                   <div style={{ fontWeight: 700, fontSize: 13, color: '#065f46' }}>Toutes les évaluations sont terminées !</div>
                   <div style={{ fontSize: 12, color: '#047857' }}>Excellent travail, vous êtes à jour.</div>
@@ -467,27 +392,29 @@ export default function JuryDashboard() {
             )}
           </div>
 
-          {/* ── Prochaines soutenances ── */}
-          <div className="card section-card" style={{ animationDelay: '280ms' }}>
+          {/* ══ Prochaines soutenances — 3 max ══
+              Réduit de 6 à 3 : au-delà, l'utilisateur consulte la page Planning.
+              Sujet vide remplacé par "Sujet non renseigné" (italique gris clair). */}
+          <div className="card section-card" style={{ animationDelay: '260ms' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div className="icon-squircle"><Calendar size={18} /></div>
                 <div>
                   <div style={{ fontWeight: 700, fontSize: 15, color: '#1a1033' }}>Prochaines soutenances</div>
-                  <div style={{ fontSize: 12, color: '#9ca3af' }}>Vos 6 prochaines évaluations</div>
+                  <div style={{ fontSize: 12, color: '#9ca3af' }}>Les 3 prochaines à évaluer</div>
                 </div>
               </div>
               <Link to="/jury" style={{
                 fontSize: 12, fontWeight: 600, color: '#7c3aed',
                 display: 'flex', alignItems: 'center', gap: 4, textDecoration: 'none',
               }}>
-                Voir tout <ChevronRight size={14} />
+                Voir le planning <ChevronRight size={14} />
               </Link>
             </div>
 
             {soutenancesRecentes.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '32px 0', color: '#9ca3af' }}>
-                <Calendar size={36} style={{ opacity: 0.3, marginBottom: 8 }} />
+                <Calendar size={36} style={{ opacity: 0.25, display: 'block', margin: '0 auto 10px' }} />
                 <div style={{ fontSize: 14 }}>Aucune soutenance à venir</div>
               </div>
             ) : (
@@ -495,35 +422,6 @@ export default function JuryDashboard() {
                 <TimelineItem key={s.id} soutenance={s} index={i} />
               ))
             )}
-          </div>
-
-          {/* ── Actions rapides ── */}
-          <div className="card section-card" style={{ animationDelay: '360ms' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-              <div className="icon-squircle"><Zap size={18} /></div>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 15, color: '#1a1033' }}>Actions rapides</div>
-                <div style={{ fontSize: 12, color: '#9ca3af' }}>Accès direct aux fonctions essentielles</div>
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              <Link to="/jury" className="btn btn-outline action-btn" style={{ transition: 'all 0.15s', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Calendar size={15} /> Mon planning
-              </Link>
-              <Link to="/jury/evaluations" className="btn btn-outline action-btn" style={{ transition: 'all 0.15s', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <FileText size={15} /> Toutes les évaluations
-              </Link>
-              {stats?.aujourdhuiCount > 0 && (
-                <Link to="/jury/evaluations" className="btn btn-primary action-btn" style={{ transition: 'all 0.15s', fontSize: 13, background: '#10b981', border: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <CheckCircle size={15} /> Évaluations du jour ({stats.aujourdhuiCount})
-                </Link>
-              )}
-              {stats?.enAttenteNote > 0 && (
-                <Link to="/jury/evaluations" className="btn btn-primary action-btn" style={{ transition: 'all 0.15s', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Clock size={15} /> En attente ({stats.enAttenteNote})
-                </Link>
-              )}
-            </div>
           </div>
 
         </div>

@@ -11,7 +11,6 @@ import {
   LogOut, 
   ClipboardList,
   CheckCircle,
-  BarChart3
 } from 'lucide-react';
 
 const studentNav = [
@@ -21,10 +20,10 @@ const studentNav = [
   { to: '/student/reclamations', icon: <Bell size={18} />, label: 'Réclamations' },
 ];
 
+// ✅ Menu jury : Dashboard + Planning (Évaluations supprimé car redondant)
 const juryNav = [
-  { to: '/jury/dashboard', icon: <LayoutDashboard size={18} />, label: 'Dashboard' },  // ← NOUVEAU
+  { to: '/jury/dashboard', icon: <LayoutDashboard size={18} />, label: 'Dashboard' },
   { to: '/jury', icon: <Calendar size={18} />, label: 'Planning' },
-  { to: '/jury/evaluations', icon: <BarChart3 size={18} />, label: 'Évaluations' },   // ← NOUVEAU
 ];
 
 const adminNav = [
