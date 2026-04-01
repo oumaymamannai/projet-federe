@@ -389,12 +389,15 @@ export default function AdminReclamations() {
                 onChange={(e) => setSelectedEncadreur(e.target.value)}
               >
                 <option value="">— Choisir —</option>
-                {encadreurs.map(e => (
-                  <option key={e.id} value={e.id}>
-                    {e.prenom} {e.nom} ({e.email})
-                  </option>
-                ))}
+                {encadreurs
+                  .filter(e => e.id !== Number(encadreurModal?.president_id) && e.id !== Number(encadreurModal?.membre3_id))
+                  .map(e => (
+                    <option key={e.id} value={e.id}>
+                      {e.prenom} {e.nom} ({e.email})
+                    </option>
+                  ))}
               </select>
+
             </div>
 
             <div className="modal-actions">

@@ -12,6 +12,7 @@ export default function PlanificationWizard({ onDone }) {
   const [periode, setPeriode] = useState(null)    // période existante chargée depuis le backend
   const [loading, setLoading] = useState(false)
   const [affectLoading, setAffectLoading] = useState(false)
+  const [affectDone, setAffectDone] = useState(false)
   const [msg, setMsg] = useState(null) // { type: 'success'|'error', text }
   const [affectResult, setAffectResult] = useState(null)
 
@@ -26,9 +27,17 @@ export default function PlanificationWizard({ onDone }) {
     if (!open) return
     setMsg(null)
     setAffectResult(null)
+    setAffectDone(false)
     setStep(1)
     fetchPeriode()
   }, [open])
+
+  // Supprimer les messages d'erreur/success quand on passe à l'étape 2
+  useEffect(() => {
+    if (step === 2) {
+      setMsg(null)
+    }
+  }, [step])
 
   async function fetchPeriode() {
     try {
@@ -50,22 +59,24 @@ export default function PlanificationWizard({ onDone }) {
     }
   }
 
+  const today = new Date().toISOString().slice(0, 10)
+
   async function handleDefinir() {
     if (!form.date_debut || !form.date_fin) {
       setMsg({ type: 'error', text: 'Veuillez renseigner les deux dates.' })
       return
     }
 
-    const today = new Date()
-    today.setHours(0, 0, 0, 0) // Remettre à minuit pour comparaison
+    const todayDate = new Date()
+    todayDate.setHours(0, 0, 0, 0) // Remettre à minuit pour comparaison
     const debutDate = new Date(form.date_debut)
     const finDate = new Date(form.date_fin)
 
-    if (debutDate < today) {
+    if (debutDate < todayDate) {
       setMsg({ type: 'error', text: 'La date de début ne peut pas être dans le passé.' })
       return
     }
-    if (finDate < today) {
+    if (finDate < todayDate) {
       setMsg({ type: 'error', text: 'La date de fin ne peut pas être dans le passé.' })
       return
     }
@@ -93,6 +104,7 @@ export default function PlanificationWizard({ onDone }) {
 
   async function handleAffecter() {
     setAffectLoading(true)
+    setAffectDone(false)
     setMsg(null)
     setAffectResult(null)
     try {
@@ -100,6 +112,7 @@ export default function PlanificationWizard({ onDone }) {
       const d = res?.data
       setAffectResult(d)
       setMsg({ type: 'success', text: d?.message || 'Dates affectées avec succès.' })
+      setAffectDone(true)
       if (onDone) onDone()
     } catch (err) {
       setMsg({ type: 'error', text: err?.response?.data?.message || "Erreur lors de l'affectation des dates." })
@@ -163,6 +176,8 @@ export default function PlanificationWizard({ onDone }) {
         salles: periode.salles || ['Salle A101', 'Salle B203', 'Amphi 1'],
       })
     }
+    setMsg(null)
+    setAffectDone(false)
     setStep(2)
   }
 
@@ -252,6 +267,7 @@ export default function PlanificationWizard({ onDone }) {
                       <label>Date début</label>
                       <input
                         type="date"
+                        min={today}
                         value={form.date_debut}
                         onChange={e => setForm(f => ({ ...f, date_debut: e.target.value }))}
                       />
@@ -260,6 +276,7 @@ export default function PlanificationWizard({ onDone }) {
                       <label>Date fin</label>
                       <input
                         type="date"
+                        min={today}
                         value={form.date_fin}
                         onChange={e => setForm(f => ({ ...f, date_fin: e.target.value }))}
                       />
@@ -353,8 +370,8 @@ export default function PlanificationWizard({ onDone }) {
                       </svg>
                       Retour
                     </button>
-                    <button className="btn-primary" onClick={handleAffecter} disabled={affectLoading}>
-                      {affectLoading ? 'Affectation en cours…' : 'Affecter les dates automatiquement'}
+                    <button className="btn-primary" onClick={handleAffecter} disabled={affectLoading || affectDone}>
+                      {affectLoading ? 'Affectation en cours…' : (affectDone ? 'Affectation terminée' : 'Affecter les dates automatiquement')}
                     </button>
                   </div>
                 </div>

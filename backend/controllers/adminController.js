@@ -177,8 +177,13 @@ exports.affecterJury = async (req, res) => {
     if (!check.ok) {
       return res.status(check.status).json({ message: check.message });
     }
+
     if (encadreur_id) {
       await db.query("DELETE FROM soutenance_jury WHERE soutenance_id = ?", [soutenance_id]);
+      await db.query(
+        "UPDATE soutenances SET encadreur_id = ?, encadreur_fige = TRUE WHERE id = ?",
+        [encadreur_id, soutenance_id]
+      );
     } else {
       await db.query(
         "DELETE FROM soutenance_jury WHERE soutenance_id = ? AND role IN ('president','3eme_membre')",
@@ -245,31 +250,65 @@ exports.traiterReclamationAvecJury = async (req, res) => {
 };
 
 exports.completerJury = async (req, res) => {
-  const { soutenance_id, president_id, membre3_id } = req.body;
+  const { soutenance_id, encadreur_id, president_id, membre3_id } = req.body;
 
   try {
     const check = await assertJuryAssignmentAllowed(soutenance_id);
     if (!check.ok) {
       return res.status(check.status).json({ message: check.message });
     }
+
     const [soutenance] = await db.query(
-      "SELECT encadreur_fige FROM soutenances WHERE id = ?",
+      "SELECT encadreur_fige, encadreur_id FROM soutenances WHERE id = ?",
       [soutenance_id]
     );
 
-    if (!soutenance.length || !soutenance[0].encadreur_fige) {
+    if (!soutenance.length) {
+      return res.status(404).json({ message: "Soutenance introuvable" });
+    }
+
+    const currentEncadreurId = soutenance[0].encadreur_id;
+    const isEncadreurFige = soutenance[0].encadreur_fige;
+
+    if (currentEncadreurId && !isEncadreurFige) {
       return res.status(400).json({ message: "L'encadreur n'est pas figé" });
+    }
+
+    const selected = [encadreur_id, president_id, membre3_id].filter(Boolean);
+    if (new Set(selected).size !== selected.length) {
+      return res.status(400).json({ message: "Un même membre ne peut pas avoir plusieurs rôles" });
+    }
+
+    await db.query(
+      "DELETE FROM soutenance_jury WHERE soutenance_id = ? AND role IN ('president','3eme_membre')",
+      [soutenance_id]
+    );
+
+    if (encadreur_id) {
+      await db.query(
+        "DELETE FROM soutenance_jury WHERE soutenance_id = ? AND role = 'encadreur'",
+        [soutenance_id]
+      );
+      await db.query(
+        "INSERT INTO soutenance_jury (soutenance_id, jury_id, role) VALUES (?, ?, 'encadreur')",
+        [soutenance_id, encadreur_id]
+      );
+      await db.query(
+        "UPDATE soutenances SET encadreur_id = ?, encadreur_fige = TRUE WHERE id = ?",
+        [encadreur_id, soutenance_id]
+      );
     }
 
     if (president_id) {
       await db.query(
-        'INSERT INTO soutenance_jury (soutenance_id, jury_id, role) VALUES (?, ?, "president")',
+        "INSERT INTO soutenance_jury (soutenance_id, jury_id, role) VALUES (?, ?, 'president')",
         [soutenance_id, president_id]
       );
     }
+
     if (membre3_id) {
       await db.query(
-        'INSERT INTO soutenance_jury (soutenance_id, jury_id, role) VALUES (?, ?, "3eme_membre")',
+        "INSERT INTO soutenance_jury (soutenance_id, jury_id, role) VALUES (?, ?, '3eme_membre')",
         [soutenance_id, membre3_id]
       );
     }
@@ -477,9 +516,17 @@ exports.affecterDatesAuto = async (req, res) => {
 exports.getReclamations = async (req, res) => {
   try {
     const [rows] = await db.query(`
-      SELECT r.*, CONCAT(u.prenom,' ',u.nom) as etudiant_nom, u.email as etudiant_email
+      SELECT 
+        r.*, 
+        CONCAT(u.prenom,' ',u.nom) as etudiant_nom, 
+        u.email as etudiant_email, 
+        s.id AS soutenance_id,
+        (SELECT jury_id FROM soutenance_jury WHERE soutenance_id = s.id AND role = 'president' LIMIT 1) AS president_id,
+        (SELECT jury_id FROM soutenance_jury WHERE soutenance_id = s.id AND role = '3eme_membre' LIMIT 1) AS membre3_id,
+        (SELECT jury_id FROM soutenance_jury WHERE soutenance_id = s.id AND role = 'encadreur' LIMIT 1) AS encadreur_id
       FROM reclamations r 
       JOIN users u ON u.id = r.etudiant_id
+      LEFT JOIN soutenances s ON s.etudiant_id = r.etudiant_id
       ORDER BY r.created_at DESC
     `);
     res.json(rows);
@@ -524,6 +571,18 @@ exports.repondreReclamation = async (req, res) => {
 
       if (sout.length > 0) {
         const soutenance_id = sout[0].id;
+
+        const [roles] = await db.query(
+          "SELECT role, jury_id FROM soutenance_jury WHERE soutenance_id = ? AND role IN ('president','3eme_membre')",
+          [soutenance_id]
+        );
+
+        if (roles.length > 0) {
+          const duplicate = roles.find(r => r.jury_id == encadreur_id);
+          if (duplicate) {
+            throw new Error('L\'encadreur ne peut pas être le président ou le 3ème membre déjà affecté.');
+          }
+        }
 
         await db.query(
           'INSERT INTO soutenance_jury (soutenance_id, jury_id, role) VALUES (?, ?, "encadreur")',

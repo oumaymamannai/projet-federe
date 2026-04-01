@@ -24,29 +24,31 @@ export default function AdminSoutenances() {
 
   // Fonction corrigée pour affecter le jury
   const handleAssign = async () => {
-    // Vérifier que les 3 sont différents
-    if (assignForm.encadreur_id && assignForm.president_id && assignForm.membre3_id) {
-      if (assignForm.encadreur_id === assignForm.president_id || 
-          assignForm.encadreur_id === assignForm.membre3_id || 
-          assignForm.president_id === assignForm.membre3_id) {
-        setMsg("❌ Un même jury ne peut pas avoir plusieurs rôles");
-        return;
-      }
+    const president_id = assignForm.president_id ? String(assignForm.president_id) : "";
+    const membre3_id = assignForm.membre3_id ? String(assignForm.membre3_id) : "";
+
+    const selected = [president_id, membre3_id].filter(Boolean);
+    if (selected.length === 0) {
+      setMsg("❌ Sélectionnez au moins un rôle de jury (président ou 3ème membre). La gestion de l'encadreur se fait depuis les réclamations.");
+      return;
     }
-    
+    if (new Set(selected).size !== selected.length) {
+      setMsg("❌ Un même membre ne peut pas avoir plusieurs rôles.");
+      return;
+    }
+
     try {
-      // CORRECTION: Utiliser la bonne route pour compléter le jury
-      await api.post("/admin/soutenances/completer-jury", {
-        soutenance_id: assignModal.id,
-        president_id: assignForm.president_id,
-        membre3_id: assignForm.membre3_id
-      });
-      setMsg("✅ Jury affecté avec succès !"); 
-      setAssignModal(null); 
-      load(); // Recharger la liste
-    } catch (err) { 
+      const payload = {};
+      if (president_id) payload.president_id = president_id;
+      if (membre3_id) payload.membre3_id = membre3_id;
+
+      await api.post(`/admin/jury/${assignModal.id}`, payload);
+      setMsg("✅ Jury affecté avec succès !");
+      setAssignModal(null);
+      load();
+    } catch (err) {
       console.error("Erreur lors de l'affectation:", err.response?.data);
-      setMsg(err.response?.data?.message || "Erreur lors de l'affectation du jury"); 
+      setMsg(err.response?.data?.message || "Erreur lors de l'affectation du jury");
     }
   };
 
@@ -213,18 +215,40 @@ export default function AdminSoutenances() {
             <h3>👥 Affecter le jury</h3>
             <p className="sub">Soutenance de {assignModal.etudiant_nom} — {assignModal.sujet || "Sujet non défini"}</p>
             
-            {/* Encadreur (figé) */}
+            {/* Encadreur (affectation sur le dashboard Réclamations : lecture seule ici) */}
             <div className="form-group">
               <label className="form-label">Encadreur</label>
-              <input
-                className="form-control"
-                value={(() => {
-                  const e = assignModal.jurys?.find(j => j.role === 'encadreur')
-                  return e ? e.nom : (assignModal.encadreur || '— Aucun encadreur')
-                })()}
-                readOnly
-                disabled
-              />
+              {(() => {
+                const fixedEncadreur = assignModal.jurys?.find(j => j.role === 'encadreur');
+                if (fixedEncadreur) {
+                  return (
+                    <input
+                      className="form-control"
+                      value={fixedEncadreur.nom}
+                      readOnly
+                      disabled
+                    />
+                  );
+                }
+                if (assignModal.encadreur) {
+                  return (
+                    <input
+                      className="form-control"
+                      value={assignModal.encadreur}
+                      readOnly
+                      disabled
+                    />
+                  );
+                }
+                return (
+                  <input
+                    className="form-control"
+                    value="Aucun encadreur assigné"
+                    readOnly
+                    disabled
+                  />
+                );
+              })()}
             </div>
 
             {/* Président */}
