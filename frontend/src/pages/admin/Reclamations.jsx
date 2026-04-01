@@ -72,7 +72,7 @@ export default function AdminReclamations() {
     try {
       await api.post("/admin/reclamations/" + modal.id + "/repondre", { reponse });
       setMsgType("success");
-      setMsg("✅ Réponse envoyée !"); 
+      setMsg(" Réponse envoyée !"); 
       setModal(null); 
       setReponse(""); 
       await load();
@@ -94,7 +94,7 @@ export default function AdminReclamations() {
       });
       
       setMsgType("success");
-      setMsg("✅ Encadreur affecté avec succès");
+      setMsg(" Encadreur affecté avec succès");
       setEncadreurModal(null);
       setSelectedEncadreur("");
       await load();
@@ -139,7 +139,7 @@ export default function AdminReclamations() {
         nouvelle_salle: nouvelleSalle || null
       });
       setMsgType("success");
-      setMsg("✅ Nouvelle date attribuée !");
+      setMsg(" Nouvelle date attribuée !");
       setDateModal(null);
       setNouvelleDate("");
       setNouvelleHeure("");
