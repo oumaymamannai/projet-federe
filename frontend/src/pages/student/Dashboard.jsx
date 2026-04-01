@@ -1,7 +1,11 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
-import { GraduationCap, Calendar, Clock, MapPin, Users, CheckCircle, AlertCircle, FileText, Star, Hourglass } from "lucide-react";
+import { 
+  GraduationCap, Calendar, Clock, MapPin, Users, CheckCircle, 
+  AlertCircle, FileText, Star, Hourglass, BookOpen, FileCheck, MessageSquare 
+} from "lucide-react";
 
 function getCountdownStatus(dateStr) {
   if (!dateStr) return null;
@@ -30,15 +34,52 @@ export default function StudentDashboard() {
   const { user } = useAuth();
   const [soutenance, setSoutenance] = useState(null);
   const [docs, setDocs] = useState([]);
+  const [soumissions, setSoumissions] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([api.get("/etudiant/soutenance"), api.get("/etudiant/documents")])
-      .then(([s, d]) => { setSoutenance(s.data); setDocs(d.data); })
+    Promise.all([
+      api.get("/etudiant/soutenance").catch(() => ({ data: null })),
+      api.get("/etudiant/documents").catch(() => ({ data: [] })),
+      api.get("/etudiant/stage/soumissions").catch(() => ({ data: [] }))
+    ])
+      .then(([s, d, soum]) => { 
+        setSoutenance(s.data); 
+        setDocs(d.data);
+        setSoumissions(soum.data);
+      })
       .finally(() => setLoading(false));
   }, []);
 
   const countdown = soutenance?.date_soutenance ? getCountdownStatus(soutenance.date_soutenance) : null;
+  const hasSubmitted = soumissions.length > 0;
+
+  const steps = [
+    { 
+      numero: 1,
+      titre: "Consulter les documents",
+      description: "Lisez les documents importants et les directives",
+      icone: BookOpen,
+      lien: "/student/documents",
+      fait: docs.length > 0
+    },
+    { 
+      numero: 2,
+      titre: "Soumettre le formulaire",
+      description: "Remplissez et soumettez votre formulaire de stage",
+      icone: FileCheck,
+      lien: "/student/stage",
+      fait: hasSubmitted
+    },
+    { 
+      numero: 3,
+      titre: "Faire une réclamation",
+      description: "En cas de problème ou d'absence d'encadreur",
+      icone: MessageSquare,
+      lien: "/student/reclamations",
+      fait: false
+    }
+  ];
 
   if (loading) return <div className="spinner" />;
 
@@ -46,18 +87,15 @@ export default function StudentDashboard() {
     <div>
       <div className="page-header">
         <div>
-          <h1>
-            <span className="icon-squircle page-title-icon" aria-hidden>
-              <GraduationCap size={22} />
-            </span>
-            Bonjour, {user?.prenom} !
-          </h1>
+          <h1>Bonjour, {user?.prenom} !</h1>
           <p>Vue d'ensemble de votre soutenance de fin d'études</p>
         </div>
       </div>
       <div className="page-content">
+        
+        {/* 1. EN HAUT : Carte Soutenance */}
         {!soutenance ? (
-          <div className="alert alert-warning">
+          <div className="alert alert-warning" style={{ marginBottom: 24 }}>
             <AlertCircle size={18} />
             Aucune soutenance planifiée pour vous. Contactez l'administration.
           </div>
@@ -167,7 +205,8 @@ export default function StudentDashboard() {
           </div>
         )}
 
-        <div className="stats-grid">
+        {/* 2. AU MILIEU : 3 cartes statistiques */}
+        <div className="stats-grid" style={{ marginBottom: 32 }}>
           <div className="stat-card">
             <div className="stat-icon icon-squircle"><FileText size={22} /></div>
             <div className="stat-value" style={{ color: "#7c3aed" }}>{docs.length}</div>
@@ -186,6 +225,111 @@ export default function StudentDashboard() {
               {soutenance?.note_finale != null ? `${soutenance.note_finale}/20` : "—"}
             </div>
             <div className="stat-label">{soutenance?.note_finale != null ? (soutenance.note_finale >= 10 ? "Admis(e)" : "Non admis(e)") : "Note en attente"}</div>
+          </div>
+        </div>
+
+        {/* 3. EN BAS : Les 3 étapes */}
+        <div>
+          <h3 style={{ marginBottom: 20, fontSize: 16, fontWeight: 600, color: "#374151" }}>
+            📍 Prochaines étapes
+          </h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {steps.map((step) => {
+              const Icon = step.icone;
+              const estFait = step.fait;
+              
+              return (
+                <Link 
+                  key={step.numero} 
+                  to={step.lien}
+                  style={{ textDecoration: "none" }}
+                >
+                  <div style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 16,
+                    padding: "16px 20px",
+                    background: estFait ? "#f9fafb" : "white",
+                    border: `1px solid ${estFait ? "#e5e7eb" : "#e5e7eb"}`,
+                    borderRadius: 12,
+                    transition: "all 0.2s",
+                    cursor: "pointer"
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!estFait) {
+                      e.currentTarget.style.borderColor = "#7c3aed";
+                      e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.05)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = "#e5e7eb";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}>
+                    
+                    <div style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: "50%",
+                      background: estFait ? "#10b981" : "#f3f4f6",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: 600,
+                      fontSize: 16,
+                      color: estFait ? "white" : "#6b7280"
+                    }}>
+                      {estFait ? "✓" : step.numero}
+                    </div>
+                    
+                    <div style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 10,
+                      background: estFait ? "#ecfdf5" : "#f5f3ff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: estFait ? "#10b981" : "#7c3aed"
+                    }}>
+                      <Icon size={22} />
+                    </div>
+                    
+                    <div style={{ flex: 1 }}>
+                      <div style={{
+                        fontWeight: 600,
+                        fontSize: 15,
+                        color: estFait ? "#6b7280" : "#1f2937",
+                        marginBottom: 4
+                      }}>
+                        {step.titre}
+                        {estFait && (
+                          <span style={{ 
+                            marginLeft: 8, 
+                            fontSize: 12, 
+                            color: "#10b981",
+                            fontWeight: 500
+                          }}>
+                            ✓ Terminé
+                          </span>
+                        )}
+                      </div>
+                      <div style={{
+                        fontSize: 13,
+                        color: "#9ca3af"
+                      }}>
+                        {step.description}
+                      </div>
+                    </div>
+                    
+                    {!estFait && (
+                      <div style={{ color: "#d1d5db" }}>
+                        →
+                      </div>
+                    )}
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </div>
