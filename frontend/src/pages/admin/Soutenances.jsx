@@ -43,7 +43,7 @@ export default function AdminSoutenances() {
       if (membre3_id) payload.membre3_id = membre3_id;
 
       await api.post(`/admin/jury/${assignModal.id}`, payload);
-      setMsg("✅ Jury affecté avec succès !");
+      setMsg(" Jury affecté avec succès !");
       setAssignModal(null);
       load();
     } catch (err) {

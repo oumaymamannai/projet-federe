@@ -57,7 +57,7 @@ export default function AdminDashboard() {
       </div>
       <div className="page-content">
         <div className="alert alert-info" style={{ marginBottom: 24 }}>
-          💡 Appuyez sur "Commencer" pour ouvrir le wizard, définir la période de soutenances, puis affecter automatiquement les dates.
+          💡 Appuyez sur "Planification de dates", définir la période de soutenances, puis affecter automatiquement les dates.
         </div>
         <div className="stats-grid" style={{ marginBottom: 24 }}>
           {stats.map((s, i) => (
