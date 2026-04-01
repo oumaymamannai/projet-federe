@@ -1,5 +1,7 @@
 const db = require("../config/db");
 const { ensureSoutenanceRowsForEtudiants } = require("../utils/soutenanceHelpers");
+const fs = require('fs');
+const path = require('path');
 
 async function syncSoutenanceStatuts() {
   await db.query(`
@@ -54,10 +56,21 @@ exports.soumettreStage = async (req, res) => {
     description,
   } = req.body;
 
-  // ✅ Gérer plusieurs fichiers
+  // Vérifier si l'étudiant a déjà soumis
+  const [existing] = await db.query(
+    "SELECT id FROM stage_soumissions WHERE etudiant_id = ?",
+    [req.user.id]
+  );
+  
+  if (existing.length > 0) {
+    return res.status(403).json({ 
+      message: "Vous avez déjà soumis votre formulaire de stage. Une seule soumission est autorisée." 
+    });
+  }
+
+  // Gérer plusieurs fichiers
   let fichiers = null;
   if (req.files && req.files.length > 0) {
-    // Stocker tous les noms de fichiers en JSON
     fichiers = JSON.stringify(req.files.map((f) => f.filename));
   }
 
@@ -99,14 +112,8 @@ exports.creerReclamation = async (req, res) => {
   const { type, message } = req.body;
   let piece_jointe = null;
   
-  // Vérifier si un fichier a été uploadé
   if (req.file) {
-    // Stocker uniquement le nom du fichier ou le chemin relatif sans 'uploads/'
-    // Option 1: Stocker juste le nom du fichier
     piece_jointe = req.file.filename;
-    
-    // Option 2: Stocker le chemin relatif complet
-    // piece_jointe = req.file.path;
   }
   
   try {
@@ -116,7 +123,6 @@ exports.creerReclamation = async (req, res) => {
     );
     res.json({ message: "Réclamation soumise avec succès" });
   } catch (err) {
-    // Supprimer le fichier en cas d'erreur
     if (req.file && req.file.path && fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
     }
@@ -125,7 +131,6 @@ exports.creerReclamation = async (req, res) => {
   }
 };
 
-// Déjà correcte, mais assurez-vous qu'elle retourne le champ piece_jointe
 exports.getMesReclamations = async (req, res) => {
   try {
     const [rows] = await db.query(
@@ -148,16 +153,12 @@ exports.getDocuments = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-// À AJOUTER dans etudiantController.js
-// (à mettre après les fonctions existantes, avant le module.exports)
 
-// 1. Demander un encadreur (réclamation spécifique)
 exports.demanderEncadreur = async (req, res) => {
   const { message } = req.body;
   const etudiant_id = req.user.id;
 
   try {
-    // Vérifier si l'étudiant n'a pas déjà une demande en cours
     const [existing] = await db.query(
       'SELECT id FROM reclamations WHERE etudiant_id = ? AND type = "pas_encadreur" AND statut = "en_attente"',
       [etudiant_id]
@@ -169,7 +170,6 @@ exports.demanderEncadreur = async (req, res) => {
         .json({ message: "Vous avez déjà une demande d'encadreur en attente" });
     }
 
-    // Vérifier si l'étudiant n'a pas déjà une soutenance
     const [soutenance] = await db.query(
       "SELECT id FROM soutenances WHERE etudiant_id = ?",
       [etudiant_id]
@@ -181,7 +181,6 @@ exports.demanderEncadreur = async (req, res) => {
         .json({ message: "Vous avez déjà une soutenance planifiée" });
     }
 
-    // Créer la réclamation
     await db.query(
       'INSERT INTO reclamations (etudiant_id, type, message, statut) VALUES (?, "pas_encadreur", ?, "en_attente")',
       [etudiant_id, message]
@@ -193,7 +192,6 @@ exports.demanderEncadreur = async (req, res) => {
   }
 };
 
-// 2. Vérifier le statut de l'encadreur
 exports.verifierStatutEncadreur = async (req, res) => {
   const etudiant_id = req.user.id;
 
@@ -224,6 +222,19 @@ exports.verifierStatutEncadreur = async (req, res) => {
     );
 
     res.json(rows[0] || { statut: "pas_demande" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Vérifier si l'étudiant a déjà soumis un formulaire de stage
+exports.aDejaSoumis = async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      "SELECT id FROM stage_soumissions WHERE etudiant_id = ? LIMIT 1",
+      [req.user.id]
+    );
+    res.json({ dejaSoumis: rows.length > 0 });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

@@ -16,13 +16,17 @@ import {
 
 const studentNav = [
   { to: '/student', icon: <LayoutDashboard size={18} />, label: 'Tableau de bord' },
-  { to: '/student/stage', icon: <FileText size={18} />, label: 'Depot dossier' },
+  { 
+    to: '/student/stage', 
+    icon: <FileText size={18} />, 
+    label: 'Depot dossier',
+    disabled: false
+  },
   { to: '/student/documents', icon: <ClipboardList size={18} />, label: 'Documents' },
   { to: '/student/reclamations', icon: <Bell size={18} />, label: 'Réclamations' },
   { to: '/student/messages', icon: <MessageSquare size={18} />, label: 'Messages' },
 ];
 
-// ✅ Menu jury : Dashboard + Planning (Évaluations supprimé car redondant)
 const juryNav = [
   { to: '/jury/dashboard', icon: <LayoutDashboard size={18} />, label: 'Dashboard' },
   { to: '/jury', icon: <Calendar size={18} />, label: 'Planning' },
@@ -51,6 +55,18 @@ export default function Sidebar() {
   const [reclamationsAdminCount, setReclamationsAdminCount] = useState(0);
   const [reclamationsCount, setReclamationsCount] = useState(0);
   const [messagesNonLus, setMessagesNonLus] = useState(0);
+  const [aDejaSoumis, setADejaSoumis] = useState(false);
+
+  const checkDejaSoumis = useCallback(async () => {
+    if (user?.role === 'etudiant') {
+      try {
+        const res = await api.get('/etudiant/a-deja-soumis');
+        setADejaSoumis(res.data.dejaSoumis);
+      } catch (err) {
+        console.error('Erreur vérification soumission:', err);
+      }
+    }
+  }, [user]);
 
   const loadPendingCount = useCallback(() => {
     if (user?.role === 'admin') {
@@ -125,9 +141,7 @@ export default function Sidebar() {
     }
   }, [reclamationsCount]);
 
-  const handleAdminReclamationsClick = useCallback(() => {
-    // Ne pas mettre à 0 immédiatement, laisser le chargement se faire
-  }, []);
+  const handleAdminReclamationsClick = useCallback(() => {}, []);
 
   useEffect(() => {
     if (user?.role === 'admin') {
@@ -153,50 +167,62 @@ export default function Sidebar() {
     }
     
     if (user?.role === 'etudiant') {
-  loadReclamationsCount();
-
-  // Badge messages non lus
-  const fetchNonLusEtudiant = () => {
-    api.get('/messages/non-lus')
-      .then(res => setMessagesNonLus(res.data.non_lus || 0))
-      .catch(() => {});
-  };
-  fetchNonLusEtudiant();
-
-  const interval = setInterval(() => {
-    loadReclamationsCount();
-    fetchNonLusEtudiant();
-  }, 30000);
-
-  const handleVisibilityChange = () => {
-    if (document.visibilityState === 'visible') {
       loadReclamationsCount();
+      checkDejaSoumis();
+
+      const fetchNonLusEtudiant = () => {
+        api.get('/messages/non-lus')
+          .then(res => setMessagesNonLus(res.data.non_lus || 0))
+          .catch(() => {});
+      };
       fetchNonLusEtudiant();
+
+      const interval = setInterval(() => {
+        loadReclamationsCount();
+        fetchNonLusEtudiant();
+        checkDejaSoumis();
+      }, 30000);
+
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+          loadReclamationsCount();
+          fetchNonLusEtudiant();
+          checkDejaSoumis();
+        }
+      };
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+
+      return () => {
+        clearInterval(interval);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      };
     }
-  };
-  document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    if (user?.role === 'jury') {
+      const fetchNonLus = () => {
+        api.get('/messages/non-lus')
+          .then(res => setMessagesNonLus(res.data.non_lus || 0))
+          .catch(() => {});
+      };
+      fetchNonLus();
+      const interval = setInterval(fetchNonLus, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user, loadPendingCount, loadReclamationsAdminCount, loadReclamationsCount, checkDejaSoumis]);
 
-  return () => {
-    clearInterval(interval);
-    document.removeEventListener('visibilitychange', handleVisibilityChange);
-  };
-}
-    // Dans useEffect, ajouter ce bloc après le bloc if (user?.role === 'etudiant')
-if (user?.role === 'jury') {
-  const fetchNonLus = () => {
-    api.get('/messages/non-lus')
-      .then(res => setMessagesNonLus(res.data.non_lus || 0))
-      .catch(() => {});
-  };
-  fetchNonLus();
-  const interval = setInterval(fetchNonLus, 30000);
-  return () => clearInterval(interval);
-}
-  }, [user, loadPendingCount, loadReclamationsAdminCount, loadReclamationsCount]);
-
-  const nav = user?.role === 'etudiant' ? studentNav : 
-              user?.role === 'jury' ? juryNav : 
-              adminNav;
+  let nav = [];
+  if (user?.role === 'etudiant') {
+    nav = studentNav.map(item => {
+      if (item.to === '/student/stage') {
+        return { ...item, disabled: aDejaSoumis };
+      }
+      return item;
+    });
+  } else if (user?.role === 'jury') {
+    nav = juryNav;
+  } else if (user?.role === 'admin') {
+    nav = adminNav;
+  }
 
   return (
     <aside className="sidebar">
@@ -211,46 +237,56 @@ if (user?.role === 'jury') {
         <small>{user?.email}</small>
       </div>
       <nav className="sidebar-nav">
-        {nav.map(item => (
-          <Link 
-            key={item.to} 
-            to={item.to}
-            onClick={() => {
-              if (item.label === 'Réclamations') {
-                if (user?.role === 'etudiant') {
-                  handleReclamationsClick();
+        {nav.map(item => {
+          const isDisabled = item.disabled === true;
+          
+          return (
+            <Link 
+              key={item.to} 
+              to={item.to}
+              onClick={(e) => {
+                if (isDisabled) {
+                  e.preventDefault();
+                  return;
                 }
-                if (user?.role === 'admin') {
-                  handleAdminReclamationsClick();
+                if (item.label === 'Réclamations') {
+                  if (user?.role === 'etudiant') {
+                    handleReclamationsClick();
+                  }
+                  if (user?.role === 'admin') {
+                    handleAdminReclamationsClick();
+                  }
                 }
-              }
-            }}
-            className={`nav-item ${location.pathname === item.to ? 'active' : ''}`}
-            style={{ position: 'relative' }}
-          >
-            {item.icon}
-            {item.label}
-            {item.to === '/admin/submissions' && pendingCount > 0 && (
-              <span className="badge-notification">{pendingCount > 99 ? '99+' : pendingCount}</span>
-            )}
-            {item.to === '/admin/reclamations' && user?.role === 'admin' && reclamationsAdminCount > 0 && (
-              <span className="badge-notification">{reclamationsAdminCount > 99 ? '99+' : reclamationsAdminCount}</span>
-            )}
-            {item.label === 'Réclamations' && user?.role === 'etudiant' && reclamationsCount > 0 && (
-              <span className="badge-notification">{reclamationsCount > 99 ? '99+' : reclamationsCount}</span>
-            )}
-            {item.to === '/jury/messages' && messagesNonLus > 0 && (
-              <span className="badge-notification">
-                {messagesNonLus > 99 ? '99+' : messagesNonLus}
-              </span>
-            )}
-            {item.to === '/student/messages' && messagesNonLus > 0 && (
-  <span className="badge-notification">
-    {messagesNonLus > 99 ? '99+' : messagesNonLus}
-  </span>
-)}
-          </Link>
-        ))}
+              }}
+              className={`nav-item ${location.pathname === item.to ? 'active' : ''} ${isDisabled ? 'disabled' : ''}`}
+              style={{ 
+                position: 'relative',
+                opacity: isDisabled ? 0.5 : 1,
+                cursor: isDisabled ? 'not-allowed' : 'pointer',
+                pointerEvents: isDisabled ? 'none' : 'auto'
+              }}
+              title={isDisabled ? "✅ Vous avez déjà soumis votre formulaire de stage. Une seule soumission est autorisée." : ""}
+            >
+              {item.icon}
+              {item.label}
+              {item.to === '/admin/submissions' && pendingCount > 0 && (
+                <span className="badge-notification">{pendingCount > 99 ? '99+' : pendingCount}</span>
+              )}
+              {item.to === '/admin/reclamations' && user?.role === 'admin' && reclamationsAdminCount > 0 && (
+                <span className="badge-notification">{reclamationsAdminCount > 99 ? '99+' : reclamationsAdminCount}</span>
+              )}
+              {item.label === 'Réclamations' && user?.role === 'etudiant' && reclamationsCount > 0 && (
+                <span className="badge-notification">{reclamationsCount > 99 ? '99+' : reclamationsCount}</span>
+              )}
+              {item.to === '/jury/messages' && messagesNonLus > 0 && (
+                <span className="badge-notification">{messagesNonLus > 99 ? '99+' : messagesNonLus}</span>
+              )}
+              {item.to === '/student/messages' && messagesNonLus > 0 && (
+                <span className="badge-notification">{messagesNonLus > 99 ? '99+' : messagesNonLus}</span>
+              )}
+            </Link>
+          );
+        })}
       </nav>
       <div className="sidebar-footer">
         <button className="logout-btn" onClick={logout}>
@@ -259,5 +295,4 @@ if (user?.role === 'jury') {
       </div>
     </aside>
   );
-  
 }

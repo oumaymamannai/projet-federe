@@ -24,6 +24,8 @@ export default function StudentStage() {
   const [loading, setLoading] = useState(false);
   const [soutenance, setSoutenance] = useState(null);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [dejaSoumis, setDejaSoumis] = useState(false);
+  const [soumissionReussie, setSoumissionReussie] = useState(false);
 
   const isTerminee = soutenance && soutenance.statut === "terminee";
 
@@ -39,11 +41,21 @@ export default function StudentStage() {
     }
   }, [user]);
 
-  // Charger les données
+  // Charger les données et vérifier si déjà soumis
   useEffect(() => {
     const fetchData = async () => {
       try {
         setInitialLoading(true);
+        
+        // Vérifier si déjà soumis
+        const dejaSoumisRes = await api.get("/etudiant/a-deja-soumis");
+        if (dejaSoumisRes.data.dejaSoumis) {
+          setDejaSoumis(true);
+          setSoumissionReussie(true);
+          setInitialLoading(false);
+          return;
+        }
+        
         const [soumissionsRes, soutenanceRes] = await Promise.all([
           api.get("/etudiant/stage/soumissions").catch(err => {
             console.error("Erreur chargement soumissions:", err);
@@ -68,6 +80,12 @@ export default function StudentStage() {
   }, []);
 
   const handleFileChange = (e) => {
+    // Bloquer si déjà soumis
+    if (soumissionReussie || dejaSoumis) {
+      setError("Vous ne pouvez plus ajouter de fichiers. Formulaire déjà soumis.");
+      return;
+    }
+    
     const selectedFiles = Array.from(e.target.files);
     
     const allowedExtensions = ['pdf', 'doc', 'docx'];
@@ -95,6 +113,7 @@ export default function StudentStage() {
   };
 
   const removeFile = (indexToRemove) => {
+    if (soumissionReussie || dejaSoumis) return;
     setFichiers(fichiers.filter((_, index) => index !== indexToRemove));
   };
 
@@ -106,6 +125,13 @@ export default function StudentStage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Bloquer si déjà soumis
+    if (soumissionReussie || dejaSoumis) {
+      setError("Vous avez déjà soumis votre formulaire. Une seule soumission est autorisée.");
+      return;
+    }
+    
     setMsg(""); 
     setError(""); 
     setLoading(true);
@@ -123,21 +149,17 @@ export default function StudentStage() {
       
       setMsg("Formulaire soumis avec succès !");
       
-      // Réinitialiser le formulaire
-      setForm({
-        nom_etudiant: user?.nom || "",
-        prenom_etudiant: user?.prenom || "",
-        email_contact: user?.email || "",
-        encadreur: "", 
-        societe: "", 
-        sujet: "", 
-        description: "" 
-      });
+      // 🔒 VERROUILLER IMMÉDIATEMENT
+      setSoumissionReussie(true);
+      setDejaSoumis(true);
+      
+      // Vider les fichiers
       setFichiers([]);
       
       // Recharger les soumissions
       const r = await api.get("/etudiant/stage/soumissions");
       setSoumissions(r.data);
+      
     } catch (err) { 
       console.error("Erreur détaillée:", err);
       setError(err.response?.data?.message || "Erreur lors de la soumission"); 
@@ -243,7 +265,7 @@ export default function StudentStage() {
                     background: "#faf9ff",
                     marginBottom: 16
                   }}
-                  onClick={() => document.getElementById('files-upload').click()}
+                  onClick={() => !soumissionReussie && !dejaSoumis && document.getElementById('files-upload').click()}
                 >
                   <Upload size={24} color="#7c3aed" style={{ margin: "0 auto 8px", display: "block" }} />
                   <input 
@@ -327,11 +349,15 @@ export default function StudentStage() {
               <button 
                 type="submit" 
                 className="btn btn-primary" 
-                disabled={loading || fichiers.length === 0}
-                style={{ marginTop: 16 }}
+                disabled={loading || fichiers.length === 0 || soumissionReussie || dejaSoumis}
+                style={{ 
+                  marginTop: 16,
+                  opacity: (soumissionReussie || dejaSoumis) ? 0.5 : 1,
+                  cursor: (soumissionReussie || dejaSoumis) ? 'not-allowed' : 'pointer'
+                }}
               >
                 <Send size={16} /> 
-                {loading ? "Envoi en cours..." : "Soumettre"}
+                {soumissionReussie || dejaSoumis ? "Formulaire déjà soumis" : (loading ? "Envoi en cours..." : "Soumettre")}
               </button>
             </form>
           </div>
@@ -421,7 +447,4 @@ export default function StudentStage() {
       </div>
     </div>
   );
-
-
-  
 }

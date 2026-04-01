@@ -124,7 +124,7 @@ export default function StudentDashboard() {
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     <div>
                       <div className="countdown-number">{countdown.label}</div>
-                      <div className="countdown-label">jour J</div>
+                      {/* Ligne "jour J" supprimée */}
                     </div>
                   </div>
                 </div>
