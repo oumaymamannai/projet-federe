@@ -67,21 +67,8 @@ export default function PlanificationWizard({ onDone }) {
       return
     }
 
-    const todayDate = new Date()
-    todayDate.setHours(0, 0, 0, 0) // Remettre à minuit pour comparaison
-    const debutDate = new Date(form.date_debut)
-    const finDate = new Date(form.date_fin)
-
-    if (debutDate < todayDate) {
-      setMsg({ type: 'error', text: 'La date de début ne peut pas être dans le passé.' })
-      return
-    }
-    if (finDate < todayDate) {
-      setMsg({ type: 'error', text: 'La date de fin ne peut pas être dans le passé.' })
-      return
-    }
     if (form.date_fin < form.date_debut) {
-      setMsg({ type: 'error', text: 'La date de fin doit être après la date de début.' })
+      setMsg({ type: 'error', text: 'Veuillez entrer une période valide.' })
       return
     }
 
@@ -94,7 +81,7 @@ export default function PlanificationWizard({ onDone }) {
       setTimeout(() => {
         setMsg(null)
         setStep(2)
-      }, 800)
+      }, 2000)
     } catch (err) {
       setMsg({ type: 'error', text: err?.response?.data?.message || 'Erreur lors de la définition de la période.' })
     } finally {
@@ -134,11 +121,9 @@ export default function PlanificationWizard({ onDone }) {
 
   function formatDateForInput(dateStr) {
     if (!dateStr) return ''
-    // Si c'est déjà au format YYYY-MM-DD, retourner tel quel
     if (typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
       return dateStr
     }
-    // Sinon, créer une date et formatter
     try {
       const date = new Date(dateStr)
       if (isNaN(date.getTime())) return ''
@@ -153,15 +138,14 @@ export default function PlanificationWizard({ onDone }) {
 
   function formatDate(d) {
     if (!d) return '—'
-    // Éviter le problème de fuseau horaire en parsant manuellement YYYY-MM-DD
     const [year, month, day] = d.split('-').map(Number)
-    const date = new Date(year, month - 1, day) // month - 1 car JavaScript commence à 0
+    const date = new Date(year, month - 1, day)
     return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
   }
 
   // Vérifier si les dates ont été modifiées
   function hasDatesChanged() {
-    if (!periode) return true // Si pas de période existante, considérer comme changé
+    if (!periode) return true
     const originalDebut = formatDateForInput(periode.date_debut)
     const originalFin = formatDateForInput(periode.date_fin)
     return form.date_debut !== originalDebut || form.date_fin !== originalFin
