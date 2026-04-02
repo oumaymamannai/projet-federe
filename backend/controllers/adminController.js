@@ -99,7 +99,7 @@ exports.getDashboard = async (req, res) => {
 
     const notesRepartition = repartition[0] || {};
 
-    // Répartition des soutenances par membre de jury
+    // FIX #1 — juryStats : exclure les encadrants externes (est_externe = 1)
     const [juryStats] = await db.query(`
       SELECT 
         u.id,
@@ -110,7 +110,8 @@ exports.getDashboard = async (req, res) => {
         SUM(CASE WHEN sj.role = '3eme_membre' THEN 1 ELSE 0 END) as nb_membre
       FROM users u
       JOIN soutenance_jury sj ON sj.jury_id = u.id
-      WHERE u.role = 'jury' OR (u.role = 'admin' AND u.email != 'admin@gradflow.dz')
+      WHERE (u.role = 'jury' OR (u.role = 'admin' AND u.email != 'admin@gradflow.dz'))
+        AND u.est_externe = 0
       GROUP BY u.id, u.nom, u.prenom
       ORDER BY total_soutenances DESC
       LIMIT 6
@@ -187,12 +188,14 @@ exports.getSoutenances = async (req, res) => {
   }
 };
 
+// FIX #2 — getJuryMembers : exclure les encadrants externes (est_externe = 1)
 exports.getJuryMembers = async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT id, nom, prenom, email
       FROM users
-      WHERE role = 'jury' OR (role = 'admin' AND email != 'admin@gradflow.dz')
+      WHERE (role = 'jury' OR (role = 'admin' AND email != 'admin@gradflow.dz'))
+        AND est_externe = 0
       ORDER BY nom, prenom
     `);
     res.json(rows);
@@ -738,6 +741,7 @@ exports.creerSoutenance = async (req, res) => {
   }
 };
 
+// FIX #3 — validerSoumission : marquer l'encadrant externe avec est_externe = 1
 exports.validerSoumission = async (req, res) => {
   const { soumission_id } = req.params;
 
@@ -771,11 +775,13 @@ exports.validerSoumission = async (req, res) => {
         );
 
         if (encadreur.length === 0) {
+          // Encadrant introuvable dans la BD → c'est un externe
           const [prenom, ...nomParts] = soumission.encadreur.split(" ");
           const nom = nomParts.join(" ") || prenom;
 
           const [result] = await db.query(
-            'INSERT INTO users (nom, prenom, email, password, role) VALUES (?, ?, ?, ?, "jury")',
+            // FIX : ajout de est_externe = 1 pour marquer cet utilisateur comme externe
+            'INSERT INTO users (nom, prenom, email, password, role, est_externe) VALUES (?, ?, ?, ?, "jury", 1)',
             [
               nom,
               prenom,
@@ -785,6 +791,7 @@ exports.validerSoumission = async (req, res) => {
           );
           encadreur_id = result.insertId;
         } else {
+          // Encadrant trouvé dans la BD → c'est un jury interne, on ne touche pas est_externe
           encadreur_id = encadreur[0].id;
         }
 
@@ -843,12 +850,10 @@ exports.getSallesDisponibles = async (req, res) => {
 const fs = require('fs');
 const path = require('path');
 
-// Supprimer un document
 exports.deleteDocument = async (req, res) => {
   const { id } = req.params;
   
   try {
-    // 1. Récupérer le document pour avoir le chemin du fichier
     const [documents] = await db.query(
       'SELECT fichier_path FROM documents WHERE id = ?',
       [id]
@@ -860,7 +865,6 @@ exports.deleteDocument = async (req, res) => {
     
     const fichier_path = documents[0].fichier_path;
     
-    // 2. Supprimer le fichier physique s'il existe
     if (fichier_path) {
       const filePath = path.join(__dirname, '../uploads', fichier_path);
       if (fs.existsSync(filePath)) {
@@ -868,7 +872,6 @@ exports.deleteDocument = async (req, res) => {
       }
     }
     
-    // 3. Supprimer l'entrée en base de données
     await db.query('DELETE FROM documents WHERE id = ?', [id]);
     
     res.json({ message: 'Document supprimé avec succès' });
@@ -877,24 +880,24 @@ exports.deleteDocument = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
 // ==================== GESTION DES EMAILS DU JURY ====================
-// Envoyer un email à un membre du jury
+
 exports.sendEmailToMember = async (req, res) => {
   const { memberId, subject, message } = req.body;
   
   try {
-    // Validation
     if (!memberId || !subject || !message) {
       return res.status(400).json({ 
         message: 'Tous les champs sont requis: memberId, subject, message' 
       });
     }
 
-    // Récupérer les infos du membre
+    // FIX #4 — sendEmailToMember : exclure les externes de la récupération
     const [rows] = await db.query(`
       SELECT id, nom, prenom, email 
       FROM users 
-      WHERE id = ? AND (role = 'jury' OR role = 'admin')
+      WHERE id = ? AND (role = 'jury' OR role = 'admin') AND est_externe = 0
     `, [memberId]);
     
     if (rows.length === 0) {
@@ -903,10 +906,8 @@ exports.sendEmailToMember = async (req, res) => {
     
     const member = rows[0];
     
-    // Importer le transporteur d'email
     const { transporter } = require('../config/email');
     
-    // Envoyer l'email
     await transporter.sendMail({
       from: process.env.EMAIL_FROM,
       to: member.email,
@@ -945,23 +946,22 @@ exports.sendEmailToMember = async (req, res) => {
   }
 };
 
-// Envoyer un email à tous les membres du jury
+// FIX #5 — sendEmailToAllJury : exclure les encadrants externes (est_externe = 1)
 exports.sendEmailToAllJury = async (req, res) => {
   const { subject, message } = req.body;
   
   try {
-    // Validation
     if (!subject || !message) {
       return res.status(400).json({ 
         message: 'Tous les champs sont requis: subject, message' 
       });
     }
 
-    // Récupérer tous les membres du jury
     const [members] = await db.query(`
       SELECT id, nom, prenom, email 
       FROM users 
-      WHERE role = 'jury' OR (role = 'admin' AND email != 'admin@gradflow.dz')
+      WHERE (role = 'jury' OR (role = 'admin' AND email != 'admin@gradflow.dz'))
+        AND est_externe = 0
     `);
     
     if (members.length === 0) {
@@ -971,7 +971,6 @@ exports.sendEmailToAllJury = async (req, res) => {
     const { transporter } = require('../config/email');
     const results = [];
     
-    // Envoyer les emails à tous
     for (const member of members) {
       try {
         await transporter.sendMail({
