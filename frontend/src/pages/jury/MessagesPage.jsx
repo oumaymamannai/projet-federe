@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { messageAPI } from '../../services/messageService';
+import { messageAPI, getMessageFileUrl } from '../../services/messageService';
 
 const token = localStorage.getItem('gradflow_token');
 const userId = token ? JSON.parse(atob(token.split('.')[1])).id : null;
@@ -133,6 +133,7 @@ export default function MessagesPage() {
   const [soutenanceActive, setSoutenanceActive] = useState(null);
   const [messages, setMessages]               = useState([]);
   const [contenu, setContenu]                 = useState('');
+  const [fichier, setFichier]                 = useState(null);
   const [loading, setLoading]                 = useState(false);
   const [sending, setSending]                 = useState(false);
   const messagesEndRef = useRef(null);
@@ -152,18 +153,31 @@ export default function MessagesPage() {
 
   const handleSend = async (e) => {
     e?.preventDefault();
-    if (!contenu.trim() || !soutenanceActive || sending) return;
+    if ((!contenu.trim() && !fichier) || !soutenanceActive || sending) return;
+
     setSending(true);
     const txt = contenu.trim();
     setContenu('');
+    setFichier(null);
+
     if (inputRef.current) { inputRef.current.style.height = 'auto'; }
+
     try {
-      await messageAPI.envoyerMessage(soutenanceActive.soutenance_id, txt);
+      if (fichier) {
+        await messageAPI.envoyerMessageAvecFichier(soutenanceActive.soutenance_id, txt, fichier);
+      } else {
+        await messageAPI.envoyerMessage(soutenanceActive.soutenance_id, txt);
+      }
+
       await fetchMsgs(soutenanceActive.soutenance_id, true);
       await fetchConvs();
       inputRef.current?.focus();
-    } catch { setContenu(txt); }
-    finally { setSending(false); }
+    } catch {
+      setContenu(txt);
+      setFichier(fichier);
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleKeyDown = (e) => {
@@ -523,7 +537,27 @@ export default function MessagesPage() {
                                 : '0 2px 8px rgba(0,0,0,0.05)',
                               wordBreak:'break-word', whiteSpace:'pre-wrap',
                             }}>
-                              {msg.contenu}
+                              {msg.contenu || (msg.piece_jointe ? '' : '')}
+                              {msg.piece_jointe && (
+                                <div style={{ marginTop: msg.contenu ? 8 : 0 }}>
+                                  <a
+                                    href={getMessageFileUrl(msg.piece_jointe)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                      display:'inline-flex', alignItems:'center', gap:6,
+                                      color: isMe ? '#fff' : C.accent,
+                                      textDecoration:'none',
+                                      border: isMe ? '1px solid rgba(255,255,255,0.45)' : '1px solid rgba(139,92,246,0.25)',
+                                      padding:'6px 8px', borderRadius:8,
+                                      fontSize:12, fontWeight:600,
+                                      background: isMe ? 'rgba(255,255,255,0.12)' : '#fff',
+                                    }}
+                                  >
+                                    📎 {msg.piece_jointe.split('/').pop()}
+                                  </a>
+                                </div>
+                              )}
                             </div>
                             {!nextSame && (
                               <div style={{
@@ -569,65 +603,101 @@ export default function MessagesPage() {
                 padding:'14px 24px',
                 borderTop:`1px solid ${C.border}`,
                 background:C.surface,
-                display:'flex', gap:12, alignItems:'flex-end',
+                display:'flex', flexDirection:'column', gap:8,
               }}>
-                <textarea
-                  ref={inputRef}
-                  value={contenu}
-                  onChange={(e) => {
-                    setContenu(e.target.value);
-                    e.target.style.height = 'auto';
-                    e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
-                  }}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Écrire un message…   ↵ pour envoyer"
-                  rows={1}
-                  className="msg-textarea"
-                  style={{
-                    flex:1,
-                    background:C.bg,
-                    border:`1px solid ${C.border}`,
-                    borderRadius:16,
-                    padding:'12px 18px',
-                    fontSize:14, color:C.text,
-                    resize:'none', maxHeight:120,
-                    lineHeight:1.58,
-                    fontFamily:"'DM Sans', sans-serif",
-                    overflowY:'auto',
-                  }}
-                />
-                <button
-                  className="send-btn"
-                  onClick={handleSend}
-                  disabled={!contenu.trim() || sending}
-                  style={{
-                    width:46, height:46, flexShrink:0,
-                    borderRadius:14, border:'none',
-                    background: contenu.trim() && !sending
-                      ? `linear-gradient(135deg, ${C.accent}, #a78bfa)`
-                      : C.border,
-                    color: contenu.trim() && !sending ? '#fff' : C.textMuted,
-                    cursor: contenu.trim() && !sending ? 'pointer' : 'default',
-                    display:'flex', alignItems:'center', justifyContent:'center',
-                    boxShadow: contenu.trim() && !sending
-                      ? '0 4px 16px rgba(139,92,246,0.3)' : 'none',
-                  }}
-                >
-                  {sending ? (
-                    <div className="spin" style={{
-                      width:18, height:18,
-                      border:'2px solid rgba(255,255,255,0.25)',
-                      borderTopColor:'#fff', borderRadius:'50%',
-                    }} />
-                  ) : (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                      stroke="currentColor" strokeWidth="2.3"
-                      strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="22" y1="2" x2="11" y2="13"/>
-                      <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                    </svg>
+                <div style={{ display:'flex', gap:8 }}>
+                  <textarea
+                    ref={inputRef}
+                    value={contenu}
+                    onChange={(e) => {
+                      setContenu(e.target.value);
+                      e.target.style.height = 'auto';
+                      e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                    }}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Écrire un message…   ↵ pour envoyer"
+                    rows={1}
+                    className="msg-textarea"
+                    style={{
+                      flex:1,
+                      background:C.bg,
+                      border:`1px solid ${C.border}`,
+                      borderRadius:16,
+                      padding:'12px 18px',
+                      fontSize:14, color:C.text,
+                      resize:'none', maxHeight:120,
+                      lineHeight:1.58,
+                      fontFamily:"'DM Sans', sans-serif",
+                      overflowY:'auto',
+                    }}
+                  />
+                  <button
+                    className="send-btn"
+                    onClick={handleSend}
+                    disabled={((!contenu || !contenu.trim()) && !fichier) || sending}
+                    style={{
+                      width:46, height:46, flexShrink:0,
+                      borderRadius:14, border:'none',
+                      background: (!contenu.trim() && !fichier) || sending ? C.border : `linear-gradient(135deg, ${C.accent}, #a78bfa)`,
+                      color: (!contenu.trim() && !fichier) || sending ? C.textMuted : '#fff',
+                      cursor: (!contenu.trim() && !fichier) || sending ? 'default' : 'pointer',
+                      display:'flex', alignItems:'center', justifyContent:'center',
+                      boxShadow: (!contenu.trim() && !fichier) || sending ? 'none' : '0 4px 16px rgba(139,92,246,0.3)',
+                    }}
+                  >
+                    {sending ? (
+                      <div className="spin" style={{
+                        width:18, height:18,
+                        border:'2px solid rgba(255,255,255,0.25)',
+                        borderTopColor:'#fff', borderRadius:'50%',
+                      }} />
+                    ) : (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" strokeWidth="2.3"
+                        strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"/>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                      </svg>
+                    )}
+                  </button>
+                </div>
+                <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                  <label htmlFor="file-input" style={{
+                    cursor:'pointer',
+                    color:C.accent,
+                    fontSize:13,
+                    fontWeight:600,
+                    border:'1px dashed '+C.accent,
+                    padding:'6px 10px',
+                    borderRadius:10,
+                  }}>
+                    📎 Joindre un fichier
+                  </label>
+                  <input
+                    id="file-input"
+                    type="file"
+                    style={{ display:'none' }}
+                    onChange={(e) => {
+                      setFichier(e.target.files?.[0] ?? null);
+                    }}
+                  />
+                  {fichier && (
+                    <div style={{ fontSize:12, color:C.textMuted }}>
+                      {fichier.name}
+                      <button
+                        type="button"
+                        onClick={() => setFichier(null)}
+                        style={{
+                          marginLeft:8, border:'none', background:'transparent', color:C.accent, cursor:'pointer', fontWeight:700
+                        }}>
+                        ✕
+                      </button>
+                    </div>
                   )}
-                </button>
+                </div>
+                <div style={{ fontSize:12, color:C.textMuted, textAlign:'center', marginTop:4 }}>
+                  L'envoi d'une pièce jointe est obligatoirement accompagné d'un message
+                </div>
               </div>
             </>
           )}

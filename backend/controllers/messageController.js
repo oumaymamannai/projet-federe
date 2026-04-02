@@ -35,10 +35,31 @@ async function verifierAccesEncadreur(soutenanceId, userId) {
  */
 exports.envoyerMessage = async (req, res) => {
   const { soutenance_id } = req.params;
-  const { contenu } = req.body;
+  let { contenu, fichiers } = req.body;
 
-  if (!contenu || !contenu.trim()) {
-    return res.status(400).json({ message: 'Le message est vide' });
+  let pieceJointe = null;
+
+  if (req.file) {
+    pieceJointe = `messages/${req.file.filename}`;
+  } else if (fichiers) {
+    try {
+      const f = typeof fichiers === 'string' ? JSON.parse(fichiers) : fichiers;
+      if (Array.isArray(f) && f.length > 0) {
+        pieceJointe = f[0];
+      } else if (typeof f === 'string') {
+        pieceJointe = f;
+      }
+    } catch (e) {
+      // ignore parse error and accept raw string
+      pieceJointe = fichiers;
+    }
+  }
+
+  contenu = typeof contenu === 'string' ? contenu.trim() : '';
+
+  // Permettre : texte seul OR fichier seul OR texte + fichier
+  if (!contenu && !pieceJointe) {
+    return res.status(400).json({ message: 'Le message ou fichier est requis' });
   }
 
   try {
@@ -48,8 +69,8 @@ exports.envoyerMessage = async (req, res) => {
     }
 
     await db.query(
-      'INSERT INTO messages (soutenance_id, expediteur_id, contenu) VALUES (?, ?, ?)',
-      [soutenance_id, req.user.id, contenu.trim()]
+      'INSERT INTO messages (soutenance_id, expediteur_id, contenu, piece_jointe) VALUES (?, ?, ?, ?)',
+      [soutenance_id, req.user.id, contenu || null, pieceJointe]
     );
 
     res.status(201).json({ message: 'Message envoyé' });
@@ -71,7 +92,7 @@ exports.getMessages = async (req, res) => {
     }
 
     const [messages] = await db.query(`
-      SELECT m.id, m.contenu, m.created_at, m.lu,
+      SELECT m.id, m.contenu, m.created_at, m.lu, m.piece_jointe,
              u.id as user_id, u.nom, u.prenom, u.role
       FROM messages m
       JOIN users u ON u.id = m.expediteur_id
@@ -144,7 +165,12 @@ exports.getConversations = async (req, res) => {
           u.prenom,
           u.id as interlocuteur_id,
           (
-            SELECT contenu FROM messages
+            SELECT
+              CASE
+                WHEN contenu IS NULL OR TRIM(contenu) = '' THEN CONCAT('[Fichier] ', COALESCE(piece_jointe, ''))
+                ELSE contenu
+              END
+            FROM messages
             WHERE soutenance_id = s.id
             ORDER BY created_at DESC LIMIT 1
           ) as dernier_message,
@@ -172,7 +198,7 @@ exports.getConversations = async (req, res) => {
         )
         WHERE s.etudiant_id = ?
           AND u.id IS NOT NULL
-        ORDER BY dernier_message_at DESC
+        ORDER BY COALESCE(dernier_message_at, s.created_at) DESC
       `, [userId, userId]);
 
     } else if (role === 'jury') {
@@ -187,7 +213,12 @@ exports.getConversations = async (req, res) => {
           u.prenom,
           u.id as interlocuteur_id,
           (
-            SELECT contenu FROM messages
+            SELECT
+              CASE
+                WHEN contenu IS NULL OR TRIM(contenu) = '' THEN CONCAT('[Fichier] ', COALESCE(piece_jointe, ''))
+                ELSE contenu
+              END
+            FROM messages
             WHERE soutenance_id = s.id
             ORDER BY created_at DESC LIMIT 1
           ) as dernier_message,
@@ -213,7 +244,7 @@ exports.getConversations = async (req, res) => {
           OR sj.jury_id = ?
         )
         GROUP BY s.id
-        ORDER BY dernier_message_at DESC
+        ORDER BY COALESCE(dernier_message_at, s.created_at) DESC
       `, [userId, userId, userId, userId]);
     }
 

@@ -25,7 +25,8 @@ const createUploadDirectories = () => {
     'uploads',
     'uploads/reclamations',
     'uploads/soumissions',
-    'uploads/documents'
+    'uploads/documents',
+    'uploads/messages'
   ];
   
   dirs.forEach(dir => {
@@ -35,6 +36,40 @@ const createUploadDirectories = () => {
       console.log(`📁 Dossier créé: ${dir}`);
     }
   });
+};
+
+// Crée la table messages si elle manque et ajoute colonne piece_jointe si nécessaire
+const ensureMessagesTable = async () => {
+  try {
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS messages (
+        id INT NOT NULL AUTO_INCREMENT,
+        soutenance_id INT NOT NULL,
+        expediteur_id INT NOT NULL,
+        contenu TEXT,
+        piece_jointe VARCHAR(255),
+        lu TINYINT(1) DEFAULT 0,
+        created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        KEY (soutenance_id),
+        KEY (expediteur_id),
+        CONSTRAINT messages_soutenance_fk FOREIGN KEY (soutenance_id) REFERENCES soutenances(id) ON DELETE CASCADE,
+        CONSTRAINT messages_expediteur_fk FOREIGN KEY (expediteur_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB;
+    `);
+
+    const [[col]] = await db.query(
+      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'messages' AND COLUMN_NAME = 'piece_jointe'`,
+      [process.env.DB_NAME]
+    );
+
+    if (!col) {
+      await db.query('ALTER TABLE messages ADD COLUMN piece_jointe VARCHAR(255) NULL AFTER contenu');
+    }
+  } catch (err) {
+    console.warn('⚠️ Impossible d\'initialiser la table messages:', err.message);
+  }
 };
 
 // Appeler la fonction au démarrage
@@ -129,5 +164,6 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, async () => {
   console.log(`✅ GradFlow API running on port ${PORT}`);
   console.log(`📁 Uploads directory: ${path.join(__dirname, 'uploads')}`);
+  await ensureMessagesTable();
   await ensurePasswords();
 });
