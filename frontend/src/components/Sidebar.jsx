@@ -212,12 +212,8 @@ export default function Sidebar() {
 
   let nav = [];
   if (user?.role === 'etudiant') {
-    nav = studentNav.map(item => {
-      if (item.to === '/student/stage') {
-        return { ...item, disabled: aDejaSoumis };
-      }
-      return item;
-    });
+    nav = studentNav
+    
   } else if (user?.role === 'jury') {
     nav = juryNav;
   } else if (user?.role === 'admin') {

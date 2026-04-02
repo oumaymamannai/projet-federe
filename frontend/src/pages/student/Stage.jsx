@@ -24,8 +24,7 @@ export default function StudentStage() {
   const [loading, setLoading] = useState(false);
   const [soutenance, setSoutenance] = useState(null);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [dejaSoumis, setDejaSoumis] = useState(false);
-  const [soumissionReussie, setSoumissionReussie] = useState(false);
+  const [aDejaSoumis, setADejaSoumis] = useState(false);
 
   const isTerminee = soutenance && soutenance.statut === "terminee";
 
@@ -50,10 +49,7 @@ export default function StudentStage() {
         // Vérifier si déjà soumis
         const dejaSoumisRes = await api.get("/etudiant/a-deja-soumis");
         if (dejaSoumisRes.data.dejaSoumis) {
-          setDejaSoumis(true);
-          setSoumissionReussie(true);
-          setInitialLoading(false);
-          return;
+          setADejaSoumis(true);
         }
         
         const [soumissionsRes, soutenanceRes] = await Promise.all([
@@ -80,9 +76,8 @@ export default function StudentStage() {
   }, []);
 
   const handleFileChange = (e) => {
-    // Bloquer si déjà soumis
-    if (soumissionReussie || dejaSoumis) {
-      setError("Vous ne pouvez plus ajouter de fichiers. Formulaire déjà soumis.");
+    if (aDejaSoumis) {
+      setError("Vous avez déjà soumis votre formulaire. Une seule soumission est autorisée.");
       return;
     }
     
@@ -113,7 +108,7 @@ export default function StudentStage() {
   };
 
   const removeFile = (indexToRemove) => {
-    if (soumissionReussie || dejaSoumis) return;
+    if (aDejaSoumis) return;
     setFichiers(fichiers.filter((_, index) => index !== indexToRemove));
   };
 
@@ -126,8 +121,7 @@ export default function StudentStage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Bloquer si déjà soumis
-    if (soumissionReussie || dejaSoumis) {
+    if (aDejaSoumis) {
       setError("Vous avez déjà soumis votre formulaire. Une seule soumission est autorisée.");
       return;
     }
@@ -148,10 +142,7 @@ export default function StudentStage() {
       });
       
       setMsg("Formulaire soumis avec succès !");
-      
-      // 🔒 VERROUILLER IMMÉDIATEMENT
-      setSoumissionReussie(true);
-      setDejaSoumis(true);
+      setADejaSoumis(true);
       
       // Vider les fichiers
       setFichiers([]);
@@ -265,7 +256,7 @@ export default function StudentStage() {
                     background: "#faf9ff",
                     marginBottom: 16
                   }}
-                  onClick={() => !soumissionReussie && !dejaSoumis && document.getElementById('files-upload').click()}
+                  onClick={() => !aDejaSoumis && document.getElementById('files-upload').click()}
                 >
                   <Upload size={24} color="#7c3aed" style={{ margin: "0 auto 8px", display: "block" }} />
                   <input 
@@ -349,15 +340,15 @@ export default function StudentStage() {
               <button 
                 type="submit" 
                 className="btn btn-primary" 
-                disabled={loading || fichiers.length === 0 || soumissionReussie || dejaSoumis}
+                disabled={loading || fichiers.length === 0 || aDejaSoumis}
                 style={{ 
                   marginTop: 16,
-                  opacity: (soumissionReussie || dejaSoumis) ? 0.5 : 1,
-                  cursor: (soumissionReussie || dejaSoumis) ? 'not-allowed' : 'pointer'
+                  opacity: aDejaSoumis ? 0.5 : 1,
+                  cursor: aDejaSoumis ? 'not-allowed' : 'pointer'
                 }}
               >
                 <Send size={16} /> 
-                {soumissionReussie || dejaSoumis ? "Formulaire déjà soumis" : (loading ? "Envoi en cours..." : "Soumettre")}
+                {aDejaSoumis ? "Formulaire déjà soumis" : (loading ? "Envoi en cours..." : "Soumettre")}
               </button>
             </form>
           </div>
@@ -365,27 +356,24 @@ export default function StudentStage() {
 
         {soumissions.length > 0 && (
           <div className="card">
-            <h3 style={{ marginBottom: 16, fontWeight: 700 }}>Mes soumissions</h3>
+            <h3 style={{ marginBottom: 16, fontWeight: 700 }}>Ma soumission</h3>
             <div className="table-wrap">
               <table className="table">
                 <thead>
-                  <tr>
+                  
                     <th>Sujet</th>
                     <th>Société</th>
                     <th>Encadreur</th>
                     <th>Fichiers</th>
                     <th>Statut</th>
                     <th>Date</th>
-                  </tr>
-                </thead>
+                  </thead>
                 <tbody>
                   {soumissions.map(s => (
                     <tr key={s.id}>
                       <td>{s.sujet}</td>
                       <td>{s.societe}</td>
-                      <td>
-                        {s.encadreur && s.encadreur.trim() !== "" ? s.encadreur : "Aucun encadreur"}
-                      </td>
+                      <td>{s.encadreur && s.encadreur.trim() !== "" ? s.encadreur : "Aucun encadreur"}</td>
                       <td>
                         {s.fichiers ? (
                           (() => {
