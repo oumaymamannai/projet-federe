@@ -47,7 +47,7 @@ function DetailDrawer({ soumission, onClose, onValider }) {
               <div className="drawer-sub">
                 {isPending
                   ? <span className="badge-pill badge-warning-pill">⏳ En attente</span>
-                  : <span className="badge-pill badge-success-pill">✅ Validé</span>
+                  : <span className="badge-pill badge-success-pill"><CheckCircle size={14} /> Validé</span>
                 }
               </div>
             </div>
@@ -78,23 +78,13 @@ function DetailDrawer({ soumission, onClose, onValider }) {
                 <div className="meta-value">{soumission.encadreur || <span style={{ color: '#9CA3AF' }}>Non renseigné</span>}</div>
               </div>
             </div>
-            {/* Encadrant entreprise — NOUVEAU */}
-            <div className="meta-item encadrant-card encadrant-card--entreprise">
-              <div className="meta-icon meta-icon--entreprise"><Building2 size={14} /></div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div className="meta-label">
-                  <span className="encadrant-tag encadrant-tag--entreprise">Entreprise</span>
-                  Encadrant entreprise
-                </div>
-                <div className="meta-value">
-                  {soumission.encadrant_entreprise?.trim()
-                    ? soumission.encadrant_entreprise
-                    : <span className="meta-empty">Non renseigné</span>
-                  }
-                </div>
+            <div className="meta-item">
+              <div className="meta-icon"><Building2 size={14} /></div>
+              <div>
+                <div className="meta-label">Encadrant entreprise</div>
+                <div className="meta-value">{soumission.encadrant_entreprise?.trim() || <span style={{ color: '#9CA3AF' }}>Non renseigné</span>}</div>
               </div>
             </div>
-
             <div className="meta-item">
               <div className="meta-icon"><Calendar size={14} /></div>
               <div>
@@ -208,11 +198,11 @@ export default function AdminSubmissions() {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <h1>
-            <span className="icon-squircle page-title-icon" aria-hidden>
-              <FileText size={22} />
-            </span>{" "}
-            Soumissions de stage
-          </h1>
+              <span className="icon-squircle page-title-icon" aria-hidden>
+                <FileText size={22} />
+              </span>{" "}
+              Soumissions de stage
+            </h1>
             {pendingCount > 0 && (
               <span className="pending-badge">{pendingCount} en attente</span>
             )}
@@ -236,6 +226,7 @@ export default function AdminSubmissions() {
             placeholder="Rechercher un étudiant..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
+            className="search-input"
             style={{
               paddingLeft: 36,
               paddingRight: 12,
@@ -248,7 +239,7 @@ export default function AdminSubmissions() {
               color: '#111827',
               background: '#fff',
             }}
-            onFocus={e => e.target.style.borderColor = '#6366F1'}
+            onFocus={e => e.target.style.borderColor = '#7c3aed'}
             onBlur={e => e.target.style.borderColor = '#E5E7EB'}
           />
         </div>
@@ -281,7 +272,7 @@ export default function AdminSubmissions() {
                     </td>
                     <td>
                       {s.statut === 'traite' ? (
-                        <span className="badge badge-success">✅ Validé</span>
+                        <span className="badge badge-success"><CheckCircle size={14} />Validé</span>
                       ) : (
                         <span className="badge badge-warning">⏳ En attente</span>
                       )}
@@ -346,13 +337,6 @@ export default function AdminSubmissions() {
           align-items: center;
           justify-content: space-between;
           margin-bottom: 24px;
-        }
-        
-        .page-header h1 {
-          font-size: 24px;
-          font-weight: 700;
-          color: var(--text-primary);
-          margin: 0;
         }
         
         .page-header p {
@@ -758,6 +742,15 @@ export default function AdminSubmissions() {
         }
         .btn-valider:active {
           transform: translateY(0);
+        }
+
+        .search-input {
+          transition: all 0.2s ease;
+        }
+        .search-input:focus {
+          border-color: #7c3aed !important;
+          box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1) !important;
+          outline: none;
         }
       `}</style>
     </div>

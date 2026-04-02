@@ -5,7 +5,8 @@ import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Toolti
 import PlanificationWizard from './PlanificationWizard'
 import { 
   Calendar, Clock, CheckCircle, Clock3,
-  TrendingUp, AlertCircle, FileText, Award, Trophy, Medal, Star, Users
+  TrendingUp, AlertCircle, FileText, Award, Trophy, Medal, Star, Users,
+  LayoutDashboard
 } from 'lucide-react'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
@@ -202,14 +203,16 @@ export default function AdminDashboard() {
     { label: 'Taux de réussite', value: `${data?.taux || 0}%`, icon: TrendingUp, color: '#10b981', bg: '#d1fae5', description: 'des étudiants admis' },
     { label: 'Moyenne générale', value: data?.moy ? `${parseFloat(data.moy).toFixed(1)}/20` : '—', icon: Award, color: '#7c3aed', bg: '#ede9fe', description: 'sur 20 points' },
     { label: 'Réclamations', value: data?.reclamations || 0, icon: AlertCircle, color: '#ef4444', bg: '#fee2e2', description: 'en attente' },
-    { label: 'Documents', value: data?.docs || 0, icon: FileText, color: '#7c3aed', bg: '#ede9fe', description: 'publiés' }, // ← Violet
+    { label: 'Documents', value: data?.docs || 0, icon: FileText, color: '#7c3aed', bg: '#ede9fe', description: 'publiés' },
   ]
 
   return (
     <div className="admin-dashboard">
       <div className="dashboard-header">
         <div>
-          <h1>Tableau de bord</h1>
+          <h1>
+            Tableau de bord
+          </h1>
           <p className="dashboard-subtitle">Vue d'ensemble des soutenances et statistiques</p>
         </div>
         <PlanificationWizard onDone={fetchData} />
