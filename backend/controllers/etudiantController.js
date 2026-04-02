@@ -51,6 +51,7 @@ exports.soumettreStage = async (req, res) => {
     prenom_etudiant,
     email_contact,
     encadreur,
+    encadrant_entreprise,
     societe,
     sujet,
     description,
@@ -76,13 +77,14 @@ exports.soumettreStage = async (req, res) => {
 
   try {
     await db.query(
-      "INSERT INTO stage_soumissions (etudiant_id, nom_etudiant, prenom_etudiant, email_contact, encadreur, societe, sujet, description, fichiers) VALUES (?,?,?,?,?,?,?,?,?)",
+      "INSERT INTO stage_soumissions (etudiant_id, nom_etudiant, prenom_etudiant, email_contact, encadreur, encadrant_entreprise, societe, sujet, description, fichiers) VALUES (?,?,?,?,?,?,?,?,?,?)",
       [
         req.user.id,
         nom_etudiant,
         prenom_etudiant,
         email_contact,
         encadreur,
+        encadrant_entreprise || null,
         societe,
         sujet,
         description,
