@@ -1,8 +1,9 @@
 // src/components/FloatingChat.jsx
 import { useState, useEffect, useRef } from 'react';
-import { MessageSquare, X, Send, Minimize2, Maximize2 } from 'lucide-react';
+import { MessageSquare, X, Send, Minimize2, Maximize2, Paperclip } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { getMessageFileUrl } from '../services/messageService';
 
 export default function FloatingChat() {
   const { user } = useAuth();
@@ -14,6 +15,7 @@ export default function FloatingChat() {
   const [soutenanceId, setSoutenanceId] = useState(null);
   const [encadreur, setEncadreur] = useState(null);
   const [nonLus, setNonLus] = useState(0);
+  const [fichier, setFichier] = useState(null);
   const messagesEndRef = useRef(null);
   const intervalRef = useRef(null);
 
@@ -99,12 +101,24 @@ export default function FloatingChat() {
 
   const sendMessage = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim() || !soutenanceId) return;
+    if ((!newMessage.trim() && !fichier) || !soutenanceId) return;
     
     setLoading(true);
     try {
-      await api.post(`/messages/${soutenanceId}`, { contenu: newMessage.trim() });
+      if (fichier) {
+        // Envoyer avec fichier
+        const formData = new FormData();
+        if (newMessage.trim()) formData.append('contenu', newMessage.trim());
+        formData.append('fichier', fichier);
+        await api.post(`/messages/${soutenanceId}`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+      } else {
+        // Message texte seul
+        await api.post(`/messages/${soutenanceId}`, { contenu: newMessage.trim() });
+      }
       setNewMessage('');
+      setFichier(null);
       await loadMessages();
     } catch (err) {
       console.error('Erreur envoi message:', err);
@@ -177,7 +191,7 @@ export default function FloatingChat() {
             position: 'fixed',
             bottom: '24px',
             right: '24px',
-            width: isMinimized ? '300px' : '380px',
+            width: isMinimized ? '300px' : '540px',
             height: isMinimized ? 'auto' : '500px',
             background: 'white',
             borderRadius: '12px',
@@ -306,6 +320,32 @@ export default function FloatingChat() {
                           <div style={{ fontSize: '14px', wordBreak: 'break-word' }}>
                             {msg.contenu}
                           </div>
+                          {msg.piece_jointe && (
+                            <div style={{ marginTop: '6px' }}>
+                              <a
+                                href={getMessageFileUrl(msg.piece_jointe)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  fontSize: '12px',
+                                  color: isMe ? '#e0e7ff' : '#7c3aed',
+                                  textDecoration: 'none',
+                                  padding: '4px 8px',
+                                  borderRadius: '6px',
+                                  background: isMe ? 'rgba(255,255,255,0.1)' : 'rgba(124,58,237,0.1)',
+                                  border: `1px solid ${isMe ? 'rgba(255,255,255,0.2)' : 'rgba(124,58,237,0.2)'}`,
+                                }}
+                                onMouseEnter={(e) => e.target.style.background = isMe ? 'rgba(255,255,255,0.2)' : 'rgba(124,58,237,0.2)'}
+                                onMouseLeave={(e) => e.target.style.background = isMe ? 'rgba(255,255,255,0.1)' : 'rgba(124,58,237,0.1)'}
+                              >
+                                <Paperclip size={12} />
+                                {msg.piece_jointe}
+                              </a>
+                            </div>
+                          )}
                           <div style={{
                             fontSize: '10px',
                             marginTop: '4px',
@@ -323,50 +363,108 @@ export default function FloatingChat() {
               </div>
 
               {/* Formulaire d'envoi */}
-              <form
-                onSubmit={sendMessage}
-                style={{
-                  padding: '12px',
-                  borderTop: '1px solid #e5e7eb',
-                  display: 'flex',
-                  gap: '8px',
-                  background: 'white'
-                }}
-              >
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Écrivez votre message..."
-                  style={{
-                    flex: 1,
+              <div style={{ background: 'white', borderTop: '1px solid #e5e7eb' }}>
+                {fichier && (
+                  <div style={{
                     padding: '8px 12px',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    outline: 'none',
-                    fontSize: '14px'
-                  }}
-                  disabled={loading}
-                />
-                <button
-                  type="submit"
-                  disabled={loading || !newMessage.trim()}
-                  style={{
-                    background: '#7c3aed',
-                    border: 'none',
-                    borderRadius: '8px',
-                    padding: '8px 12px',
-                    color: 'white',
-                    cursor: loading || !newMessage.trim() ? 'not-allowed' : 'pointer',
-                    opacity: loading || !newMessage.trim() ? 0.5 : 1,
+                    fontSize: '12px',
+                    color: '#6b7280',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '4px'
+                    justifyContent: 'space-between',
+                    background: '#f9fafb'
+                  }}>
+                    <span>📎 {fichier.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => setFichier(null)}
+                      style={{
+                        border: 'none',
+                        background: 'transparent',
+                        color: '#ef4444',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+                <form
+                  onSubmit={sendMessage}
+                  style={{
+                    padding: '12px',
+                    display: 'flex',
+                    gap: '8px',
+                    alignItems: 'center'
                   }}
                 >
-                  <Send size={16} />
-                </button>
-              </form>
+                  <label
+                    htmlFor="chat-file-input"
+                    style={{
+                      cursor: 'pointer',
+                      color: '#7c3aed',
+                      padding: '6px',
+                      borderRadius: '6px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                    title="Joindre un fichier"
+                  >
+                    <Paperclip size={16} />
+                  </label>
+                  <input
+                    id="chat-file-input"
+                    type="file"
+                    style={{ display: 'none' }}
+                    onChange={(e) => setFichier(e.target.files?.[0] ?? null)}
+                  />
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder={fichier ? "Ajouter un message..." : "Écrivez votre message..."}
+                    style={{
+                      flex: 1,
+                      padding: '8px 12px',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                      outline: 'none',
+                      fontSize: '14px'
+                    }}
+                    disabled={loading}
+                  />
+                  <button
+                    type="submit"
+                    disabled={loading || (!newMessage.trim() && !fichier)}
+                    style={{
+                      background: '#7c3aed',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '8px 12px',
+                      color: 'white',
+                      cursor: loading || (!newMessage.trim() && !fichier) ? 'not-allowed' : 'pointer',
+                      opacity: loading || (!newMessage.trim() && !fichier) ? 0.5 : 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                  >
+                    <Send size={16} />
+                  </button>
+                </form>
+                <div style={{
+                  fontSize: '11px',
+                  color: '#9ca3af',
+                  textAlign: 'center',
+                  padding: '0 12px 8px',
+                  marginTop: '-4px'
+                }}>
+                  L'envoi d'une pièce jointe est obligatoirement accompagné d'un message
+                </div>
+              </div>
             </>
           )}
         </div>

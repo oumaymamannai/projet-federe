@@ -78,6 +78,23 @@ function DetailDrawer({ soumission, onClose, onValider }) {
                 <div className="meta-value">{soumission.encadreur || <span style={{ color: '#9CA3AF' }}>Non renseigné</span>}</div>
               </div>
             </div>
+            {/* Encadrant entreprise — NOUVEAU */}
+            <div className="meta-item encadrant-card encadrant-card--entreprise">
+              <div className="meta-icon meta-icon--entreprise"><Building2 size={14} /></div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="meta-label">
+                  <span className="encadrant-tag encadrant-tag--entreprise">Entreprise</span>
+                  Encadrant entreprise
+                </div>
+                <div className="meta-value">
+                  {soumission.encadrant_entreprise?.trim()
+                    ? soumission.encadrant_entreprise
+                    : <span className="meta-empty">Non renseigné</span>
+                  }
+                </div>
+              </div>
+            </div>
+
             <div className="meta-item">
               <div className="meta-icon"><Calendar size={14} /></div>
               <div>

@@ -43,7 +43,21 @@ const fileFilter = (req, file, cb) => {
 
 const maxSize = parseInt(process.env.MAX_FILE_SIZE) || 10 * 1024 * 1024;
 
+const messagesStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join(process.env.UPLOAD_PATH || './uploads', 'messages');
+    ensureDir(dir);
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    const name = `message_${Date.now()}_${Math.random().toString(36).substr(2, 9)}${ext}`;
+    cb(null, name);
+  }
+});
+
 const uploadDocument = multer({ storage: documentsStorage, fileFilter, limits: { fileSize: maxSize } });
 const uploadStage = multer({ storage: stageStorage, fileFilter, limits: { fileSize: maxSize } });
+const uploadMessage = multer({ storage: messagesStorage, fileFilter, limits: { fileSize: maxSize } });
 
-module.exports = { uploadDocument, uploadStage };
+module.exports = { uploadDocument, uploadStage, uploadMessage };

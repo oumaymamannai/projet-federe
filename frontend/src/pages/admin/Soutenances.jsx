@@ -10,17 +10,15 @@ export default function AdminSoutenances() {
   const [assignForm, setAssignForm] = useState({ encadreur_id: "", president_id: "", membre3_id: "" });
   const [msg, setMsg] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [successModal, setSuccessModal] = useState(null);
 
   const load = () => Promise.all([api.get("/admin/soutenances"), api.get("/admin/jury/members")])
-    .then(([s, j]) => { 
-      console.log("Soutenances chargées:", s.data.length);
-      console.log("Jurys chargés:", j.data.length);
-      setSoutenances(s.data); 
-      setJurys(j.data); 
+    .then(([s, j]) => {
+      setSoutenances(s.data);
+      setJurys(j.data);
     })
-    .catch(err => console.error("Erreur chargement:", err))
     .finally(() => setLoading(false));
-    
+
   useEffect(() => { load(); }, []);
 
   const filteredSoutenances = soutenances.filter(s =>
@@ -88,12 +86,28 @@ export default function AdminSoutenances() {
   };
 
   const handleSendResult = async (id) => {
-    try { 
-      await api.post("/admin/resultat/" + id + "/envoyer"); 
-      alert("Email envoyé avec succès !"); 
-    } catch (err) { 
-      console.error("Erreur envoi email:", err);
-      alert("Erreur lors de l'envoi de l'email"); 
+    const soutenance = soutenances.find(s => s.id === id);
+
+    if (!soutenance?.jurys || soutenance.jurys.length < 3) {
+      setMsg("❌ Le jury doit être complet (3 membres) avant d'envoyer les résultats.");
+      return;
+    }
+
+    const manquants = soutenance.jurys.filter(j =>
+      !j.remarques || String(j.remarques).trim() === ""
+    );
+
+    if (manquants.length > 0) {
+      const noms = manquants.map(j => `${j.nom} (${j.role})`).join(", ");
+      setMsg(`❌ Remarques manquantes pour : ${noms}`);
+      return;
+    }
+
+    try {
+      await api.post("/admin/resultat/" + id + "/envoyer");
+      setSuccessModal({ nom: soutenance.etudiant_nom });
+    } catch (err) {
+      setMsg("❌ Erreur lors de l'envoi de l'email");
     }
   };
 
@@ -125,6 +139,85 @@ export default function AdminSoutenances() {
 
   return (
     <div>
+      {/* ── Modale succès email ── */}
+      {successModal && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(15,5,32,.55)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          zIndex: 1000, backdropFilter: "blur(2px)",
+        }}>
+          <div style={{
+            background: "#fff", borderRadius: 20, width: 420, maxWidth: "95vw",
+            boxShadow: "0 24px 80px rgba(124,58,237,.18)",
+            overflow: "hidden",
+          }}>
+            {/* Header violet */}
+            <div style={{
+              background: "linear-gradient(135deg, #4c3db5, #6b5ce7)",
+              padding: "20px 24px",
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{
+                  width: 42, height: 42, borderRadius: "50%",
+                  background: "rgba(255,255,255,0.2)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 18,
+                }}>🎓</div>
+                <div>
+                  <div style={{ color: "white", fontWeight: 700, fontSize: 15 }}>
+                    {successModal.nom}
+                  </div>
+                  <div style={{ color: "rgba(255,255,255,0.8)", fontSize: 12 }}>
+                    Résultats de soutenance
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setSuccessModal(null)}
+                style={{
+                  background: "rgba(255,255,255,0.15)", border: "none",
+                  borderRadius: "50%", width: 30, height: 30,
+                  cursor: "pointer", color: "white", fontSize: 18,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}
+              >×</button>
+            </div>
+
+            {/* Corps */}
+            <div style={{ padding: "36px 24px", textAlign: "center" }}>
+              <div style={{
+                width: 64, height: 64, borderRadius: "50%",
+                background: "#d1fae5", border: "4px solid #a7f3d0",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                margin: "0 auto 16px", fontSize: 28, color: "#065f46",
+              }}>✓</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "#1a1033", marginBottom: 8 }}>
+                Email envoyé !
+              </div>
+              <div style={{ fontSize: 14, color: "#6b7280" }}>
+                Les résultats ont été transmis à <strong>{successModal.nom}</strong>.
+              </div>
+            </div>
+
+            {/* Bouton */}
+            <div style={{ padding: "0 24px 24px" }}>
+              <button
+                onClick={() => setSuccessModal(null)}
+                style={{
+                  width: "100%", padding: "11px 0",
+                  background: "linear-gradient(135deg, #4c3db5, #7c3aed)",
+                  color: "white", border: "none", borderRadius: 10,
+                  fontSize: 14, fontWeight: 600, cursor: "pointer",
+                }}
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="page-header">
         <div>
           <h1>
@@ -161,7 +254,7 @@ export default function AdminSoutenances() {
       </div>
 
       <div className="page-content">
-        {msg && <div className="alert alert-success">✅ {msg}</div>}
+        {msg && <div className="alert alert-success">{msg}</div>}
         <div className="card">
           <div className="table-wrap">
             <table>
@@ -182,15 +275,15 @@ export default function AdminSoutenances() {
                   <tr key={s.id}>
                     <td>
                       <strong>{s.etudiant_nom}</strong>
-                      <br /><small style={{color:"#9ca3af"}}>{s.etudiant_email}</small>
+                      <br /><small style={{ color: "#9ca3af" }}>{s.etudiant_email}</small>
                     </td>
                     <td style={{ maxWidth: 180 }}>{s.sujet || "—"}</td>
                     <td>
-                      {s.date_soutenance ? new Date(s.date_soutenance).toLocaleString("fr-FR", { 
-                        day: "2-digit", 
-                        month: "2-digit", 
-                        hour: "2-digit", 
-                        minute: "2-digit" 
+                      {s.date_soutenance ? new Date(s.date_soutenance).toLocaleString("fr-FR", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit"
                       }) : "—"}
                     </td>
                     <td>{s.salle || "—"}</td>
@@ -199,9 +292,9 @@ export default function AdminSoutenances() {
                     <td>
                       {s.jurys?.length > 0 ? s.jurys.map((j, i) => (
                         <div key={i} style={{ fontSize: 12 }}>
-                          {j.nom} <span style={{color:"#9ca3af"}}>({j.role})</span>
+                          {j.nom} <span style={{ color: "#9ca3af" }}>({j.role})</span>
                         </div>
-                      )) : <span style={{color:"#9ca3af"}}>Non assigné</span>}
+                      )) : <span style={{ color: "#9ca3af" }}>Non assigné</span>}
                     </td>
                     <td>
                       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -218,22 +311,37 @@ export default function AdminSoutenances() {
                             const presidentId = s.jurys?.find(j => j.role === 'president')?.id || "";
                             const membre3Id = s.jurys?.find(j => j.role === '3eme_membre')?.id || "";
                             setAssignModal(s);
-                            setAssignForm({ 
-                              encadreur_id: encId, 
-                              president_id: presidentId, 
-                              membre3_id: membre3Id 
+                            setAssignForm({
+                              encadreur_id: encId,
+                              president_id: presidentId,
+                              membre3_id: membre3Id
                             });
                           }}>
                           <Users size={12} /> Jury
                         </button>
-                        {s.statut === "terminee" && (
-                          <button 
-                            className="btn btn-sm" 
-                            style={{ background: "#10b981", color: "white" }} 
-                            onClick={() => handleSendResult(s.id)}>
-                            <Send size={12} /> Email
-                          </button>
-                        )}
+
+                        {s.statut === "terminee" && (() => {
+                          const pret = s.jurys?.length >= 3 &&
+                            s.jurys.every(j => j.remarques && String(j.remarques).trim() !== "");
+                          return (
+                            <button
+                              className="btn btn-sm"
+                              style={{
+                                background: pret ? "#10b981" : "#d1d5db",
+                                color: pret ? "white" : "#9ca3af",
+                                cursor: pret ? "pointer" : "not-allowed",
+                                opacity: pret ? 1 : 0.6,
+                              }}
+                              disabled={!pret}
+                              title={pret
+                                ? "Envoyer les résultats par email"
+                                : "Les remarques des 3 membres du jury sont requises"}
+                              onClick={() => handleSendResult(s.id)}
+                            >
+                              <Send size={12} /> Email
+                            </button>
+                          );
+                        })()}
                       </div>
                     </td>
                   </tr>
@@ -256,7 +364,7 @@ export default function AdminSoutenances() {
           <div className="modal">
             <h3>👥 Affecter le jury</h3>
             <p className="sub">Soutenance de {assignModal.etudiant_nom} — {assignModal.sujet || "Sujet non défini"}</p>
-            
+
             <div className="form-group">
               <label className="form-label">Encadreur</label>
               {(() => {
@@ -273,10 +381,10 @@ export default function AdminSoutenances() {
 
             <div className="form-group">
               <label className="form-label">Président</label>
-              <select 
-                className="form-control" 
-                value={assignForm.president_id} 
-                onChange={e => setAssignForm({...assignForm, president_id: e.target.value})}
+              <select
+                className="form-control"
+                value={assignForm.president_id}
+                onChange={e => setAssignForm({ ...assignForm, president_id: e.target.value })}
               >
                 <option value="">— Choisir —</option>
                 {getFilteredJurys('president').map(j => (
@@ -287,10 +395,10 @@ export default function AdminSoutenances() {
 
             <div className="form-group">
               <label className="form-label">3ème Membre</label>
-              <select 
-                className="form-control" 
-                value={assignForm.membre3_id} 
-                onChange={e => setAssignForm({...assignForm, membre3_id: e.target.value})}
+              <select
+                className="form-control"
+                value={assignForm.membre3_id}
+                onChange={e => setAssignForm({ ...assignForm, membre3_id: e.target.value })}
               >
                 <option value="">— Choisir —</option>
                 {getFilteredJurys('membre3').map(j => (
