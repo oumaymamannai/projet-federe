@@ -16,12 +16,7 @@ import {
 
 const studentNav = [
   { to: '/student', icon: <LayoutDashboard size={18} />, label: 'Tableau de bord' },
-  { 
-    to: '/student/stage', 
-    icon: <FileText size={18} />, 
-    label: 'Depot dossier',
-    disabled: false
-  },
+  { to: '/student/stage', icon: <FileText size={18} />, label: 'Depot dossier', disabled: false },
   { to: '/student/documents', icon: <ClipboardList size={18} />, label: 'Documents' },
   { to: '/student/reclamations', icon: <Bell size={18} />, label: 'Réclamations' },
 ];
@@ -41,29 +36,33 @@ const adminNav = [
   { to: '/admin/documents', icon: <FileText size={18} />, label: 'Documents' },
 ];
 
-const roleLabels = { 
-  etudiant: 'ÉTUDIANT', 
-  jury: 'JURY', 
-  admin: 'RESPONSABLE' 
-};
+const roleLabels = { etudiant: 'ÉTUDIANT', jury: 'JURY', admin: 'RESPONSABLE' };
+
+/* ─────────────────────────────────────────────────────────────
+   Paths des pages Messages selon le rôle.
+   Utilisé pour détecter si on est sur la page Messages.
+──────────────────────────────────────────────────────────────*/
+const MESSAGE_PATHS = ['/jury/messages', '/student/messages'];
 
 export default function Sidebar() {
   const { user, logout } = useAuth();
   const location = useLocation();
-  const [pendingCount, setPendingCount] = useState(0);
+  const [pendingCount, setPendingCount]               = useState(0);
   const [reclamationsAdminCount, setReclamationsAdminCount] = useState(0);
-  const [reclamationsCount, setReclamationsCount] = useState(0);
-  const [messagesNonLus, setMessagesNonLus] = useState(0);
-  const [aDejaSoumis, setADejaSoumis] = useState(false);
+  const [reclamationsCount, setReclamationsCount]     = useState(0);
+  const [messagesNonLus, setMessagesNonLus]           = useState(0);
+  const [aDejaSoumis, setADejaSoumis]                 = useState(false);
+
+  const isOnMessagesPage = MESSAGE_PATHS.includes(location.pathname);
+
+  /* ── Admin / étudiant / jury : logique inchangée ── */
 
   const checkDejaSoumis = useCallback(async () => {
     if (user?.role === 'etudiant') {
       try {
         const res = await api.get('/etudiant/a-deja-soumis');
         setADejaSoumis(res.data.dejaSoumis);
-      } catch (err) {
-        console.error('Erreur vérification soumission:', err);
-      }
+      } catch (err) { console.error('Erreur vérification soumission:', err); }
     }
   }, [user]);
 
@@ -93,26 +92,16 @@ export default function Sidebar() {
     if (user?.role === 'etudiant') {
       try {
         const res = await api.get('/etudiant/reclamations');
-        const reclamations = res.data;
-        
         const reponsesVues = JSON.parse(localStorage.getItem('reponsesVues') || '{}');
-        
         let newCount = 0;
-        
-        reclamations.forEach(r => {
+        res.data.forEach(r => {
           if (r.statut === 'traitee' && r.reponse) {
-            const reponseId = `${r.id}_${r.reponse_at || r.updated_at}`;
-            if (!reponsesVues[reponseId]) {
-              newCount++;
-            }
+            const id = `${r.id}_${r.reponse_at || r.updated_at}`;
+            if (!reponsesVues[id]) newCount++;
           }
         });
-        
         setReclamationsCount(newCount);
-        
-      } catch (error) {
-        console.error('Erreur chargement réclamations étudiant:', error);
-      }
+      } catch (error) { console.error('Erreur chargement réclamations étudiant:', error); }
     }
   }, [user]);
 
@@ -120,104 +109,131 @@ export default function Sidebar() {
     if (reclamationsCount > 0) {
       try {
         const res = await api.get('/etudiant/reclamations');
-        const reclamations = res.data;
-        
         const reponsesVues = JSON.parse(localStorage.getItem('reponsesVues') || '{}');
-        
-        reclamations.forEach(r => {
+        res.data.forEach(r => {
           if (r.statut === 'traitee' && r.reponse) {
-            const reponseId = `${r.id}_${r.reponse_at || r.updated_at}`;
-            reponsesVues[reponseId] = true;
+            reponsesVues[`${r.id}_${r.reponse_at || r.updated_at}`] = true;
           }
         });
-        
         localStorage.setItem('reponsesVues', JSON.stringify(reponsesVues));
         setReclamationsCount(0);
-        
-      } catch (error) {
-        console.error('Erreur:', error);
-      }
+      } catch (error) { console.error('Erreur:', error); }
     }
   }, [reclamationsCount]);
 
   const handleAdminReclamationsClick = useCallback(() => {}, []);
 
+  /* ─────────────────────────────────────────────────────────────
+     Badge Messages — NOUVELLE LOGIQUE :
+
+     QUAND on est sur la page Messages :
+       → MessagesPage est la source de vérité.
+         Elle émet 'messages-non-lus-updated' à chaque changement
+         de son totalUnread (état local, identique à la sidebar conv).
+         La Sidebar écoute et met à jour immédiatement.
+         Le polling API ci-dessous est SUSPENDU pour éviter la divergence.
+
+     QUAND on n'est PAS sur la page Messages :
+       → La Sidebar fait son propre polling /messages/non-lus
+         toutes les 30s pour détecter les nouveaux messages.
+
+     C'est exactement le même principe que la sidebar de la conv :
+     l'état local (ou l'événement qui le reflète) prime toujours
+     sur le serveur.
+  ──────────────────────────────────────────────────────────────*/
+
+  /* Polling messages — actif seulement hors page Messages */
+  const fetchNonLus = useCallback(() => {
+    if (isOnMessagesPage) return; // MessagesPage gère via événement
+    api.get('/messages/non-lus')
+      .then(res => setMessagesNonLus(res.data.non_lus || 0))
+      .catch(() => {});
+  }, [isOnMessagesPage]);
+
+  /* Écoute de l'événement émis par MessagesPage */
+  useEffect(() => {
+    if (user?.role !== 'jury' && user?.role !== 'etudiant') return;
+
+    const handler = (e) => {
+      // MessagesPage calcule totalUnread depuis son état local
+      // (somme de tous les conv.non_lus), exactement comme la
+      // sidebar de la conv calcule ses badges. On reçoit le même chiffre.
+      setMessagesNonLus(e.detail.count);
+    };
+
+    window.addEventListener('messages-non-lus-updated', handler);
+    return () => window.removeEventListener('messages-non-lus-updated', handler);
+  }, [user]);
+
+  /* Quand on quitte la page Messages, on re-fetch une fois
+     pour avoir l'état réel du serveur (d'autres messages
+     peuvent être arrivés depuis d'autres convs) */
+  useEffect(() => {
+    if (!isOnMessagesPage && (user?.role === 'jury' || user?.role === 'etudiant')) {
+      // Petit délai pour laisser le serveur traiter les marquages
+      const t = setTimeout(() => {
+        api.get('/messages/non-lus')
+          .then(res => setMessagesNonLus(res.data.non_lus || 0))
+          .catch(() => {});
+      }, 500);
+      return () => clearTimeout(t);
+    }
+  }, [isOnMessagesPage, user]);
+
+  /* Setup des effets selon le rôle */
   useEffect(() => {
     if (user?.role === 'admin') {
       loadPendingCount();
       loadReclamationsAdminCount();
-      
       const interval = setInterval(() => {
         loadPendingCount();
         loadReclamationsAdminCount();
       }, 30000);
-      
-      const handleSubmissionUpdate = () => loadPendingCount();
+      const handleSubmissionUpdate   = () => loadPendingCount();
       const handleReclamationsUpdate = () => loadReclamationsAdminCount();
-      
       window.addEventListener('submissionUpdated', handleSubmissionUpdate);
       window.addEventListener('reclamations-admin-updated', handleReclamationsUpdate);
-      
       return () => {
         clearInterval(interval);
         window.removeEventListener('submissionUpdated', handleSubmissionUpdate);
         window.removeEventListener('reclamations-admin-updated', handleReclamationsUpdate);
       };
     }
-    
+
     if (user?.role === 'etudiant') {
       loadReclamationsCount();
       checkDejaSoumis();
-
-      const fetchNonLusEtudiant = () => {
-        api.get('/messages/non-lus')
-          .then(res => setMessagesNonLus(res.data.non_lus || 0))
-          .catch(() => {});
-      };
-      fetchNonLusEtudiant();
-
+      fetchNonLus();
       const interval = setInterval(() => {
         loadReclamationsCount();
-        fetchNonLusEtudiant();
+        fetchNonLus();
         checkDejaSoumis();
       }, 30000);
-
       const handleVisibilityChange = () => {
         if (document.visibilityState === 'visible') {
           loadReclamationsCount();
-          fetchNonLusEtudiant();
+          fetchNonLus();
           checkDejaSoumis();
         }
       };
       document.addEventListener('visibilitychange', handleVisibilityChange);
-
       return () => {
         clearInterval(interval);
         document.removeEventListener('visibilitychange', handleVisibilityChange);
       };
     }
-    
+
     if (user?.role === 'jury') {
-      const fetchNonLus = () => {
-        api.get('/messages/non-lus')
-          .then(res => setMessagesNonLus(res.data.non_lus || 0))
-          .catch(() => {});
-      };
       fetchNonLus();
       const interval = setInterval(fetchNonLus, 30000);
       return () => clearInterval(interval);
     }
-  }, [user, loadPendingCount, loadReclamationsAdminCount, loadReclamationsCount, checkDejaSoumis]);
+  }, [user, loadPendingCount, loadReclamationsAdminCount, loadReclamationsCount, checkDejaSoumis, fetchNonLus]);
 
   let nav = [];
-  if (user?.role === 'etudiant') {
-    nav = studentNav
-    
-  } else if (user?.role === 'jury') {
-    nav = juryNav;
-  } else if (user?.role === 'admin') {
-    nav = adminNav;
-  }
+  if (user?.role === 'etudiant')     nav = studentNav;
+  else if (user?.role === 'jury')    nav = juryNav;
+  else if (user?.role === 'admin')   nav = adminNav;
 
   return (
     <aside className="sidebar">
@@ -234,31 +250,23 @@ export default function Sidebar() {
       <nav className="sidebar-nav">
         {nav.map(item => {
           const isDisabled = item.disabled === true;
-          
           return (
-            <Link 
-              key={item.to} 
+            <Link
+              key={item.to}
               to={item.to}
               onClick={(e) => {
-                if (isDisabled) {
-                  e.preventDefault();
-                  return;
-                }
+                if (isDisabled) { e.preventDefault(); return; }
                 if (item.label === 'Réclamations') {
-                  if (user?.role === 'etudiant') {
-                    handleReclamationsClick();
-                  }
-                  if (user?.role === 'admin') {
-                    handleAdminReclamationsClick();
-                  }
+                  if (user?.role === 'etudiant') handleReclamationsClick();
+                  if (user?.role === 'admin') handleAdminReclamationsClick();
                 }
               }}
               className={`nav-item ${location.pathname === item.to ? 'active' : ''} ${isDisabled ? 'disabled' : ''}`}
-              style={{ 
+              style={{
                 position: 'relative',
                 opacity: isDisabled ? 0.5 : 1,
                 cursor: isDisabled ? 'not-allowed' : 'pointer',
-                pointerEvents: isDisabled ? 'none' : 'auto'
+                pointerEvents: isDisabled ? 'none' : 'auto',
               }}
               title={isDisabled ? "✅ Vous avez déjà soumis votre formulaire de stage. Une seule soumission est autorisée." : ""}
             >
