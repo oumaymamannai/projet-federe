@@ -30,6 +30,15 @@ function statusBadge(s) {
   return <span style={row}><Hourglass size={14} strokeWidth={2.5} /> En attente</span>;
 }
 
+// Fonction pour obtenir le texte de la mention
+function getMentionText(note) {
+  if (note >= 16) return { text: "Très Bien", color: "#f59e0b" };
+  if (note >= 14) return { text: "Bien", color: "#10b981" };
+  if (note >= 12) return { text: "Assez Bien", color: "#3b82f6" };
+  if (note >= 10) return { text: "Passable", color: "#8b5cf6" };
+  return null;
+}
+
 export default function StudentDashboard() {
   const { user } = useAuth();
   const [soutenance, setSoutenance] = useState(null);
@@ -44,7 +53,7 @@ export default function StudentDashboard() {
       api.get("/etudiant/soutenance").catch(() => ({ data: null })),
       api.get("/etudiant/documents").catch(() => ({ data: [] })),
       api.get("/etudiant/stage/soumissions").catch(() => ({ data: [] })),
-      api.get("/etudiant/reclamations").catch(() => ({ data: [] }))  // Ajout des réclamations
+      api.get("/etudiant/reclamations").catch(() => ({ data: [] }))
     ])
       .then(([s, d, soum, recl]) => { 
         setSoutenance(s.data); 
@@ -54,7 +63,7 @@ export default function StudentDashboard() {
       })
       .finally(() => setLoading(false));
     
-    // Vérifier si l'étudiant a consulté des documents
+    // Vérifier si l'étudiant a consulté des documents (par ID utilisateur)
     if (user?.id) {
       const consulted = localStorage.getItem(`documents_consulted_${user.id}`);
       setDocumentsConsulted(consulted === 'true');
@@ -63,7 +72,7 @@ export default function StudentDashboard() {
 
   const countdown = soutenance?.date_soutenance ? getCountdownStatus(soutenance.date_soutenance) : null;
   const hasSubmitted = soumissions.length > 0;
-  const hasReclamation = reclamations.length > 0; // ✅ Vérifier si au moins une réclamation existe
+  const hasReclamation = reclamations.length > 0;
 
   const steps = [
     { 
@@ -88,7 +97,7 @@ export default function StudentDashboard() {
       description: "En cas de problème ou d'absence d'encadreur",
       icone: MessageSquare,
       lien: "/student/reclamations",
-      fait: hasReclamation  // ✅ Maintenant basé sur les réclamations existantes
+      fait: hasReclamation
     }
   ];
 
@@ -104,7 +113,7 @@ export default function StudentDashboard() {
       </div>
       <div className="page-content">
         
-        {/* Carte Soutenance */}
+        {/* 1. EN HAUT : Carte Soutenance */}
         {!soutenance ? (
           <div className="alert alert-warning" style={{ marginBottom: 24 }}>
             <AlertCircle size={18} />
@@ -216,7 +225,7 @@ export default function StudentDashboard() {
           </div>
         )}
 
-        {/* Cartes statistiques */}
+        {/* 2. AU MILIEU : 3 cartes statistiques */}
         <div className="stats-grid" style={{ marginBottom: 32 }}>
           <div className="stat-card">
             <div className="stat-icon icon-squircle"><FileText size={22} /></div>
@@ -235,11 +244,36 @@ export default function StudentDashboard() {
             <div className="stat-value" style={{ color: soutenance?.note_finale != null ? (soutenance.note_finale >= 10 ? "#10b981" : "#ef4444") : "#9ca3af" }}>
               {soutenance?.note_finale != null ? `${soutenance.note_finale}/20` : "—"}
             </div>
-            <div className="stat-label">{soutenance?.note_finale != null ? (soutenance.note_finale >= 10 ? "Admis(e)" : "Non admis(e)") : "Note en attente"}</div>
+            <div className="stat-label">
+              {soutenance?.note_finale != null ? (
+                <>
+                  {soutenance.note_finale >= 10 ? (
+  <>
+    Admis(e)
+    {(() => {
+      const mention = getMentionText(soutenance.note_finale);
+      if (mention) {
+        return (
+          <span style={{ marginLeft: 6 }}>
+            Mention {mention.text}
+          </span>
+        );
+      }
+      return null;
+    })()}
+  </>
+) : (
+  "Non admis(e)"
+)}
+                </>
+              ) : (
+                "Note en attente"
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Prochaines étapes */}
+        {/* 3. EN BAS : Les 3 étapes */}
         <div>
           <h3 style={{ marginBottom: 20, fontSize: 16, fontWeight: 600, color: "#374151" }}>
             📍 Prochaines étapes
