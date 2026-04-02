@@ -180,7 +180,9 @@ export default function StudentStage() {
     <div>
       <div className="page-header">
         <div>
-          <h1>📋 Formulaire de stage</h1>
+          <h1> <span className="icon-squircle page-title-icon" aria-hidden>
+                <FileText size={22} />
+              </span>{" "}Formulaire de stage</h1>
           <p>Soumettez vos informations de stage</p>
         </div>
       </div>

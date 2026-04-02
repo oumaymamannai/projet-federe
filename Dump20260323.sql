@@ -3,7 +3,7 @@
 -- Host: localhost    Database: gradflow
 -- ------------------------------------------------------
 -- Server version	8.0.45
-
+use gradflow;
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
@@ -254,3 +254,6 @@ UNLOCK TABLES;
 ALTER TABLE stage_soumissions
   ADD COLUMN encadrant_entreprise VARCHAR(255) NULL
     AFTER encadreur;
+    
+    
+    ALTER TABLE users ADD COLUMN est_externe TINYINT(1) NOT NULL DEFAULT 0;
