@@ -43,7 +43,7 @@ export default function AdminSoutenances() {
       if (membre3_id) payload.membre3_id = membre3_id;
 
       await api.post(`/admin/jury/${assignModal.id}`, payload);
-      setMsg(" Jury affecté avec succès !");
+      setMsg("✅ Jury affecté avec succès !");
       setAssignModal(null);
       load();
     } catch (err) {
@@ -52,7 +52,7 @@ export default function AdminSoutenances() {
     }
   };
 
-  // Filtrer les jurys pour éviter les doublons
+  // Filtrer les jurys pour éviter les doublons, mais inclure les membres déjà assignés
   const getFilteredJurys = (role) => {
     const selectedValues = {
       encadreur: parseInt(assignForm.encadreur_id) || null,
@@ -60,6 +60,10 @@ export default function AdminSoutenances() {
       membre3: parseInt(assignForm.membre3_id) || null
     };
     const encadreurId = parseInt(assignForm.encadreur_id) || (assignModal?.encadreur_id ? parseInt(assignModal.encadreur_id) : null);
+
+    // Récupérer l'ID actuel du membre pour ce rôle
+    const currentId = selectedValues[role === 'president' ? 'president' : 'membre3'];
+    const currentMember = currentId ? jurys.find(j => j.id === currentId) : null;
 
     return jurys.filter(j => {
       // 1. Exclure l'admin (GradFlow Admin a généralement id=1)
@@ -71,9 +75,13 @@ export default function AdminSoutenances() {
         return j.id !== selectedValues.president && j.id !== selectedValues.membre3;
       }
       if (role === 'president') {
+        // Si c'est le membre actuellement assigné, on le garde même s'il est aussi dans les exclus
+        if (currentMember && j.id === currentMember.id) return true;
         return j.id !== encadreurId && j.id !== selectedValues.membre3;
       }
       if (role === 'membre3') {
+        // Si c'est le membre actuellement assigné, on le garde même s'il est aussi dans les exclus
+        if (currentMember && j.id === currentMember.id) return true;
         return j.id !== encadreurId && j.id !== selectedValues.president;
       }
       return true;
@@ -177,10 +185,21 @@ export default function AdminSoutenances() {
                           style={!canAssignJury(s) ? { opacity: 0.5, cursor: "not-allowed" } : {}}
                           onClick={() => {
                             if (!canAssignJury(s)) return;
+                            
+                            // Récupérer l'encadreur existant
                             const encFromJurys = s.jurys?.find(j => j.role === 'encadreur')?.id;
                             const encId = s.encadreur_id || encFromJurys || "";
+                            
+                            // Récupérer le président et 3ème membre existants
+                            const presidentId = s.jurys?.find(j => j.role === 'president')?.id || "";
+                            const membre3Id = s.jurys?.find(j => j.role === '3eme_membre')?.id || "";
+                            
                             setAssignModal(s);
-                            setAssignForm({ encadreur_id: encId, president_id: "", membre3_id: "" });
+                            setAssignForm({ 
+                              encadreur_id: encId, 
+                              president_id: presidentId, 
+                              membre3_id: membre3Id 
+                            });
                           }}>
                           <Users size={12} /> Jury
                         </button>
