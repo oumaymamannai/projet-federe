@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import api from "../../services/api";
-import { FileText, CheckCircle, X, ChevronRight, Building2, User, BookOpen, AlignLeft, Paperclip, Calendar, Eye, XCircle } from "lucide-react";
+import { FileText, CheckCircle, X, ChevronRight, Building2, User, BookOpen, AlignLeft, Paperclip, Calendar, Eye } from "lucide-react";
 
 // ── Drawer de détail ─────────────────────────────────────────────────────────
-function DetailDrawer({ soumission, onClose, onValider, onRejeter }) {
+function DetailDrawer({ soumission, onClose, onValider }) {
   const drawerRef = useRef(null);
 
   useEffect(() => {
@@ -35,12 +35,8 @@ function DetailDrawer({ soumission, onClose, onValider, onRejeter }) {
 
   return (
     <>
-      {/* Overlay */}
       <div className="drawer-overlay" onClick={onClose} />
-
-      {/* Drawer */}
       <div className="drawer" ref={drawerRef}>
-        {/* Header */}
         <div className="drawer-header">
           <div className="drawer-header-left">
             <div className="drawer-avatar">
@@ -59,10 +55,7 @@ function DetailDrawer({ soumission, onClose, onValider, onRejeter }) {
           <button className="drawer-close" onClick={onClose}><X size={18} /></button>
         </div>
 
-        {/* Corps */}
         <div className="drawer-body">
-
-          {/* Méta infos en grille */}
           <div className="drawer-meta-grid">
             <div className="meta-item">
               <div className="meta-icon"><BookOpen size={14} /></div>
@@ -94,7 +87,6 @@ function DetailDrawer({ soumission, onClose, onValider, onRejeter }) {
             </div>
           </div>
 
-          {/* Description complète */}
           <div className="drawer-section">
             <div className="drawer-section-title">
               <AlignLeft size={14} />
@@ -109,7 +101,6 @@ function DetailDrawer({ soumission, onClose, onValider, onRejeter }) {
             )}
           </div>
 
-          {/* Documents joints */}
           {files.length > 0 && (
             <div className="drawer-section">
               <div className="drawer-section-title">
@@ -135,25 +126,15 @@ function DetailDrawer({ soumission, onClose, onValider, onRejeter }) {
           )}
         </div>
 
-        {/* Footer avec actions */}
         {isPending && (
           <div className="drawer-footer">
-            <div className="footer-actions">
-              <button
-                className="btn-rejeter"
-                onClick={() => { onRejeter(soumission.id); onClose(); }}
-              >
-                <XCircle size={16} />
-                Refuser
-              </button>
-              <button
-                className="btn-valider"
-                onClick={() => { onValider(soumission.id); onClose(); }}
-              >
-                <CheckCircle size={16} />
-                Valider la soumission
-              </button>
-            </div>
+            <button
+              className="btn-valider"
+              onClick={() => { onValider(soumission.id); onClose(); }}
+            >
+              <CheckCircle size={16} />
+              Valider cette soumission
+            </button>
           </div>
         )}
       </div>
@@ -195,19 +176,6 @@ export default function AdminSubmissions() {
     }
   };
 
-  const rejeterSoumission = async (id) => {
-    try {
-      await api.post(`/admin/soumissions/${id}/rejeter`);
-      await loadSoumissions();
-      setMsg('❌ Soumission refusée');
-      window.dispatchEvent(new Event('submissionUpdated'));
-      setTimeout(() => setMsg(''), 4000);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Erreur lors du refus');
-      setTimeout(() => setError(''), 4000);
-    }
-  };
-
   const pendingCount = soumissions.filter(s => s.statut !== 'traite').length;
 
   if (loading) return <div className="spinner" />;
@@ -227,13 +195,12 @@ export default function AdminSubmissions() {
       </div>
 
       <div className="page-content">
-        {msg   && <div className="alert alert-success">✅ {msg}</div>}
+        {msg   && <div className="alert alert-success">{msg}</div>}
         {error && <div className="alert alert-danger">⚠️ {error}</div>}
 
         <div className="card">
           <h3 style={{ fontWeight: 700, marginBottom: 16 }}>📋 Liste des soumissions</h3>
 
-          {/* Tableau simplifié */}
           <div className="table-wrap">
             <table className="admin-table">
               <thead>
@@ -285,18 +252,15 @@ export default function AdminSubmissions() {
         </div>
       </div>
 
-      {/* Drawer avec détails complets */}
       {selected && (
         <DetailDrawer
           soumission={selected}
           onClose={() => setSelected(null)}
           onValider={validerSoumission}
-          onRejeter={rejeterSoumission}
         />
       )}
 
       <style>{`
-        /* Variables de couleurs */
         :root {
           --primary-dark: #4F46E5;
           --primary-main: #6366F1;
@@ -306,7 +270,6 @@ export default function AdminSubmissions() {
           --success-dark: #059669;
           --warning: #F59E0B;
           --danger: #EF4444;
-          --danger-dark: #DC2626;
           --text-primary: #111827;
           --text-secondary: #4B5563;
           --text-muted: #6B7280;
@@ -318,7 +281,6 @@ export default function AdminSubmissions() {
           --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
 
-        /* ── Page Header ── */
         .page-header {
           margin-bottom: 24px;
         }
@@ -344,7 +306,6 @@ export default function AdminSubmissions() {
           font-weight: 600;
         }
 
-        /* ── Table styles ── */
         .admin-table {
           width: 100%;
           border-collapse: collapse;
@@ -371,7 +332,6 @@ export default function AdminSubmissions() {
           color: var(--text-primary);
         }
 
-        /* ── Clickable rows ── */
         .row-clickable {
           cursor: pointer;
           transition: all 0.2s;
@@ -384,7 +344,6 @@ export default function AdminSubmissions() {
           border-left: 3px solid var(--primary-main);
         }
 
-        /* ── Badges ── */
         .badge {
           display: inline-flex;
           align-items: center;
@@ -403,7 +362,6 @@ export default function AdminSubmissions() {
           color: #92400E;
         }
         
-        /* ── Bouton Voir ── */
         .btn-view {
           display: inline-flex;
           align-items: center;
@@ -433,7 +391,6 @@ export default function AdminSubmissions() {
           padding: 48px !important;
         }
 
-        /* ── Alertes ── */
         .alert {
           padding: 14px 18px;
           border-radius: 10px;
@@ -460,7 +417,6 @@ export default function AdminSubmissions() {
           border: 1px solid var(--border-color);
         }
 
-        /* ── Overlay ── */
         .drawer-overlay {
           position: fixed;
           inset: 0;
@@ -469,7 +425,6 @@ export default function AdminSubmissions() {
           animation: fadeIn 0.2s ease;
         }
 
-        /* ── Drawer ── */
         .drawer {
           position: fixed;
           top: 0;
@@ -495,7 +450,6 @@ export default function AdminSubmissions() {
           to   { opacity: 1; }
         }
 
-        /* ── Drawer header ── */
         .drawer-header {
           display: flex;
           align-items: center;
@@ -548,7 +502,6 @@ export default function AdminSubmissions() {
           border-color: var(--primary-main);
         }
 
-        /* ── Badge pills ── */
         .badge-pill {
           font-size: 11px;
           font-weight: 600;
@@ -565,7 +518,6 @@ export default function AdminSubmissions() {
           color: #065F46;
         }
 
-        /* ── Drawer body ── */
         .drawer-body {
           flex: 1;
           overflow-y: auto;
@@ -576,7 +528,6 @@ export default function AdminSubmissions() {
           background: var(--bg-white);
         }
 
-        /* ── Meta grid ── */
         .drawer-meta-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
@@ -618,7 +569,6 @@ export default function AdminSubmissions() {
           word-break: break-word;
         }
 
-        /* ── Section ── */
         .drawer-section {
           display: flex;
           flex-direction: column;
@@ -638,7 +588,6 @@ export default function AdminSubmissions() {
           color: var(--primary-main);
         }
 
-        /* ── Description block ── */
         .description-block {
           background: var(--bg-secondary);
           border-left: 4px solid var(--primary-main);
@@ -674,7 +623,6 @@ export default function AdminSubmissions() {
           text-align: center;
         }
 
-        /* ── Files list ── */
         .files-list {
           display: flex;
           flex-direction: column;
@@ -718,24 +666,19 @@ export default function AdminSubmissions() {
           color: var(--text-muted);
         }
 
-        /* ── Footer avec deux boutons ── */
         .drawer-footer {
           padding: 20px 24px;
           border-top: 1px solid var(--border-color);
           flex-shrink: 0;
           background: var(--bg-white);
         }
-        .footer-actions {
-          display: flex;
-          gap: 12px;
-        }
         .btn-valider {
-          flex: 1;
+          width: 100%;
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 8px;
-          padding: 12px;
+          padding: 14px;
           border-radius: 10px;
           background: linear-gradient(135deg, var(--success), var(--success-dark));
           color: white;
@@ -750,28 +693,7 @@ export default function AdminSubmissions() {
           transform: translateY(-1px);
           box-shadow: var(--shadow-sm);
         }
-        .btn-rejeter {
-          flex: 1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          padding: 12px;
-          border-radius: 10px;
-          background: linear-gradient(135deg, var(--danger), var(--danger-dark));
-          color: white;
-          font-size: 14px;
-          font-weight: 600;
-          border: none;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .btn-rejeter:hover {
-          opacity: 0.95;
-          transform: translateY(-1px);
-          box-shadow: var(--shadow-sm);
-        }
-        .btn-valider:active, .btn-rejeter:active {
+        .btn-valider:active {
           transform: translateY(0);
         }
       `}</style>
