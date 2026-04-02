@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import api from "../../services/api";
-import { Send, Users } from "lucide-react";
+import { Send, Users, Search } from "lucide-react";
 
 export default function AdminSoutenances() {
   const [soutenances, setSoutenances] = useState([]);
@@ -9,6 +9,7 @@ export default function AdminSoutenances() {
   const [assignModal, setAssignModal] = useState(null);
   const [assignForm, setAssignForm] = useState({ encadreur_id: "", president_id: "", membre3_id: "" });
   const [msg, setMsg] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const load = () => Promise.all([api.get("/admin/soutenances"), api.get("/admin/jury/members")])
     .then(([s, j]) => { 
@@ -22,7 +23,11 @@ export default function AdminSoutenances() {
     
   useEffect(() => { load(); }, []);
 
-  // Fonction corrigée pour affecter le jury
+  const filteredSoutenances = soutenances.filter(s =>
+    s.etudiant_nom?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    s.etudiant_email?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const handleAssign = async () => {
     const president_id = assignForm.president_id ? String(assignForm.president_id) : "";
     const membre3_id = assignForm.membre3_id ? String(assignForm.membre3_id) : "";
@@ -52,7 +57,6 @@ export default function AdminSoutenances() {
     }
   };
 
-  // Filtrer les jurys pour éviter les doublons, mais inclure les membres déjà assignés
   const getFilteredJurys = (role) => {
     const selectedValues = {
       encadreur: parseInt(assignForm.encadreur_id) || null,
@@ -61,26 +65,21 @@ export default function AdminSoutenances() {
     };
     const encadreurId = parseInt(assignForm.encadreur_id) || (assignModal?.encadreur_id ? parseInt(assignModal.encadreur_id) : null);
 
-    // Récupérer l'ID actuel du membre pour ce rôle
     const currentId = selectedValues[role === 'president' ? 'president' : 'membre3'];
     const currentMember = currentId ? jurys.find(j => j.id === currentId) : null;
 
     return jurys.filter(j => {
-      // 1. Exclure l'admin (GradFlow Admin a généralement id=1)
       if (j.id === 1) return false;
-      // 2. Exclure l'encadreur figé
       if (encadreurId && j.id === encadreurId) return false;
 
       if (role === 'encadreur') {
         return j.id !== selectedValues.president && j.id !== selectedValues.membre3;
       }
       if (role === 'president') {
-        // Si c'est le membre actuellement assigné, on le garde même s'il est aussi dans les exclus
         if (currentMember && j.id === currentMember.id) return true;
         return j.id !== encadreurId && j.id !== selectedValues.membre3;
       }
       if (role === 'membre3') {
-        // Si c'est le membre actuellement assigné, on le garde même s'il est aussi dans les exclus
         if (currentMember && j.id === currentMember.id) return true;
         return j.id !== encadreurId && j.id !== selectedValues.president;
       }
@@ -131,7 +130,31 @@ export default function AdminSoutenances() {
           <h1>🎓 Soutenances</h1>
           <p>Gestion des soutenances et affectation des jurys</p>
         </div>
+        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+          <div style={{ position: "relative" }}>
+            <Search
+              size={16}
+              style={{
+                position: "absolute",
+                left: 12,
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: "#9ca3af",
+                pointerEvents: "none",
+              }}
+            />
+            <input
+              type="text"
+              placeholder="Rechercher un étudiant..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="form-control"
+              style={{ paddingLeft: 36, width: 280 }}
+            />
+          </div>
+        </div>
       </div>
+
       <div className="page-content">
         {msg && <div className="alert alert-success">✅ {msg}</div>}
         <div className="card">
@@ -150,7 +173,7 @@ export default function AdminSoutenances() {
                 </tr>
               </thead>
               <tbody>
-                {soutenances.map(s => (
+                {filteredSoutenances.map(s => (
                   <tr key={s.id}>
                     <td>
                       <strong>{s.etudiant_nom}</strong>
@@ -185,15 +208,10 @@ export default function AdminSoutenances() {
                           style={!canAssignJury(s) ? { opacity: 0.5, cursor: "not-allowed" } : {}}
                           onClick={() => {
                             if (!canAssignJury(s)) return;
-                            
-                            // Récupérer l'encadreur existant
                             const encFromJurys = s.jurys?.find(j => j.role === 'encadreur')?.id;
                             const encId = s.encadreur_id || encFromJurys || "";
-                            
-                            // Récupérer le président et 3ème membre existants
                             const presidentId = s.jurys?.find(j => j.role === 'president')?.id || "";
                             const membre3Id = s.jurys?.find(j => j.role === '3eme_membre')?.id || "";
-                            
                             setAssignModal(s);
                             setAssignForm({ 
                               encadreur_id: encId, 
@@ -215,10 +233,10 @@ export default function AdminSoutenances() {
                     </td>
                   </tr>
                 ))}
-                {soutenances.length === 0 && (
+                {filteredSoutenances.length === 0 && (
                   <tr>
                     <td colSpan={8} style={{ textAlign: "center", padding: "40px", color: "#9ca3af" }}>
-                      Aucune soutenance trouvée
+                      {searchQuery ? `Aucun résultat pour "${searchQuery}"` : "Aucune soutenance trouvée"}
                     </td>
                   </tr>
                 )}
@@ -234,43 +252,20 @@ export default function AdminSoutenances() {
             <h3>👥 Affecter le jury</h3>
             <p className="sub">Soutenance de {assignModal.etudiant_nom} — {assignModal.sujet || "Sujet non défini"}</p>
             
-            {/* Encadreur (affectation sur le dashboard Réclamations : lecture seule ici) */}
             <div className="form-group">
               <label className="form-label">Encadreur</label>
               {(() => {
                 const fixedEncadreur = assignModal.jurys?.find(j => j.role === 'encadreur');
                 if (fixedEncadreur) {
-                  return (
-                    <input
-                      className="form-control"
-                      value={fixedEncadreur.nom}
-                      readOnly
-                      disabled
-                    />
-                  );
+                  return <input className="form-control" value={fixedEncadreur.nom} readOnly disabled />;
                 }
                 if (assignModal.encadreur) {
-                  return (
-                    <input
-                      className="form-control"
-                      value={assignModal.encadreur}
-                      readOnly
-                      disabled
-                    />
-                  );
+                  return <input className="form-control" value={assignModal.encadreur} readOnly disabled />;
                 }
-                return (
-                  <input
-                    className="form-control"
-                    value="Aucun encadreur assigné"
-                    readOnly
-                    disabled
-                  />
-                );
+                return <input className="form-control" value="Aucun encadreur assigné" readOnly disabled />;
               })()}
             </div>
 
-            {/* Président */}
             <div className="form-group">
               <label className="form-label">Président</label>
               <select 
@@ -285,7 +280,6 @@ export default function AdminSoutenances() {
               </select>
             </div>
 
-            {/* 3ème Membre */}
             <div className="form-group">
               <label className="form-label">3ème Membre</label>
               <select 

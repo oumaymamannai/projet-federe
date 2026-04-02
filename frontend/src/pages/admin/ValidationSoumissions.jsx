@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import api from "../../services/api";
-import { FileText, CheckCircle, X, ChevronRight, Building2, User, BookOpen, AlignLeft, Paperclip, Calendar, Eye } from "lucide-react";
+import { FileText, CheckCircle, X, ChevronRight, Building2, User, BookOpen, AlignLeft, Paperclip, Calendar, Eye, Search } from "lucide-react";
 
 // ── Drawer de détail ─────────────────────────────────────────────────────────
 function DetailDrawer({ soumission, onClose, onValider }) {
@@ -144,11 +144,12 @@ function DetailDrawer({ soumission, onClose, onValider }) {
 
 // ── Page principale ──────────────────────────────────────────────────────────
 export default function AdminSubmissions() {
-  const [soumissions, setSoumissions] = useState([]);
-  const [loading, setLoading]         = useState(true);
-  const [selected, setSelected]       = useState(null);
-  const [msg, setMsg]                 = useState('');
-  const [error, setError]             = useState('');
+  const [soumissions, setSoumissions]   = useState([]);
+  const [loading, setLoading]           = useState(true);
+  const [selected, setSelected]         = useState(null);
+  const [msg, setMsg]                   = useState('');
+  const [error, setError]               = useState('');
+  const [searchQuery, setSearchQuery]   = useState('');
 
   const loadSoumissions = async () => {
     try {
@@ -176,6 +177,10 @@ export default function AdminSubmissions() {
     }
   };
 
+  const filteredSoumissions = soumissions.filter(s =>
+    s.etudiant_nom?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const pendingCount = soumissions.filter(s => s.statut !== 'traite').length;
 
   if (loading) return <div className="spinner" />;
@@ -191,6 +196,39 @@ export default function AdminSubmissions() {
             )}
           </div>
           <p>Consultez et traitez les demandes de stage des étudiants</p>
+        </div>
+        <div style={{ position: 'relative' }}>
+          <Search
+            size={16}
+            style={{
+              position: 'absolute',
+              left: 12,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: '#9ca3af',
+              pointerEvents: 'none',
+            }}
+          />
+          <input
+            type="text"
+            placeholder="Rechercher un étudiant..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            style={{
+              paddingLeft: 36,
+              paddingRight: 12,
+              height: 40,
+              width: 280,
+              border: '1px solid #E5E7EB',
+              borderRadius: 8,
+              fontSize: 14,
+              outline: 'none',
+              color: '#111827',
+              background: '#fff',
+            }}
+            onFocus={e => e.target.style.borderColor = '#6366F1'}
+            onBlur={e => e.target.style.borderColor = '#E5E7EB'}
+          />
         </div>
       </div>
 
@@ -211,7 +249,7 @@ export default function AdminSubmissions() {
                 </tr>
               </thead>
               <tbody>
-                {soumissions.map((s) => (
+                {filteredSoumissions.map((s) => (
                   <tr
                     key={s.id}
                     className={`row-clickable ${selected?.id === s.id ? 'row-active' : ''}`}
@@ -219,7 +257,6 @@ export default function AdminSubmissions() {
                     <td className="student-name">
                       <strong>{s.etudiant_nom}</strong>
                     </td>
-                    
                     <td>
                       {s.statut === 'traite' ? (
                         <span className="badge badge-success">✅ Validé</span>
@@ -227,7 +264,6 @@ export default function AdminSubmissions() {
                         <span className="badge badge-warning">⏳ En attente</span>
                       )}
                     </td>
-                    
                     <td>
                       <button
                         className="btn-view"
@@ -239,10 +275,12 @@ export default function AdminSubmissions() {
                     </td>
                   </tr>
                 ))}
-                {soumissions.length === 0 && (
+                {filteredSoumissions.length === 0 && (
                   <tr>
                     <td colSpan={3} className="empty-state">
-                      Aucune soumission à afficher
+                      {searchQuery
+                        ? `Aucun résultat pour "${searchQuery}"`
+                        : 'Aucune soumission à afficher'}
                     </td>
                   </tr>
                 )}
@@ -282,6 +320,9 @@ export default function AdminSubmissions() {
         }
 
         .page-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
           margin-bottom: 24px;
         }
         
