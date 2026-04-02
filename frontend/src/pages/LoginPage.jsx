@@ -24,7 +24,8 @@ export default function LoginPage() {
     setError(""); setLoading(true);
     try {
       const user = await login(email.trim(), password, selectedRole);
-      navigate(user.role === "admin" ? "/admin" : user.role === "jury" ? "/jury" : "/student");
+      // ✅ CORRECTION : jury redirige vers /jury/dashboard
+      navigate(user.role === "admin" ? "/admin" : user.role === "jury" ? "/jury/dashboard" : "/student");
     } catch (err) {
       const msg = err.response?.data?.message
         || (err.code === "ERR_NETWORK" || err.message?.includes("Network")
