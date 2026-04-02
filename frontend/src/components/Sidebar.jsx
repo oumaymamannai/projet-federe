@@ -273,6 +273,9 @@ export default function Sidebar() {
               {item.label === 'Réclamations' && user?.role === 'etudiant' && reclamationsCount > 0 && (
                 <span className="badge-notification">{reclamationsCount > 99 ? '99+' : reclamationsCount}</span>
               )}
+              {item.label === 'Messages' && messagesNonLus > 0 && (
+                <span className="badge-notification">{messagesNonLus > 99 ? '99+' : messagesNonLus}</span>
+              )}
             </Link>
           );
         })}
