@@ -1,25 +1,26 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { messageAPI, getMessageFileUrl } from '../../services/messageService';
+import { Search, X } from 'lucide-react';
 
 const token = localStorage.getItem('gradflow_token');
 const userId = token ? JSON.parse(atob(token.split('.')[1])).id : null;
 const userRole = token ? JSON.parse(atob(token.split('.')[1])).role : null;
 
 const C = {
-  bg:            '#f8f3ff',      // violet clair
-  surface:       '#ffffff',      // blanc
-  surfaceHover:  '#faf5ff',      // violet très clair
-  surfaceActive: '#f3e8ff',      // violet clair actif
-  border:        '#e9dfff',      // bordure violet pâle
-  borderLight:   '#f0e6ff',      // bordure plus claire
-  accent:        '#8b5cf6',      // violet vif
+  bg:            '#f8f3ff',
+  surface:       '#ffffff',
+  surfaceHover:  '#faf5ff',
+  surfaceActive: '#f3e8ff',
+  border:        '#e9dfff',
+  borderLight:   '#f0e6ff',
+  accent:        '#8b5cf6',
   accentGlow:    'rgba(139,92,246,0.15)',
   accentSoft:    'rgba(139,92,246,0.08)',
-  text:          '#1a1033',      // texte foncé
-  textMuted:     '#6b5b7e',      // texte gris-violet
-  textFaint:     '#b4a5d0',      // texte très clair
-  bubble:        '#f5efff',      // bulle violet clair
-  green:         '#10b981',      // vert
+  text:          '#1a1033',
+  textMuted:     '#6b5b7e',
+  textFaint:     '#b4a5d0',
+  bubble:        '#f5efff',
+  green:         '#10b981',
   white:         '#ffffff',
 };
 
@@ -68,14 +69,6 @@ const globalCss = `
     60%      { box-shadow: 0 0 0 5px rgba(16,185,129,0); }
   }
   .online-dot { animation: pulse 2.2s infinite; }
-
-  @keyframes typeBounce {
-    0%,60%,100% { transform: translateY(0); }
-    30% { transform: translateY(-4px); }
-  }
-  .td1 { animation: typeBounce 1.2s infinite ease-in-out; }
-  .td2 { animation: typeBounce 1.2s 0.18s infinite ease-in-out; }
-  .td3 { animation: typeBounce 1.2s 0.36s infinite ease-in-out; }
 `;
 
 /* ─── Avatar ─── */
@@ -136,9 +129,16 @@ export default function MessagesPage() {
   const [fichier, setFichier]                 = useState(null);
   const [loading, setLoading]                 = useState(false);
   const [sending, setSending]                 = useState(false);
+  const [searchTerm, setSearchTerm]           = useState('');
   const messagesEndRef = useRef(null);
   const inputRef       = useRef(null);
   const prevCount      = useRef(0);
+
+  // Filtrer les conversations par nom
+  const filteredConversations = conversations.filter(conv => {
+    const fullName = `${conv.prenom} ${conv.nom}`.toLowerCase();
+    return fullName.includes(searchTerm.toLowerCase());
+  });
 
   const fetchConvs = useCallback(async () => {
     try { const r = await messageAPI.getConversations(); setConversations(r.data); }
@@ -149,6 +149,19 @@ export default function MessagesPage() {
     if (!silent) setLoading(true);
     try { const r = await messageAPI.getMessages(id); setMessages(r.data); }
     catch {} finally { if (!silent) setLoading(false); }
+  }, []);
+
+  const markMessagesAsRead = useCallback(async (soutenanceId) => {
+    try {
+      await messageAPI.marquerCommeLu(soutenanceId);
+      setConversations(prev =>
+        prev.map(c => 
+          c.soutenance_id === soutenanceId ? { ...c, non_lus: 0 } : c
+        )
+      );
+    } catch (err) {
+      console.error('Erreur marquage lu:', err);
+    }
   }, []);
 
   const handleSend = async (e) => {
@@ -184,11 +197,18 @@ export default function MessagesPage() {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
-  const selectConv = (conv) => {
+  const selectConv = async (conv) => {
     setSoutenanceActive(conv);
-    setConversations(prev =>
-      prev.map(c => c.soutenance_id === conv.soutenance_id ? { ...c, non_lus: 0 } : c)
-    );
+    
+    if (conv.non_lus > 0) {
+      await markMessagesAsRead(conv.soutenance_id);
+    }
+    
+    await fetchMsgs(conv.soutenance_id);
+  };
+
+  const clearSearch = () => {
+    setSearchTerm('');
   };
 
   useEffect(() => { fetchConvs(); }, [fetchConvs]);
@@ -246,7 +266,7 @@ export default function MessagesPage() {
 
         {/* ══════ SIDEBAR ══════ */}
         <aside className="msg-scroller" style={{
-          width: 300, flexShrink: 0,
+          width: 320, flexShrink: 0,
           background: C.surface,
           borderRight: `1px solid ${C.border}`,
           display:'flex', flexDirection:'column', overflowY:'auto',
@@ -258,7 +278,7 @@ export default function MessagesPage() {
             position:'sticky', top:0, zIndex:2,
             background: C.surface,
           }}>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom: 16 }}>
               <div>
                 <h2 style={{
                   fontSize:18, fontWeight:700, color:C.text,
@@ -280,11 +300,74 @@ export default function MessagesPage() {
                 </div>
               )}
             </div>
+
+            {/* Barre de recherche */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              background: C.bg,
+              borderRadius: 12,
+              padding: '6px 12px',
+              border: `1px solid ${C.border}`,
+              transition: 'all 0.2s ease',
+            }}>
+              <Search size={16} color={C.textMuted} />
+              <input
+                type="text"
+                placeholder="Rechercher un étudiant..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{
+                  flex: 1,
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  fontSize: 13,
+                  color: C.text,
+                  fontFamily: "'DM Sans', sans-serif",
+                }}
+                autoComplete="off"
+              />
+              {searchTerm && (
+                <button
+                  onClick={clearSearch}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 2,
+                    borderRadius: '50%',
+                    color: C.textMuted,
+                  }}
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+
+            {/* Résultat de recherche */}
+            {searchTerm && filteredConversations.length === 0 && (
+              <div style={{
+                marginTop: 12,
+                fontSize: 12,
+                color: C.textMuted,
+                textAlign: 'center',
+                padding: '8px',
+                background: C.accentSoft,
+                borderRadius: 8,
+              }}>
+                Aucun étudiant trouvé pour "{searchTerm}"
+              </div>
+            )}
           </div>
 
           {/* Liste */}
           <div style={{ flex:1 }}>
-            {conversations.length === 0 ? (
+            {filteredConversations.length === 0 && !searchTerm ? (
               <div style={{ padding:'44px 24px', textAlign:'center', color:C.textMuted }}>
                 <div style={{
                   width:52, height:52, borderRadius:16,
@@ -298,73 +381,75 @@ export default function MessagesPage() {
                     : 'Aucun étudiant encadré pour le moment'}
                 </p>
               </div>
-            ) : conversations.map((conv, i) => {
-              const isActive  = soutenanceActive?.soutenance_id === conv.soutenance_id;
-              const hasUnread = conv.non_lus > 0;
-              return (
-                <div
-                  key={conv.soutenance_id}
-                  className="conv-row conv-anim"
-                  onClick={() => selectConv(conv)}
-                  style={{
-                    padding:'14px 18px', cursor:'pointer',
-                    borderBottom:`1px solid ${C.border}`,
-                    background: isActive ? C.surfaceActive : 'transparent',
-                    borderLeft:`3px solid ${isActive ? C.accent : 'transparent'}`,
-                    animationDelay:`${i * 0.045}s`,
-                  }}
-                >
-                  <div style={{ display:'flex', gap:11, alignItems:'flex-start' }}>
-                    <Avatar prenom={conv.prenom} nom={conv.nom} size={42} accent={isActive} />
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{
-                        display:'flex', justifyContent:'space-between',
-                        alignItems:'center', marginBottom:3,
-                      }}>
-                        <span style={{
-                          fontWeight: hasUnread ? 700 : 600,
-                          fontSize:14,
-                          color: isActive ? C.accent : C.text,
-                        }}>
-                          {conv.prenom} {conv.nom}
-                        </span>
-                        <div style={{ display:'flex', alignItems:'center', gap:5 }}>
-                          {conv.dernier_message_at && (
-                            <span style={{
-                              fontSize:10, color:C.textMuted,
-                              fontFamily:"'DM Mono', monospace",
-                            }}>{fmtShort(conv.dernier_message_at)}</span>
-                          )}
-                          {hasUnread && (
-                            <div style={{
-                              background:C.accent, color:'#fff',
-                              fontSize:10, fontWeight:700,
-                              fontFamily:"'DM Mono', monospace",
-                              padding:'2px 7px', borderRadius:10,
-                              minWidth:20, textAlign:'center',
-                            }}>{conv.non_lus > 99 ? '99+' : conv.non_lus}</div>
-                          )}
-                        </div>
-                      </div>
-                      <div style={{
-                        fontSize:11, color:C.accent,
-                        fontWeight:600, marginBottom:4,
-                        letterSpacing:'0.02em',
-                        whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
-                      }}>{conv.sujet || 'Soutenance'}</div>
-                      {conv.dernier_message && (
+            ) : (
+              filteredConversations.map((conv, i) => {
+                const isActive  = soutenanceActive?.soutenance_id === conv.soutenance_id;
+                const hasUnread = conv.non_lus > 0;
+                return (
+                  <div
+                    key={conv.soutenance_id}
+                    className="conv-row conv-anim"
+                    onClick={() => selectConv(conv)}
+                    style={{
+                      padding:'14px 18px', cursor:'pointer',
+                      borderBottom:`1px solid ${C.border}`,
+                      background: isActive ? C.surfaceActive : 'transparent',
+                      borderLeft:`3px solid ${isActive ? C.accent : 'transparent'}`,
+                      animationDelay:`${i * 0.045}s`,
+                    }}
+                  >
+                    <div style={{ display:'flex', gap:11, alignItems:'flex-start' }}>
+                      <Avatar prenom={conv.prenom} nom={conv.nom} size={42} accent={isActive} />
+                      <div style={{ flex:1, minWidth:0 }}>
                         <div style={{
-                          fontSize:12,
-                          color: hasUnread ? C.text : C.textMuted,
-                          fontWeight: hasUnread ? 600 : 500,
+                          display:'flex', justifyContent:'space-between',
+                          alignItems:'center', marginBottom:3,
+                        }}>
+                          <span style={{
+                            fontWeight: hasUnread ? 700 : 600,
+                            fontSize:14,
+                            color: isActive ? C.accent : C.text,
+                          }}>
+                            {conv.prenom} {conv.nom}
+                          </span>
+                          <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+                            {conv.dernier_message_at && (
+                              <span style={{
+                                fontSize:10, color:C.textMuted,
+                                fontFamily:"'DM Mono', monospace",
+                              }}>{fmtShort(conv.dernier_message_at)}</span>
+                            )}
+                            {hasUnread && (
+                              <div style={{
+                                background:C.accent, color:'#fff',
+                                fontSize:10, fontWeight:700,
+                                fontFamily:"'DM Mono', monospace",
+                                padding:'2px 7px', borderRadius:10,
+                                minWidth:20, textAlign:'center',
+                              }}>{conv.non_lus > 99 ? '99+' : conv.non_lus}</div>
+                            )}
+                          </div>
+                        </div>
+                        <div style={{
+                          fontSize:11, color:C.accent,
+                          fontWeight:600, marginBottom:4,
+                          letterSpacing:'0.02em',
                           whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
-                        }}>{conv.dernier_message}</div>
-                      )}
+                        }}>{conv.sujet || 'Soutenance'}</div>
+                        {conv.dernier_message && (
+                          <div style={{
+                            fontSize:12,
+                            color: hasUnread ? C.text : C.textMuted,
+                            fontWeight: hasUnread ? 600 : 500,
+                            whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
+                          }}>{conv.dernier_message}</div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </aside>
 
@@ -372,7 +457,6 @@ export default function MessagesPage() {
         <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
 
           {!soutenanceActive ? (
-            /* État vide */
             <div style={{
               flex:1, display:'flex', flexDirection:'column',
               alignItems:'center', justifyContent:'center', gap:16, padding:40,
@@ -477,124 +561,122 @@ export default function MessagesPage() {
                     <p style={{ fontSize:14, fontWeight:600, marginBottom:4 }}>Aucun message</p>
                     <p style={{ fontSize:12, color:C.textFaint }}>Lancez la conversation !</p>
                   </div>
-                ) : null}
+                ) : (
+                  Object.entries(grouped).map(([dateKey, msgs]) => (
+                    <div key={dateKey}>
+                      <DateDivider date={msgs[0].created_at} />
+                      {msgs.map((msg, idx) => {
+                        const isMe       = msg.user_id === userId;
+                        const prevSame   = idx > 0 && msgs[idx-1].user_id === msg.user_id;
+                        const nextSame   = idx < msgs.length-1 && msgs[idx+1].user_id === msg.user_id;
+                        const showAvatar = !isMe && !nextSame;
+                        const showName   = !isMe && !prevSame;
 
-                {Object.entries(grouped).map(([dateKey, msgs]) => (
-                  <div key={dateKey}>
-                    <DateDivider date={msgs[0].created_at} />
-                    {msgs.map((msg, idx) => {
-                      const isMe       = msg.user_id === userId;
-                      const prevSame   = idx > 0 && msgs[idx-1].user_id === msg.user_id;
-                      const nextSame   = idx < msgs.length-1 && msgs[idx+1].user_id === msg.user_id;
-                      const showAvatar = !isMe && !nextSame;
-                      const showName   = !isMe && !prevSame;
+                        const bRadius = isMe
+                          ? `18px 18px ${nextSame ? '16px' : '4px'} 18px`
+                          : `18px 18px 18px ${nextSame ? '16px' : '4px'}`;
 
-                      const bRadius = isMe
-                        ? `18px 18px ${nextSame ? '16px' : '4px'} 18px`
-                        : `18px 18px 18px ${nextSame ? '16px' : '4px'}`;
-
-                      return (
-                        <div
-                          key={msg.id}
-                          className="bubble-anim"
-                          style={{
-                            display:'flex',
-                            justifyContent: isMe ? 'flex-end' : 'flex-start',
-                            marginBottom: nextSame ? 3 : 10,
-                            alignItems:'flex-end', gap:8,
-                          }}
-                        >
-                          {/* Avatar gauche */}
-                          {!isMe && (
-                            <div style={{ width:32, flexShrink:0 }}>
-                              {showAvatar
-                                ? <Avatar prenom={msg.prenom} nom={msg.nom} size={32} />
-                                : <div style={{width:32}}/>
-                              }
-                            </div>
-                          )}
-
-                          <div style={{ maxWidth:'58%' }}>
-                            {showName && (
-                              <div style={{
-                                fontSize:11, color:C.textMuted,
-                                fontWeight:600, marginBottom:4, marginLeft:3,
-                              }}>
-                                {msg.prenom} {msg.nom}
+                        return (
+                          <div
+                            key={msg.id}
+                            className="bubble-anim"
+                            style={{
+                              display:'flex',
+                              justifyContent: isMe ? 'flex-end' : 'flex-start',
+                              marginBottom: nextSame ? 3 : 10,
+                              alignItems:'flex-end', gap:8,
+                            }}
+                          >
+                            {!isMe && (
+                              <div style={{ width:32, flexShrink:0 }}>
+                                {showAvatar
+                                  ? <Avatar prenom={msg.prenom} nom={msg.nom} size={32} />
+                                  : <div style={{width:32}}/>
+                                }
                               </div>
                             )}
-                            <div style={{
-                              padding:'10px 15px',
-                              borderRadius: bRadius,
-                              background: isMe
-                                ? `linear-gradient(135deg, ${C.accent}, #a78bfa)`
-                                : C.bubble,
-                              color: isMe ? '#fff' : C.text,
-                              fontSize:14, lineHeight:1.58,
-                              border: isMe ? 'none' : `1px solid ${C.border}`,
-                              boxShadow: isMe
-                                ? '0 4px 20px rgba(139,92,246,0.2)'
-                                : '0 2px 8px rgba(0,0,0,0.05)',
-                              wordBreak:'break-word', whiteSpace:'pre-wrap',
-                            }}>
-                              {msg.contenu || (msg.piece_jointe ? '' : '')}
-                              {msg.piece_jointe && (
-                                <div style={{ marginTop: msg.contenu ? 8 : 0 }}>
-                                  <a
-                                    href={getMessageFileUrl(msg.piece_jointe)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    style={{
-                                      display:'inline-flex', alignItems:'center', gap:6,
-                                      color: isMe ? '#fff' : C.accent,
-                                      textDecoration:'none',
-                                      border: isMe ? '1px solid rgba(255,255,255,0.45)' : '1px solid rgba(139,92,246,0.25)',
-                                      padding:'6px 8px', borderRadius:8,
-                                      fontSize:12, fontWeight:600,
-                                      background: isMe ? 'rgba(255,255,255,0.12)' : '#fff',
-                                    }}
-                                  >
-                                    📎 {msg.piece_jointe.split('/').pop()}
-                                  </a>
+
+                            <div style={{ maxWidth:'58%' }}>
+                              {showName && (
+                                <div style={{
+                                  fontSize:11, color:C.textMuted,
+                                  fontWeight:600, marginBottom:4, marginLeft:3,
+                                }}>
+                                  {msg.prenom} {msg.nom}
+                                </div>
+                              )}
+                              <div style={{
+                                padding:'10px 15px',
+                                borderRadius: bRadius,
+                                background: isMe
+                                  ? `linear-gradient(135deg, ${C.accent}, #a78bfa)`
+                                  : C.bubble,
+                                color: isMe ? '#fff' : C.text,
+                                fontSize:14, lineHeight:1.58,
+                                border: isMe ? 'none' : `1px solid ${C.border}`,
+                                boxShadow: isMe
+                                  ? '0 4px 20px rgba(139,92,246,0.2)'
+                                  : '0 2px 8px rgba(0,0,0,0.05)',
+                                wordBreak:'break-word', whiteSpace:'pre-wrap',
+                              }}>
+                                {msg.contenu || (msg.piece_jointe ? '' : '')}
+                                {msg.piece_jointe && (
+                                  <div style={{ marginTop: msg.contenu ? 8 : 0 }}>
+                                    <a
+                                      href={getMessageFileUrl(msg.piece_jointe)}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      style={{
+                                        display:'inline-flex', alignItems:'center', gap:6,
+                                        color: isMe ? '#fff' : C.accent,
+                                        textDecoration:'none',
+                                        border: isMe ? '1px solid rgba(255,255,255,0.45)' : '1px solid rgba(139,92,246,0.25)',
+                                        padding:'6px 8px', borderRadius:8,
+                                        fontSize:12, fontWeight:600,
+                                        background: isMe ? 'rgba(255,255,255,0.12)' : '#fff',
+                                      }}
+                                    >
+                                      📎 {msg.piece_jointe.split('/').pop()}
+                                    </a>
+                                  </div>
+                                )}
+                              </div>
+                              {!nextSame && (
+                                <div style={{
+                                  fontSize:10, color:C.textFaint,
+                                  marginTop:4,
+                                  fontFamily:"'DM Mono', monospace",
+                                  textAlign: isMe ? 'right' : 'left',
+                                  paddingLeft: isMe ? 0 : 4,
+                                  paddingRight: isMe ? 4 : 0,
+                                  display:'flex',
+                                  justifyContent: isMe ? 'flex-end' : 'flex-start',
+                                  alignItems:'center', gap:4,
+                                }}>
+                                  {fmtTime(msg.created_at)}
+                                  {isMe && (
+                                    <span style={{ color: msg.lu ? C.accent : C.textFaint, fontSize:12 }}>
+                                      {msg.lu ? '✓✓' : '✓'}
+                                    </span>
+                                  )}
                                 </div>
                               )}
                             </div>
-                            {!nextSame && (
-                              <div style={{
-                                fontSize:10, color:C.textFaint,
-                                marginTop:4,
-                                fontFamily:"'DM Mono', monospace",
-                                textAlign: isMe ? 'right' : 'left',
-                                paddingLeft: isMe ? 0 : 4,
-                                paddingRight: isMe ? 4 : 0,
-                                display:'flex',
-                                justifyContent: isMe ? 'flex-end' : 'flex-start',
-                                alignItems:'center', gap:4,
-                              }}>
-                                {fmtTime(msg.created_at)}
-                                {isMe && (
-                                  <span style={{ color: msg.lu ? C.accent : C.textFaint, fontSize:12 }}>
-                                    {msg.lu ? '✓✓' : '✓'}
-                                  </span>
-                                )}
+
+                            {isMe && (
+                              <div style={{ width:32, flexShrink:0 }}>
+                                {!nextSame
+                                  ? <Avatar prenom={msg.prenom} nom={msg.nom} size={32} accent />
+                                  : <div style={{width:32}}/>
+                                }
                               </div>
                             )}
                           </div>
-
-                          {/* Avatar droite */}
-                          {isMe && (
-                            <div style={{ width:32, flexShrink:0 }}>
-                              {!nextSame
-                                ? <Avatar prenom={msg.prenom} nom={msg.nom} size={32} accent />
-                                : <div style={{width:32}}/>
-                              }
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ))}
+                        );
+                      })}
+                    </div>
+                  ))
+                )}
                 <div ref={messagesEndRef} />
               </div>
 
