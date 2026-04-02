@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import api from "../../services/api";
+import { useAuth } from "../../context/AuthContext";
 import { Download, Eye, FileText } from "lucide-react";
 
 export default function StudentDocuments() {
+  const { user } = useAuth();
   const [docs, setDocs] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -12,7 +14,14 @@ export default function StudentDocuments() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Fonction pour vérifier si c'est un PDF
+  // Fonction à appeler quand l'étudiant consulte un document
+  const handleConsultDocument = () => {
+    if (user?.id) {
+      // Stocker par ID utilisateur pour éviter les conflits entre étudiants
+      localStorage.setItem(`documents_consulted_${user.id}`, 'true');
+    }
+  };
+
   const isPdf = (fichier_path) => {
     return fichier_path && fichier_path.toLowerCase().endsWith('.pdf');
   };
@@ -48,7 +57,6 @@ export default function StudentDocuments() {
                   gap: 16
                 }}
               >
-                {/* Info document */}
                 <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                   <div style={{ 
                     width: 48, 
@@ -73,9 +81,7 @@ export default function StudentDocuments() {
                   </div>
                 </div>
 
-                {/* Boutons */}
                 <div style={{ display: "flex", gap: "8px" }}>
-                  {/* Bouton Voir - UNIQUEMENT pour les PDF */}
                   {doc.fichier_path && isPdf(doc.fichier_path) && (
                     <a
                       href={`/uploads/${doc.fichier_path}`}
@@ -83,18 +89,19 @@ export default function StudentDocuments() {
                       rel="noopener noreferrer"
                       className="btn btn-outline btn-sm"
                       style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
+                      onClick={handleConsultDocument}
                     >
                       <Eye size={14} /> Voir
                     </a>
                   )}
 
-                  {/* Bouton Télécharger - pour tous les types */}
                   {doc.fichier_path && (
                     <a
                       href={`/uploads/${doc.fichier_path}`}
                       download
                       className="btn btn-outline btn-sm"
                       style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
+                      onClick={handleConsultDocument}
                     >
                       <Download size={14} /> Télécharger
                     </a>

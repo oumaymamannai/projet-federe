@@ -99,6 +99,23 @@ exports.getDashboard = async (req, res) => {
 
     const notesRepartition = repartition[0] || {};
 
+    // Répartition des soutenances par membre de jury
+    const [juryStats] = await db.query(`
+      SELECT 
+        u.id,
+        CONCAT(u.prenom, ' ', u.nom) as nom_complet,
+        COUNT(sj.soutenance_id) as total_soutenances,
+        SUM(CASE WHEN sj.role = 'encadreur' THEN 1 ELSE 0 END) as nb_encadreur,
+        SUM(CASE WHEN sj.role = 'president' THEN 1 ELSE 0 END) as nb_president,
+        SUM(CASE WHEN sj.role = '3eme_membre' THEN 1 ELSE 0 END) as nb_membre
+      FROM users u
+      JOIN soutenance_jury sj ON sj.jury_id = u.id
+      WHERE u.role = 'jury' OR (u.role = 'admin' AND u.email != 'admin@gradflow.dz')
+      GROUP BY u.id, u.nom, u.prenom
+      ORDER BY total_soutenances DESC
+      LIMIT 6
+    `);
+
     res.json({
       total,
       planifiees,
@@ -116,6 +133,14 @@ exports.getDashboard = async (req, res) => {
         entre_14_16: Number(notesRepartition.entre_14_16) || 0,
         plus_16: Number(notesRepartition.plus_16) || 0,
       },
+      juryStats: juryStats.map(j => ({
+        id: j.id,
+        nom: j.nom_complet,
+        total: Number(j.total_soutenances),
+        encadreur: Number(j.nb_encadreur),
+        president: Number(j.nb_president),
+        membre: Number(j.nb_membre),
+      })),
     });
   } catch (err) {
     res.status(500).json({ message: err.message });

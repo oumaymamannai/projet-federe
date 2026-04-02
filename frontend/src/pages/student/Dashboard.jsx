@@ -35,24 +35,35 @@ export default function StudentDashboard() {
   const [soutenance, setSoutenance] = useState(null);
   const [docs, setDocs] = useState([]);
   const [soumissions, setSoumissions] = useState([]);
+  const [reclamations, setReclamations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [documentsConsulted, setDocumentsConsulted] = useState(false);
 
   useEffect(() => {
     Promise.all([
       api.get("/etudiant/soutenance").catch(() => ({ data: null })),
       api.get("/etudiant/documents").catch(() => ({ data: [] })),
-      api.get("/etudiant/stage/soumissions").catch(() => ({ data: [] }))
+      api.get("/etudiant/stage/soumissions").catch(() => ({ data: [] })),
+      api.get("/etudiant/reclamations").catch(() => ({ data: [] }))  // Ajout des réclamations
     ])
-      .then(([s, d, soum]) => { 
+      .then(([s, d, soum, recl]) => { 
         setSoutenance(s.data); 
         setDocs(d.data);
         setSoumissions(soum.data);
+        setReclamations(recl.data);
       })
       .finally(() => setLoading(false));
-  }, []);
+    
+    // Vérifier si l'étudiant a consulté des documents
+    if (user?.id) {
+      const consulted = localStorage.getItem(`documents_consulted_${user.id}`);
+      setDocumentsConsulted(consulted === 'true');
+    }
+  }, [user?.id]);
 
   const countdown = soutenance?.date_soutenance ? getCountdownStatus(soutenance.date_soutenance) : null;
   const hasSubmitted = soumissions.length > 0;
+  const hasReclamation = reclamations.length > 0; // ✅ Vérifier si au moins une réclamation existe
 
   const steps = [
     { 
@@ -61,7 +72,7 @@ export default function StudentDashboard() {
       description: "Lisez les documents importants et les directives",
       icone: BookOpen,
       lien: "/student/documents",
-      fait: docs.length > 0
+      fait: documentsConsulted
     },
     { 
       numero: 2,
@@ -77,7 +88,7 @@ export default function StudentDashboard() {
       description: "En cas de problème ou d'absence d'encadreur",
       icone: MessageSquare,
       lien: "/student/reclamations",
-      fait: false
+      fait: hasReclamation  // ✅ Maintenant basé sur les réclamations existantes
     }
   ];
 
@@ -93,7 +104,7 @@ export default function StudentDashboard() {
       </div>
       <div className="page-content">
         
-        {/* 1. EN HAUT : Carte Soutenance */}
+        {/* Carte Soutenance */}
         {!soutenance ? (
           <div className="alert alert-warning" style={{ marginBottom: 24 }}>
             <AlertCircle size={18} />
@@ -205,7 +216,7 @@ export default function StudentDashboard() {
           </div>
         )}
 
-        {/* 2. AU MILIEU : 3 cartes statistiques */}
+        {/* Cartes statistiques */}
         <div className="stats-grid" style={{ marginBottom: 32 }}>
           <div className="stat-card">
             <div className="stat-icon icon-squircle"><FileText size={22} /></div>
@@ -228,7 +239,7 @@ export default function StudentDashboard() {
           </div>
         </div>
 
-        {/* 3. EN BAS : Les 3 étapes */}
+        {/* Prochaines étapes */}
         <div>
           <h3 style={{ marginBottom: 20, fontSize: 16, fontWeight: 600, color: "#374151" }}>
             📍 Prochaines étapes
