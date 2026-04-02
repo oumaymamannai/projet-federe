@@ -190,7 +190,12 @@ export default function AdminSubmissions() {
       <div className="page-header">
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <h1>📋 Gestion des soumissions</h1>
+            <h1>
+            <span className="icon-squircle page-title-icon" aria-hidden>
+              <FileText size={22} />
+            </span>{" "}
+            Soumissions de stage
+          </h1>
             {pendingCount > 0 && (
               <span className="pending-badge">{pendingCount} en attente</span>
             )}
@@ -237,7 +242,7 @@ export default function AdminSubmissions() {
         {error && <div className="alert alert-danger">⚠️ {error}</div>}
 
         <div className="card">
-          <h3 style={{ fontWeight: 700, marginBottom: 16 }}>📋 Liste des soumissions</h3>
+          <h3 style={{ fontWeight: 700, marginBottom: 16 }}> Liste des soumissions</h3>
 
           <div className="table-wrap">
             <table className="admin-table">

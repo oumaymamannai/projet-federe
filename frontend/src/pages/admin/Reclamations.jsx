@@ -167,39 +167,18 @@ export default function AdminReclamations() {
   return (
     <div>
       <div className="page-header">
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <div style={{ 
-            width: "48px", 
-            height: "48px", 
-            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-            borderRadius: "12px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center"
-          }}>
-            <Bell size={24} color="white" strokeWidth={1.5} />
-          </div>
           <div>
-            <h1 style={{ margin: 0, display: "flex", alignItems: "center", gap: "10px" }}>
-              Gestion des réclamations
-              {pendingCount > 0 && (
-                <span style={{
-                  background: "#ef4444",
-                  color: "white",
-                  fontSize: "14px",
-                  padding: "2px 10px",
-                  borderRadius: "20px",
-                  fontWeight: "500"
-                }}>
-                  {pendingCount} en attente
-                </span>
-              )}
-            </h1>
+            <h1>
+            <span className="icon-squircle page-title-icon" aria-hidden>
+              <AlertCircle size={22} />
+            </span>{" "}
+            Soumissions de stage
+          </h1>
             <p style={{ margin: "4px 0 0 0", color: "#6b7280" }}>
               Traitez les demandes et réclamations des étudiants
             </p>
           </div>
-        </div>
+        
       </div>
       
       <div className="page-content">

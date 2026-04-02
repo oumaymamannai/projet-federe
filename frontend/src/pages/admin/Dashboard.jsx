@@ -82,12 +82,9 @@ function JuryPanel({ juryStats }) {
     <div className="jury-list">
       {juryStats.map((jury) => (
         <div key={jury.id} className="jury-row">
-          {/* Avatar */}
           <div className="jury-avatar" style={{ background: avatarColor(jury.id) }}>
             {initiales(jury.nom)}
           </div>
-
-          {/* Nom + badges rôles */}
           <div className="jury-info">
             <div className="jury-name">{jury.nom}</div>
             <div className="jury-roles">
@@ -108,8 +105,6 @@ function JuryPanel({ juryStats }) {
               )}
             </div>
           </div>
-
-          {/* Barre de charge */}
           <div className="jury-bar-wrap">
             <div className="jury-bar">
               {jury.encadreur > 0 && (
@@ -123,8 +118,6 @@ function JuryPanel({ juryStats }) {
               )}
             </div>
           </div>
-
-          {/* Total */}
           <div className="jury-total">{jury.total}</div>
         </div>
       ))}
@@ -153,13 +146,11 @@ export default function AdminDashboard() {
   const total = (data?.en_attente || 0) + (data?.planifiees || 0) + (data?.terminees || 0)
   const notesRepartition = data?.notesRepartition || {}
 
-  // Top 3 depuis data.notes
   const top3 = [...(data?.notes || [])]
     .filter(n => n.note_finale != null)
     .sort((a, b) => b.note_finale - a.note_finale)
     .slice(0, 3)
 
-  // ── Graphique à barres ───────────────────────────────────────────────────
   const intervals = [
     { label: '< 10',  count: notesRepartition.moins_10     || 0, color: '#CECBF6' },
     { label: '10-12', count: notesRepartition.entre_10_12  || 0, color: '#AFA9EC' },
@@ -198,38 +189,39 @@ export default function AdminDashboard() {
     }
   }
 
+  // Cartes principales
   const mainCards = [
-    { label: 'Soutenances totales', value: total,                  icon: Calendar,    color: '#534AB7' },
-    { label: 'Terminées',           value: data?.terminees  || 0,  icon: CheckCircle, color: '#26215C' },
-    { label: 'Planifiées',          value: data?.planifiees || 0,  icon: Clock,       color: '#7F77DD' },
-    { label: 'En attente',          value: data?.en_attente || 0,  icon: Clock3,      color: '#AFA9EC' },
+    { label: 'Soutenances totales', value: total, icon: Calendar, color: '#7c3aed', bg: '#ede9fe' },
+    { label: 'Terminées', value: data?.terminees || 0, icon: CheckCircle, color: '#10b981', bg: '#d1fae5' },
+    { label: 'Planifiées', value: data?.planifiees || 0, icon: Clock, color: '#f59e0b', bg: '#fef3c7' },
+    { label: 'En attente', value: data?.en_attente || 0, icon: Clock3, color: '#ef4444', bg: '#fee2e2' },
   ]
 
+  // Statistiques secondaires
   const secondaryStats = [
-    { label: 'Taux de réussite', value: `${data?.taux || 0}%`,                                     icon: TrendingUp,  color: '#534AB7', description: 'des étudiants admis' },
-    { label: 'Moyenne générale', value: data?.moy ? `${parseFloat(data.moy).toFixed(1)}/20` : '—', icon: Award,       color: '#7F77DD', description: 'sur 20 points' },
-    { label: 'Réclamations',     value: data?.reclamations || 0,                                    icon: AlertCircle, color: '#AFA9EC', description: 'en attente' },
-    { label: 'Documents',        value: data?.docs || 0,                                            icon: FileText,    color: '#26215C', description: 'publiés' },
+    { label: 'Taux de réussite', value: `${data?.taux || 0}%`, icon: TrendingUp, color: '#10b981', bg: '#d1fae5', description: 'des étudiants admis' },
+    { label: 'Moyenne générale', value: data?.moy ? `${parseFloat(data.moy).toFixed(1)}/20` : '—', icon: Award, color: '#7c3aed', bg: '#ede9fe', description: 'sur 20 points' },
+    { label: 'Réclamations', value: data?.reclamations || 0, icon: AlertCircle, color: '#ef4444', bg: '#fee2e2', description: 'en attente' },
+    { label: 'Documents', value: data?.docs || 0, icon: FileText, color: '#7c3aed', bg: '#ede9fe', description: 'publiés' }, // ← Violet
   ]
 
   return (
     <div className="admin-dashboard">
       <div className="dashboard-header">
         <div>
-          <h1 className="dashboard-title">Tableau de bord</h1>
+          <h1>Tableau de bord</h1>
           <p className="dashboard-subtitle">Vue d'ensemble des soutenances et statistiques</p>
         </div>
         <PlanificationWizard onDone={fetchData} />
       </div>
 
-      {/* ── KPI ── */}
       <div className="cards-grid">
         {mainCards.map((card, i) => {
           const Icon = card.icon
           return (
             <div key={i} className="stat-card-main" style={{ borderLeftColor: card.color }}>
               <div className="stat-card-header">
-                <div className="stat-icon-wrapper" style={{ background: '#EEEDFE', color: card.color }}>
+                <div className="stat-icon-wrapper" style={{ background: card.bg, color: card.color }}>
                   <Icon size={20} />
                 </div>
               </div>
@@ -240,10 +232,7 @@ export default function AdminDashboard() {
         })}
       </div>
 
-      {/* ── 2 colonnes : graphique + jury ── */}
       <div className="two-columns">
-
-        {/* 1. Distribution des notes */}
         <div className="card">
           <div className="card-header">
             <div className="card-title-wrapper">
@@ -264,7 +253,6 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* 2. Charge des membres du jury */}
         <div className="card">
           <div className="card-header">
             <div className="card-title-wrapper">
@@ -283,13 +271,12 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* ── Stats secondaires ── */}
       <div className="secondary-cards">
         {secondaryStats.map((stat, i) => {
           const Icon = stat.icon
           return (
             <div key={i} className="stat-card-secondary">
-              <div className="stat-icon-secondary" style={{ background: '#EEEDFE', color: stat.color }}>
+              <div className="stat-icon-secondary" style={{ background: stat.bg, color: stat.color }}>
                 <Icon size={18} />
               </div>
               <div className="stat-content">
@@ -302,7 +289,6 @@ export default function AdminDashboard() {
         })}
       </div>
 
-      {/* ── Top 3 ── */}
       <div className="card">
         <div className="card-header">
           <div className="card-title-wrapper">
@@ -333,15 +319,15 @@ export default function AdminDashboard() {
         .dashboard-title { font-size: 22px; font-weight: 500; color: var(--color-text-primary); margin: 0; }
         .dashboard-subtitle { font-size: 13px; color: var(--color-text-secondary); margin: 4px 0 0; }
 
-        /* KPI */
         .cards-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
-        .stat-card-main { background: var(--color-background-primary); border-radius: 12px; padding: 20px; border-left: 4px solid; border-top: 0.5px solid var(--color-border-tertiary); border-right: 0.5px solid var(--color-border-tertiary); border-bottom: 0.5px solid var(--color-border-tertiary); }
+        .stat-card-main { background: var(--color-background-primary); border-radius: 12px; padding: 20px; border-left: 4px solid; border-top: 0.5px solid var(--color-border-tertiary); border-right: 0.5px solid var(--color-border-tertiary); border-bottom: 0.5px solid var(--color-border-tertiary); transition: transform 0.2s, box-shadow 0.2s; }
+        .stat-card-main:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
         .stat-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-        .stat-icon-wrapper { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+        .stat-icon-wrapper { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; }
+        .stat-card-main:hover .stat-icon-wrapper { transform: scale(1.05); }
         .stat-value { font-size: 28px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 5px; line-height: 1; }
         .stat-label { font-size: 12px; color: var(--color-text-secondary); }
 
-        /* Layout */
         .two-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
         .card { background: var(--color-background-primary); border-radius: 12px; border: 0.5px solid var(--color-border-tertiary); overflow: hidden; }
         .secondary-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
@@ -353,13 +339,11 @@ export default function AdminDashboard() {
         .card-body { padding: 20px; }
         .chart-container { height: 280px; }
 
-        /* Legend */
         .legend-group { display: flex; gap: 10px; flex-wrap: wrap; }
         .legend-item { display: flex; align-items: center; gap: 5px; }
         .legend-dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
         .legend-label { font-size: 11px; color: var(--color-text-secondary); }
 
-        /* Jury panel */
         .jury-legend-header { display: flex; gap: 6px; }
         .role-badge { font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 99px; white-space: nowrap; }
         .jury-list { display: flex; flex-direction: column; gap: 14px; }
@@ -374,15 +358,14 @@ export default function AdminDashboard() {
         .jury-total { font-size: 13px; font-weight: 600; color: var(--color-text-primary); min-width: 24px; text-align: right; }
         .jury-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 32px 0; color: var(--color-text-secondary); font-size: 13px; }
 
-        /* Secondary cards */
-        .stat-card-secondary { background: var(--color-background-primary); border-radius: 12px; padding: 16px 18px; display: flex; align-items: center; gap: 14px; border: 0.5px solid var(--color-border-tertiary); }
+        .stat-card-secondary { background: var(--color-background-primary); border-radius: 12px; padding: 16px 18px; display: flex; align-items: center; gap: 14px; border: 0.5px solid var(--color-border-tertiary); transition: transform 0.2s; }
+        .stat-card-secondary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
         .stat-icon-secondary { width: 42px; height: 42px; min-width: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
         .stat-content { flex: 1; min-width: 0; }
         .stat-value-secondary { font-size: 20px; font-weight: 500; color: var(--color-text-primary); line-height: 1.2; }
         .stat-label-secondary { font-size: 12px; color: var(--color-text-secondary); margin-top: 3px; }
         .stat-description { font-size: 11px; color: var(--color-text-secondary); margin-top: 2px; opacity: 0.7; }
 
-        /* Top 3 */
         .top-list { display: flex; flex-direction: column; gap: 10px; }
         .top-card { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 10px; background: var(--color-background-secondary); }
         .top-card--empty { opacity: 0.45; }

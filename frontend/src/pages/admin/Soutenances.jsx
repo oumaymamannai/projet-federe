@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import api from "../../services/api";
-import { Send, Users, Search } from "lucide-react";
+import { Send, Users, Search ,CalendarDays } from "lucide-react";
 
 export default function AdminSoutenances() {
   const [soutenances, setSoutenances] = useState([]);
@@ -127,7 +127,12 @@ export default function AdminSoutenances() {
     <div>
       <div className="page-header">
         <div>
-          <h1>🎓 Soutenances</h1>
+          <h1>
+            <span className="icon-squircle page-title-icon" aria-hidden>
+              <CalendarDays size={22} />
+            </span>{" "}
+            Soutenances
+          </h1>
           <p>Gestion des soutenances et affectation des jurys</p>
         </div>
         <div style={{ display: "flex", gap: 12, alignItems: "center" }}>

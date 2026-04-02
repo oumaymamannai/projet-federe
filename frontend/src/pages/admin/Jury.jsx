@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import api from "../../services/api";
 
+import { 
+  Users
+} from 'lucide-react'
 function Modal({ member, onClose }) {
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
@@ -262,8 +265,11 @@ export default function JuryPage() {
     }}>
       <div style={{ marginBottom: 28, display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 26, fontWeight: 700, color: "#1a1a2e", display: "flex", alignItems: "center", gap: 10 }}>
-            <span>👥</span> Membres du jury
+          <h1>
+            <span className="icon-squircle page-title-icon" aria-hidden>
+              <Users size={22} />
+            </span>{" "}
+            Membres du jury
           </h1>
           <p style={{ margin: "6px 0 0", color: "#6b7280", fontSize: 14 }}>
             Liste des membres du jury disponibles pour les affectations
