@@ -236,6 +236,8 @@ CREATE TABLE `users` (
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
 INSERT INTO `users` VALUES (1,'Admin','GradFlow','admin@gradflow.dz','$2a$12$d1L7zZdujNH6QHCyZtqsQ.VXKfHmsEpEXFQxBs/lILSyvdhFxHJme','admin',NULL,'2026-03-01 15:57:53'),(2,'Hadj','Karim','jury1@gradflow.dz','$2a$12$d1L7zZdujNH6QHCyZtqsQ.VXKfHmsEpEXFQxBs/lILSyvdhFxHJme','jury',NULL,'2026-03-01 15:57:53'),(5,'Benali','Amina','etudiant1@gradflow.dz','$2a$12$d1L7zZdujNH6QHCyZtqsQ.VXKfHmsEpEXFQxBs/lILSyvdhFxHJme','etudiant',NULL,'2026-03-01 15:57:53'),(6,'Kaci','Youcef','etudiant2@gradflow.dz','$2a$12$d1L7zZdujNH6QHCyZtqsQ.VXKfHmsEpEXFQxBs/lILSyvdhFxHJme','etudiant',NULL,'2026-03-01 15:57:53'),(7,'Meziane','Sara','etudiant3@gradflow.dz','$2a$12$d1L7zZdujNH6QHCyZtqsQ.VXKfHmsEpEXFQxBs/lILSyvdhFxHJme','etudiant',NULL,'2026-03-01 15:57:53'),(8,'masmoudi','salma','salma@gradflow.dz','$2a$12$d1L7zZdujNH6QHCyZtqsQ.VXKfHmsEpEXFQxBs/lILSyvdhFxHJme','jury',NULL,'2026-03-02 10:06:19'),(9,'ayari','fatma','fatma@gradflow.dz','$2a$12$d1L7zZdujNH6QHCyZtqsQ.VXKfHmsEpEXFQxBs/lILSyvdhFxHJme','jury',NULL,'2026-03-02 10:06:44'),(11,'belhaj','samir','samir@gradflow.dz','$2a$12$d1L7zZdujNH6QHCyZtqsQ.VXKfHmsEpEXFQxBs/lILSyvdhFxHJme','jury',NULL,'2026-03-02 10:07:05'),(12,'ayari','tasnim','tasnimayarimliki@gmail.com','$2a$12$d1L7zZdujNH6QHCyZtqsQ.VXKfHmsEpEXFQxBs/lILSyvdhFxHJme','etudiant',NULL,'2026-03-23 12:55:31'),(13,'mannai','oumayma','oumaymamannai20@gmail.com','$2a$12$d1L7zZdujNH6QHCyZtqsQ.VXKfHmsEpEXFQxBs/lILSyvdhFxHJme','etudiant',NULL,'2026-03-23 12:55:51');
+insert into users (nom,prenom,email,password,role) values 
+('hadded','yasmine','yasminehadded9@gmail.com','$2a$12$d1L7zZdujNH6QHCyZtqsQ.VXKfHmsEpEXFQxBs/lILSyvdhFxHJme','etudiant');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -249,3 +251,6 @@ UNLOCK TABLES;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
 -- Dump completed on 2026-03-23 14:10:37
+ALTER TABLE stage_soumissions
+  ADD COLUMN encadrant_entreprise VARCHAR(255) NULL
+    AFTER encadreur;
