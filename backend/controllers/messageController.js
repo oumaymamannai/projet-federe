@@ -253,3 +253,62 @@ exports.getConversations = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+// Ajoutez ces fonctions après la fonction getNonLus existante
+
+/**
+ * Récupérer le nombre de messages non lus pour une soutenance spécifique
+ * GET /api/messages/:soutenance_id/non-lus
+ */
+exports.getNonLusBySoutenance = async (req, res) => {
+  const { soutenance_id } = req.params;
+  
+  try {
+    const autorise = await verifierAccesEncadreur(soutenance_id, req.user.id);
+    if (!autorise) {
+      return res.status(403).json({ message: 'Accès refusé' });
+    }
+    
+    const [[{ count }]] = await db.query(`
+      SELECT COUNT(*) as count
+      FROM messages m
+      WHERE m.soutenance_id = ?
+        AND m.expediteur_id != ?
+        AND m.lu = 0
+    `, [soutenance_id, req.user.id]);
+    
+    res.json({ count });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+/**
+ * Marquer tous les messages d'une soutenance comme lus
+ * POST /api/messages/:soutenance_id/read
+ */
+exports.markAsRead = async (req, res) => {
+  const { soutenance_id } = req.params;
+  
+  try {
+    const autorise = await verifierAccesEncadreur(soutenance_id, req.user.id);
+    if (!autorise) {
+      return res.status(403).json({ message: 'Accès refusé' });
+    }
+    
+    const [result] = await db.query(`
+      UPDATE messages 
+      SET lu = 1
+      WHERE soutenance_id = ?
+        AND expediteur_id != ?
+        AND lu = 0
+    `, [soutenance_id, req.user.id]);
+    
+    res.json({ 
+      success: true, 
+      message: 'Messages marqués comme lus',
+      affectedRows: result.affectedRows 
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
