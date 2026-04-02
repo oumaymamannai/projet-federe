@@ -32,7 +32,7 @@ export default function AdminSoutenances() {
 
     const selected = [president_id, membre3_id].filter(Boolean);
     if (selected.length === 0) {
-      setMsg("❌ Sélectionnez au moins un rôle de jury (président ou 3ème membre). La gestion de l'encadreur se fait depuis les réclamations.");
+      setMsg("❌ Sélectionnez au moins un rôle de jury (président ou 3ème membre). La gestion de l'encadrant se fait depuis les réclamations.");
       return;
     }
     if (new Set(selected).size !== selected.length) {
@@ -290,9 +290,12 @@ export default function AdminSoutenances() {
                     <td>{statusBadge(s.statut)}</td>
                     <td><strong>{s.note_finale != null ? s.note_finale + "/20" : "—"}</strong></td>
                     <td>
-                      {s.jurys?.length > 0 ? s.jurys.map((j, i) => (
-                        <div key={i} style={{ fontSize: 12 }}>
-                          {j.nom} <span style={{ color: "#9ca3af" }}>({j.role})</span>
+                    {s.jurys?.length > 0 ? s.jurys.map((j, i) => (
+                        <div key={i} style={{ fontSize: 12}}>
+                          <span>{j.nom}</span>
+                          <span style={{ color: "#9ca3af" }}>
+                            {j.role === 'encadreur' ? '(Encadrant)' : j.role === 'president' ? '(Président)' : '(Membre)'}
+                          </span>
                         </div>
                       )) : <span style={{ color: "#9ca3af" }}>Non assigné</span>}
                     </td>
@@ -366,7 +369,7 @@ export default function AdminSoutenances() {
             <p className="sub">Soutenance de {assignModal.etudiant_nom} — {assignModal.sujet || "Sujet non défini"}</p>
 
             <div className="form-group">
-              <label className="form-label">Encadreur</label>
+              <label className="form-label">Encadrant</label>
               {(() => {
                 const fixedEncadreur = assignModal.jurys?.find(j => j.role === 'encadreur');
                 if (fixedEncadreur) {
@@ -375,7 +378,7 @@ export default function AdminSoutenances() {
                 if (assignModal.encadreur) {
                   return <input className="form-control" value={assignModal.encadreur} readOnly disabled />;
                 }
-                return <input className="form-control" value="Aucun encadreur assigné" readOnly disabled />;
+                return <input className="form-control" value="Aucun encadrant assigné" readOnly disabled />;
               })()}
             </div>
 

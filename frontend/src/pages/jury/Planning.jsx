@@ -18,7 +18,7 @@ function isSoutenanceTimePassed(dateStr) {
 }
 
 function roleLabel(r) {
-  return r === "president" ? "Président" : r === "encadreur" ? "Encadreur" : "3ème Membre";
+  return r === "president" ? "Président" : r === "encadreur" ? "Encadrant" : "3ème Membre";
 }
 
 function formatDate(dateStr) {

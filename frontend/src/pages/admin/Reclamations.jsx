@@ -27,14 +27,9 @@ export default function AdminReclamations() {
         api.get("/admin/reclamations"),
         api.get("/admin/jury/members")
       ]);
-      
-      console.log("Réclamations reçues:", reclamationsRes.data);
-      console.log("Membres du jury reçus:", juryRes.data);
-      
       setReclamations(reclamationsRes.data || []);
       setEncadreurs(juryRes.data || []);
     } catch (error) {
-      console.error("Erreur lors du chargement:", error);
       setMsgType("error");
       setMsg("Erreur de chargement: " + (error.response?.data?.message || error.message));
     } finally {
@@ -50,15 +45,12 @@ export default function AdminReclamations() {
 
   const getFileUrl = (filePath) => {
     if (!filePath) return null;
-    
     let filename = filePath;
     if (filename.includes('\\') || filename.includes('/')) {
       filename = filename.split(/[\\/]/).pop();
     }
-    
     const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
     const cleanBaseUrl = baseUrl.replace(/\/api$/, '');
-    
     return `${cleanBaseUrl}/uploads/reclamations/${filename}`;
   };
 
@@ -86,15 +78,13 @@ export default function AdminReclamations() {
   const handleAffecterEncadreur = async () => {
     try {
       const encadreur = encadreurs.find(e => e.id == selectedEncadreur);
-      
       await api.post("/admin/reclamations/" + encadreurModal.id + "/repondre", {
-        reponse: `Encadreur affecté: ${encadreur?.prenom} ${encadreur?.nom}`,
+        reponse: `Encadrant affecté: ${encadreur?.prenom} ${encadreur?.nom}`,
         affecter_encadreur: true,
         encadreur_id: selectedEncadreur
       });
-      
       setMsgType("success");
-      setMsg(" Encadreur affecté avec succès");
+      setMsg(" Encadrant affecté avec succès");
       setEncadreurModal(null);
       setSelectedEncadreur("");
       await load();
@@ -113,7 +103,6 @@ export default function AdminReclamations() {
       setSallesDisponibles(res.data);
       setNouvelleSalle("");
     } catch (error) {
-      console.error("Erreur chargement salles:", error);
       setSallesDisponibles(["Salle A101", "Salle B203", "Amphi 1"]);
     } finally {
       setLoadingSalles(false);
@@ -152,9 +141,8 @@ export default function AdminReclamations() {
     }
   };
 
-  const typeLabel = (t) => t === "probleme_date" ? "Problème date" : t === "pas_encadreur" ? "Pas d'encadreur" : "Autre";
+  const typeLabel = (t) => t === "probleme_date" ? "Problème date" : t === "pas_encadreur" ? "Pas d'encadrant" : "Autre";
 
-  // Compter les réclamations en attente
   const pendingCount = reclamations.filter(r => r.statut === "en_attente").length;
 
   if (loading) return (
@@ -169,13 +157,9 @@ export default function AdminReclamations() {
       <div className="page-header">
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <div style={{ 
-            width: "48px", 
-            height: "48px", 
+            width: "48px", height: "48px", 
             background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-            borderRadius: "12px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center"
+            borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center"
           }}>
             <Bell size={24} color="white" strokeWidth={1.5} />
           </div>
@@ -183,14 +167,7 @@ export default function AdminReclamations() {
             <h1 style={{ margin: 0, display: "flex", alignItems: "center", gap: "10px" }}>
               Gestion des réclamations
               {pendingCount > 0 && (
-                <span style={{
-                  background: "#ef4444",
-                  color: "white",
-                  fontSize: "14px",
-                  padding: "2px 10px",
-                  borderRadius: "20px",
-                  fontWeight: "500"
-                }}>
+                <span style={{ background: "#ef4444", color: "white", fontSize: "14px", padding: "2px 10px", borderRadius: "20px", fontWeight: "500" }}>
                   {pendingCount} en attente
                 </span>
               )}
@@ -244,29 +221,17 @@ export default function AdminReclamations() {
                         {r.piece_jointe && (
                           <div>
                             {isImage(r.piece_jointe) ? (
-                              <button
-                                className="btn btn-sm btn-outline"
-                                onClick={() => setFileModal(r)}
-                                style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
-                              >
+                              <button className="btn btn-sm btn-outline" onClick={() => setFileModal(r)} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
                                 <Eye size={14} /> Voir image
                               </button>
                             ) : (
-                              <a
-                                href={getFileUrl(r.piece_jointe)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="btn btn-sm btn-outline"
-                                style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
-                              >
+                              <a href={getFileUrl(r.piece_jointe)} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-outline" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
                                 <FileText size={14} /> Voir fichier
                               </a>
                             )}
                           </div>
                         )}
-                        {!r.piece_jointe && (
-                          <span style={{ fontSize: 12, color: "#9ca3af" }}>Aucune pièce jointe</span>
-                        )}
+                        {!r.piece_jointe && <span style={{ fontSize: 12, color: "#9ca3af" }}>Aucune pièce jointe</span>}
                       </td>
                       <td>
                         <span className={"badge " + (r.statut === "traitee" ? "badge-success" : "badge-warning")}>
@@ -277,34 +242,20 @@ export default function AdminReclamations() {
                       <td>
                         <div style={{ display: "flex", gap: 6, flexDirection: "column" }}>
                           {r.statut === "en_attente" && (
-                            <button 
-                              className="btn btn-outline btn-sm" 
-                              onClick={() => { setModal(r); setReponse(""); }}
-                            >
+                            <button className="btn btn-outline btn-sm" onClick={() => { setModal(r); setReponse(""); }}>
                               <MessageSquare size={12} /> Répondre
                             </button>
                           )}
-                          
                           {r.type === "pas_encadreur" && r.statut === "en_attente" && (
-                            <button 
-                              className="btn btn-primary btn-sm"
-                              onClick={() => setEncadreurModal(r)}
-                              style={{ background: "#7c3aed" }}
-                            >
-                              <UserPlus size={12} /> Affecter encadreur
+                            <button className="btn btn-primary btn-sm" onClick={() => setEncadreurModal(r)} style={{ background: "#7c3aed" }}>
+                              <UserPlus size={12} /> Affecter encadrant
                             </button>
                           )}
-                          
                           {r.type === "probleme_date" && r.statut === "en_attente" && (
-                            <button 
-                              className="btn btn-primary btn-sm"
-                              onClick={() => setDateModal(r)}
-                              style={{ background: "#16a34a" }}
-                            >
+                            <button className="btn btn-primary btn-sm" onClick={() => setDateModal(r)} style={{ background: "#16a34a" }}>
                               <Calendar size={12} /> Changer la date
                             </button>
                           )}
-                          
                           {r.reponse && (
                             <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
                               <Mail size={10} style={{ display: "inline", marginRight: "4px" }} />
@@ -329,7 +280,6 @@ export default function AdminReclamations() {
         </div>
       </div>
 
-      {/* Modals remain the same */}
       {modal && (
         <div className="modal-overlay">
           <div className="modal">
@@ -339,7 +289,6 @@ export default function AdminReclamations() {
               <strong>Message :</strong>
               <p style={{ margin: "8px 0 0 0", color: "#374151" }}>{modal.message}</p>
             </div>
-            
             <div className="form-group">
               <label className="form-label">Votre réponse</label>
               <textarea className="form-control" rows={4} value={reponse} onChange={e => setReponse(e.target.value)} placeholder="Écrivez votre réponse ici..." />
@@ -358,15 +307,8 @@ export default function AdminReclamations() {
             <h3>📷 Pièce jointe</h3>
             <p className="sub">{fileModal.etudiant_nom}</p>
             <div style={{ textAlign: "center", marginBottom: 16 }}>
-              <img 
-                src={getFileUrl(fileModal.piece_jointe)} 
-                alt="Pièce jointe"
-                style={{ maxWidth: "100%", maxHeight: "70vh", borderRadius: 8 }}
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                  e.target.parentElement.innerHTML = '<p style="color:red">❌ Impossible de charger l\'image</p>';
-                }}
-              />
+              <img src={getFileUrl(fileModal.piece_jointe)} alt="Pièce jointe" style={{ maxWidth: "100%", maxHeight: "70vh", borderRadius: 8 }}
+                onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<p style="color:red">❌ Impossible de charger l\'image</p>'; }} />
             </div>
             <div className="modal-actions">
               <button className="btn btn-outline" onClick={() => setFileModal(null)}>Fermer</button>
@@ -378,36 +320,22 @@ export default function AdminReclamations() {
       {encadreurModal && (
         <div className="modal-overlay">
           <div className="modal">
-            <h3>👤 Affecter un encadreur</h3>
+            <h3>👤 Affecter un encadrant</h3>
             <p className="sub">{encadreurModal.etudiant_nom}</p>
-            
             <div className="form-group">
-              <label className="form-label">Choisir un encadreur</label>
-              <select 
-                className="form-control"
-                value={selectedEncadreur}
-                onChange={(e) => setSelectedEncadreur(e.target.value)}
-              >
+              <label className="form-label">Choisir un encadrant</label>
+              <select className="form-control" value={selectedEncadreur} onChange={(e) => setSelectedEncadreur(e.target.value)}>
                 <option value="">— Choisir —</option>
                 {encadreurs
                   .filter(e => e.id !== Number(encadreurModal?.president_id) && e.id !== Number(encadreurModal?.membre3_id))
                   .map(e => (
-                    <option key={e.id} value={e.id}>
-                      {e.prenom} {e.nom} ({e.email})
-                    </option>
+                    <option key={e.id} value={e.id}>{e.prenom} {e.nom} ({e.email})</option>
                   ))}
               </select>
-
             </div>
-
             <div className="modal-actions">
               <button className="btn btn-outline" onClick={() => setEncadreurModal(null)}>Annuler</button>
-              <button 
-                className="btn btn-primary" 
-                onClick={handleAffecterEncadreur}
-                disabled={!selectedEncadreur}
-                style={{ background: "#7c3aed" }}
-              >
+              <button className="btn btn-primary" onClick={handleAffecterEncadreur} disabled={!selectedEncadreur} style={{ background: "#7c3aed" }}>
                 <CheckCircle size={14} /> Confirmer
               </button>
             </div>
@@ -420,11 +348,9 @@ export default function AdminReclamations() {
           <div className="modal">
             <h3>📅 Changer la date de soutenance</h3>
             <p className="sub">{dateModal.etudiant_nom}</p>
-            
             <div style={{ background: "#fef3c7", borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 14, color: "#92400e" }}>
               <strong>Réclamation :</strong> {dateModal.message}
             </div>
-
             <div className="form-group">
               <label className="form-label">Nouvelle date</label>
               <input type="date" className="form-control" value={nouvelleDate} onChange={e => handleDateChange(e.target.value)} required />
@@ -451,13 +377,10 @@ export default function AdminReclamations() {
               ) : (
                 <select className="form-control" value={nouvelleSalle} onChange={e => setNouvelleSalle(e.target.value)}>
                   <option value="">— Choisir une salle —</option>
-                  {sallesDisponibles.map(s => (
-                    <option key={s} value={s}>{s} </option>
-                  ))}
+                  {sallesDisponibles.map(s => (<option key={s} value={s}>{s}</option>))}
                 </select>
               )}
             </div>
-
             <div className="modal-actions">
               <button className="btn btn-outline" onClick={() => { setDateModal(null); setNouvelleDate(""); setNouvelleHeure(""); setNouvelleSalle(""); }}>Annuler</button>
               <button className="btn btn-primary" onClick={handleChangerDate} disabled={!nouvelleDate || !nouvelleHeure || !nouvelleSalle} style={{ background: "#16a34a" }}>
