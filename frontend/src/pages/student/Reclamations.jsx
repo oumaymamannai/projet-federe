@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import api from "../../services/api";
-import { Send, MessageCircle, Upload, X, Clock, CheckCircle, AlertCircle, FileText } from "lucide-react";
+import { Send, MessageCircle, Upload, X, Clock, CheckCircle, AlertCircle, FileText, Calendar } from "lucide-react";
 
 export default function StudentReclamations() {
   const [form, setForm] = useState({ type: "probleme_date", message: "" });
@@ -209,7 +209,7 @@ export default function StudentReclamations() {
                         </strong>
                         <span className={`badge ${isTraitee ? "badge-success" : "badge-warning"}`}
                           style={{ fontSize: 11 }}>
-                          {isTraitee ? "✅ Traité" : "⏳ En attente"}
+                          {isTraitee ? " Traité" : " En attente"}
                         </span>
                       </div>
 
@@ -258,9 +258,9 @@ export default function StudentReclamations() {
                         fontSize: 11, color: "#9CA3AF", marginTop: 10,
                         display: "flex", gap: 12
                       }}>
-                        <span>📅 {new Date(r.created_at).toLocaleDateString("fr-FR")}</span>
+                        <span><Calendar size={14} /> {new Date(r.created_at).toLocaleDateString("fr-FR")}</span>
                         {r.reponse_at && (
-                          <span>✅ Répondu le {new Date(r.reponse_at).toLocaleDateString("fr-FR")}</span>
+                          <span><CheckCircle size={14} /> Répondu le {new Date(r.reponse_at).toLocaleDateString("fr-FR")}</span>
                         )}
                       </div>
                     </div>
@@ -304,8 +304,8 @@ export default function StudentReclamations() {
                       value={form.type}
                       onChange={e => setForm({ ...form, type: e.target.value })}
                     >
-                      <option value="probleme_date">Problème avec la date</option>
-                      <option value="pas_encadreur">Pas d'encadreur assigné</option>
+                      <option value="probleme_date">Problème de date</option>
+                      <option value="pas_encadreur">Pas d'encadrant assigné</option>
                       <option value="autre">Autre</option>
                     </select>
                   </div>
