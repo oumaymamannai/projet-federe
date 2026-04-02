@@ -15,12 +15,15 @@ exports.getMesSoutenances = async (req, res) => {
   try {
     await syncSoutenanceStatuts();
     const [rows] = await db.query(`
-      SELECT s.id, s.sujet, s.date_soutenance, s.salle, s.statut, s.note_finale,
+      SELECT s.id, 
+        COALESCE(NULLIF(s.sujet, ''), ss.sujet) as sujet,
+        s.date_soutenance, s.salle, s.statut, s.note_finale,
         u.nom, u.prenom, u.email,
         sj.role as mon_role, sj.note as ma_note, sj.remarques as mes_remarques, sj.id as sj_id
       FROM soutenance_jury sj
       JOIN soutenances s ON s.id = sj.soutenance_id
       JOIN users u ON u.id = s.etudiant_id
+      LEFT JOIN stage_soumissions ss ON ss.etudiant_id = u.id
       WHERE sj.jury_id = ?
       ORDER BY s.date_soutenance ASC
     `, [req.user.id]);

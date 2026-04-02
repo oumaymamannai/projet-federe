@@ -60,8 +60,7 @@ function RoleBadge({ role }) {
   const style = ROLE_STYLES[role]?.badge ?? ROLE_STYLES.membre.badge;
   return (
     <span style={{
-      fontSize: 10, padding: "2px 7px", borderRadius: 5, fontWeight: 500,
-      display: "inline-flex", alignItems: "center", gap: 3, ...style
+      fontSize: 10, padding: "2px 7px", borderRadius: 5, fontWeight: 700,
     }}>
       {roleLabel(role)}
     </span>
@@ -72,7 +71,7 @@ function StatusBadge({ status, label }) {
   const style = STATUS_STYLES[status] ?? STATUS_STYLES.done;
   return (
     <span style={{
-      fontSize: 10, padding: "2px 7px", borderRadius: 5, fontWeight: 500, ...style
+      fontSize: 10, padding: "2px 7px", borderRadius: 5, fontWeight: 700, ...style
     }}>
       {label}
     </span>
@@ -88,14 +87,14 @@ function ActionButton({ s }) {
 
   if (isPresident && s.note_finale != null)
     return (
-      <span style={{ fontSize: 11, padding: "6px 12px", borderRadius: 8, fontWeight: 500, background: "#EAF3DE", color: "#27500A", display: "inline-flex", alignItems: "center", gap: 5 }}>
+      <span style={{ fontSize: 11, padding: "6px 12px", borderRadius: 8, fontWeight: 600, background: "#EAF3DE", color: "#27500A", display: "inline-flex", alignItems: "center", gap: 5 }}>
         Noté : {s.note_finale}/20
       </span>
     );
 
   if (!isPresident && s.mes_remarques)
     return (
-      <span style={{ fontSize: 11, padding: "6px 12px", borderRadius: 8, fontWeight: 500, background: "#EAF3DE", color: "#27500A", display: "inline-flex", alignItems: "center", gap: 5 }}>
+      <span style={{ fontSize: 11, padding: "6px 12px", borderRadius: 8, fontWeight: 600, background: "#EAF3DE", color: "#27500A", display: "inline-flex", alignItems: "center", gap: 5 }}>
         Remarques envoyées
       </span>
     );
@@ -103,7 +102,7 @@ function ActionButton({ s }) {
   if (s.date_soutenance && !isSoutenanceTimePassed(s.date_soutenance))
     return (
       <button disabled style={{
-        fontSize: 11, padding: "6px 12px", borderRadius: 8, fontWeight: 500,
+        fontSize: 11, padding: "6px 12px", borderRadius: 8, fontWeight: 600,
         background: "#f3f4f6", color: "#9ca3af",
         border: "0.5px solid #e5e7eb", cursor: "not-allowed",
         display: "inline-flex", alignItems: "center", gap: 5
@@ -114,7 +113,7 @@ function ActionButton({ s }) {
 
   return (
     <a href={`/jury/evaluations/${s.id}`} style={{
-      fontSize: 11, padding: "6px 12px", borderRadius: 8, fontWeight: 500,
+      fontSize: 11, padding: "6px 12px", borderRadius: 8, fontWeight: 600,
       background: "#7c3aed", color: "white", textDecoration: "none",
       display: "inline-flex", alignItems: "center", gap: 5
     }}>
@@ -140,14 +139,14 @@ function SoutenanceCard({ s }) {
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap", marginBottom: 4 }}>
-          <span style={{ fontSize: 14, fontWeight: 500, color: "#111827" }}>
+          <span style={{ fontSize: 14, fontWeight: 700, color: "#1a1033" }}>
             {s.prenom} {s.nom}
           </span>
           <RoleBadge role={s.mon_role} />
           {countdown && <StatusBadge status={countdown.status} label={countdown.label} />}
         </div>
 
-        <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 7, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 500, marginBottom: 7, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {s.sujet}
         </div>
 
@@ -274,7 +273,7 @@ export default function JuryPlanning() {
               style={{
                 padding: "4px 12px", borderRadius: 20, border: "0.5px solid",
                 fontSize: 12, cursor: "pointer", transition: "all 0.15s",
-                fontWeight: activeFilter === f ? 500 : 400,
+                fontWeight: activeFilter === f ? 600 : 400,
                 background: activeFilter === f ? "#7c3aed" : "white",
                 color: activeFilter === f ? "white" : "#6b7280",
                 borderColor: activeFilter === f ? "#7c3aed" : "#e5e7eb",
@@ -323,7 +322,7 @@ export default function JuryPlanning() {
             return (
               <div key={dateKey} style={{ marginBottom: 20 }}>
                 <div style={{
-                  fontSize: 11, fontWeight: 500, color: "#9ca3af",
+                  fontSize: 11, fontWeight: 700, color: "#9ca3af",
                   textTransform: "uppercase", letterSpacing: "0.06em",
                   marginBottom: 8, display: "flex", alignItems: "center", gap: 8
                 }}>

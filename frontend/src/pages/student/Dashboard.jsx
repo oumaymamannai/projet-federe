@@ -215,7 +215,7 @@ export default function StudentDashboard() {
                   <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                     {soutenance.jurys.map((j, i) => (
                       <div key={i} style={{ background: "rgba(167,139,250,0.3)", color: "white", padding: "6px 12px", borderRadius: 8, fontSize: 13, fontWeight: 600 }}>
-                        {j.nom} — {j.role.replace("3eme_membre", "3ème Membre").replace("encadreur", "Encadreur").replace("president", "Président")}
+                        {j.nom} — {j.role.replace("3eme_membre", "3ème Membre").replace("encadreur", "Encadrant").replace("president", "Président")}
                       </div>
                     ))}
                   </div>
