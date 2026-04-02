@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import LoginPage from "./pages/LoginPage";
 import Sidebar from "./components/Sidebar";
+import FloatingChat from './components/FloatingChat';
 import { Toaster } from 'react-hot-toast';
 
 // Student pages
@@ -29,10 +30,15 @@ function ProtectedRoute({ children, roles }) {
   if (loading) return <div className="spinner" />;
   if (!user) return <Navigate to="/login" replace />;
   if (roles && !roles.includes(user.role)) return <Navigate to="/login" replace />;
+  
   return (
     <div className="app-layout">
       <Sidebar />
-      <main className="main-content">{children}</main>
+      <main className="main-content">
+        {children}
+        {/* Ajouter le chat flottant seulement pour les étudiants */}
+        {user?.role === 'etudiant' && <FloatingChat />}
+      </main>
     </div>
   );
 }
@@ -52,7 +58,6 @@ function AppRoutes() {
       <Route path="/student/stage" element={<ProtectedRoute roles={["etudiant"]}><StudentStage /></ProtectedRoute>} />
       <Route path="/student/documents" element={<ProtectedRoute roles={["etudiant"]}><StudentDocuments /></ProtectedRoute>} />
       <Route path="/student/reclamations" element={<ProtectedRoute roles={["etudiant"]}><StudentReclamations /></ProtectedRoute>} />
-      <Route path="/student/messages" element={<ProtectedRoute roles={["etudiant"]}><MessagesPage /></ProtectedRoute>} /> 
 
       {/* Jury routes */}
       <Route path="/jury/dashboard" element={<ProtectedRoute roles={["jury"]}><JuryDashboard /></ProtectedRoute>} />

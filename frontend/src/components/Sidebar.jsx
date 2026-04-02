@@ -24,7 +24,6 @@ const studentNav = [
   },
   { to: '/student/documents', icon: <ClipboardList size={18} />, label: 'Documents' },
   { to: '/student/reclamations', icon: <Bell size={18} />, label: 'Réclamations' },
-  { to: '/student/messages', icon: <MessageSquare size={18} />, label: 'Messages' },
 ];
 
 const juryNav = [
@@ -273,12 +272,6 @@ export default function Sidebar() {
               )}
               {item.label === 'Réclamations' && user?.role === 'etudiant' && reclamationsCount > 0 && (
                 <span className="badge-notification">{reclamationsCount > 99 ? '99+' : reclamationsCount}</span>
-              )}
-              {item.to === '/jury/messages' && messagesNonLus > 0 && (
-                <span className="badge-notification">{messagesNonLus > 99 ? '99+' : messagesNonLus}</span>
-              )}
-              {item.to === '/student/messages' && messagesNonLus > 0 && (
-                <span className="badge-notification">{messagesNonLus > 99 ? '99+' : messagesNonLus}</span>
               )}
             </Link>
           );

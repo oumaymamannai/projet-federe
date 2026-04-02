@@ -698,3 +698,41 @@ tr:hover td { background: var(--purple-50); }
 .highlight {
   animation: highlight 1s ease-out;
 }
+/* Animation pour le chat flottant */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.floating-chat-window {
+  animation: slideIn 0.3s ease;
+}
+
+/* Scrollbar personnalisée pour les messages */
+.floating-chat-window ::-webkit-scrollbar,
+.messages-container ::-webkit-scrollbar {
+  width: 6px;
+}
+
+.floating-chat-window ::-webkit-scrollbar-track,
+.messages-container ::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.floating-chat-window ::-webkit-scrollbar-thumb,
+.messages-container ::-webkit-scrollbar-thumb {
+  background: #c7c7c7;
+  border-radius: 3px;
+}
+
+.floating-chat-window ::-webkit-scrollbar-thumb:hover,
+.messages-container ::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
