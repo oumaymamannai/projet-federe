@@ -443,9 +443,11 @@ const handleDelete = async (id) => {
     await api.delete(`/admin/documents/${id}`);
     await loadDocuments();
     // Message personnalisé avec le nom du document
-    showToast(`✅ "${docTitle}" a été supprimé avec succès`, "success");
+    <CheckCircle size={14} /> 
+    showToast(`"${docTitle}" a été supprimé avec succès`, "success");
   } catch { 
-    showToast(`❌ Erreur : impossible de supprimer "${docTitle}"`, "error"); 
+    <AlertCircle size={14} /> 
+    showToast(` Erreur : impossible de supprimer "${docTitle}"`, "error"); 
   }
 };
 

@@ -64,7 +64,7 @@ export default function AdminReclamations() {
     try {
       await api.post("/admin/reclamations/" + modal.id + "/repondre", { reponse });
       setMsgType("success");
-      setMsg(" Réponse envoyée !"); 
+      setMsg("Réponse envoyée !"); 
       setModal(null); 
       setReponse(""); 
       await load();
@@ -156,12 +156,8 @@ export default function AdminReclamations() {
     <div>
       <div className="page-header">
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <div style={{ 
-            width: "48px", height: "48px", 
-            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-            borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center"
-          }}>
-            <Bell size={24} color="white" strokeWidth={1.5} />
+          <div className="icon-squircle">
+            <AlertCircle size={22} color="#7c3aed" />
           </div>
           <div>
             <h1 style={{ margin: 0, display: "flex", alignItems: "center", gap: "10px" }}>
@@ -182,7 +178,7 @@ export default function AdminReclamations() {
       <div className="page-content">
         {msg && (
           <div className={`alert alert-${msgType === "success" ? "success" : "danger"}`}>
-            {msgType === "success" ? "✅" : "❌"} {msg}
+            {msgType === "success" ? <CheckCircle size={16} /> : <AlertCircle size={16} />} {msg}
           </div>
         )}
         
@@ -269,7 +265,7 @@ export default function AdminReclamations() {
                 ) : (
                   <tr>
                     <td colSpan={7} style={{ textAlign: "center", color: "#9ca3af", padding: 32 }}>
-                      <Bell size={32} style={{ marginBottom: "12px", opacity: 0.5 }} />
+                      <AlertCircle size={32} style={{ marginBottom: "12px", opacity: 0.5 }} />
                       <p>Aucune réclamation pour le moment</p>
                     </td>
                   </tr>
@@ -346,7 +342,7 @@ export default function AdminReclamations() {
       {dateModal && (
         <div className="modal-overlay">
           <div className="modal">
-            <h3>📅 Changer la date de soutenance</h3>
+            <h3><Calendar size={14} /> Changer la date de soutenance</h3>
             <p className="sub">{dateModal.etudiant_nom}</p>
             <div style={{ background: "#fef3c7", borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 14, color: "#92400e" }}>
               <strong>Réclamation :</strong> {dateModal.message}
