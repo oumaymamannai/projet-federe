@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import api from "../../services/api";
-import { FileText, CheckCircle, X, ChevronRight, Building2, User, BookOpen, AlignLeft, Paperclip, Calendar, Eye, Search, GraduationCap } from "lucide-react";
+import { FileText, CheckCircle, X, ChevronRight, Building2, User, BookOpen, AlignLeft, Paperclip, Calendar, Eye, Search } from "lucide-react";
 
 // ── Drawer de détail ─────────────────────────────────────────────────────────
 function DetailDrawer({ soumission, onClose, onValider }) {
@@ -37,8 +37,6 @@ function DetailDrawer({ soumission, onClose, onValider }) {
     <>
       <div className="drawer-overlay" onClick={onClose} />
       <div className="drawer" ref={drawerRef}>
-
-        {/* ── Header ── */}
         <div className="drawer-header">
           <div className="drawer-header-left">
             <div className="drawer-avatar">
@@ -57,10 +55,7 @@ function DetailDrawer({ soumission, onClose, onValider }) {
           <button className="drawer-close" onClick={onClose}><X size={18} /></button>
         </div>
 
-        {/* ── Corps ── */}
         <div className="drawer-body">
-
-          {/* Sujet + Société */}
           <div className="drawer-meta-grid">
             <div className="meta-item">
               <div className="meta-icon"><BookOpen size={14} /></div>
@@ -76,27 +71,13 @@ function DetailDrawer({ soumission, onClose, onValider }) {
                 <div className="meta-value">{soumission.societe || '—'}</div>
               </div>
             </div>
-          </div>
-
-          {/* ── Encadrants : 2 cartes côte à côte ── */}
-          <div className="drawer-meta-grid">
-            {/* Encadrant pédagogique — NOM CORRIGÉ */}
-            <div className="meta-item encadrant-card encadrant-card--pedago">
-              <div className="meta-icon meta-icon--pedago"><GraduationCap size={14} /></div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div className="meta-label">
-                  <span className="encadrant-tag encadrant-tag--pedago">Faculté</span>
-                  Encadrant pédagogique
-                </div>
-                <div className="meta-value">
-                  {soumission.encadreur?.trim()
-                    ? soumission.encadreur
-                    : <span className="meta-empty">Non renseigné</span>
-                  }
-                </div>
+            <div className="meta-item">
+              <div className="meta-icon"><User size={14} /></div>
+              <div>
+                <div className="meta-label">Encadreur pédagogique</div>
+                <div className="meta-value">{soumission.encadreur || <span style={{ color: '#9CA3AF' }}>Non renseigné</span>}</div>
               </div>
             </div>
-
             {/* Encadrant entreprise — NOUVEAU */}
             <div className="meta-item encadrant-card encadrant-card--entreprise">
               <div className="meta-icon meta-icon--entreprise"><Building2 size={14} /></div>
@@ -113,10 +94,7 @@ function DetailDrawer({ soumission, onClose, onValider }) {
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Date de soumission */}
-          <div className="drawer-meta-grid" style={{ gridTemplateColumns: '1fr' }}>
             <div className="meta-item">
               <div className="meta-icon"><Calendar size={14} /></div>
               <div>
@@ -126,13 +104,12 @@ function DetailDrawer({ soumission, onClose, onValider }) {
             </div>
           </div>
 
-          {/* Description */}
           <div className="drawer-section">
             <div className="drawer-section-title">
               <AlignLeft size={14} />
               <span>Description détaillée du projet</span>
             </div>
-            {soumission.description?.trim() ? (
+            {soumission.description ? (
               <div className="description-block">
                 {soumission.description}
               </div>
@@ -141,7 +118,6 @@ function DetailDrawer({ soumission, onClose, onValider }) {
             )}
           </div>
 
-          {/* Fichiers */}
           {files.length > 0 && (
             <div className="drawer-section">
               <div className="drawer-section-title">
@@ -167,7 +143,6 @@ function DetailDrawer({ soumission, onClose, onValider }) {
           )}
         </div>
 
-        {/* ── Footer ── */}
         {isPending && (
           <div className="drawer-footer">
             <button
@@ -186,12 +161,12 @@ function DetailDrawer({ soumission, onClose, onValider }) {
 
 // ── Page principale ──────────────────────────────────────────────────────────
 export default function AdminSubmissions() {
-  const [soumissions, setSoumissions] = useState([]);
-  const [loading,     setLoading]     = useState(true);
-  const [selected,    setSelected]    = useState(null);
-  const [msg,         setMsg]         = useState('');
-  const [error,       setError]       = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [soumissions, setSoumissions]   = useState([]);
+  const [loading, setLoading]           = useState(true);
+  const [selected, setSelected]         = useState(null);
+  const [msg, setMsg]                   = useState('');
+  const [error, setError]               = useState('');
+  const [searchQuery, setSearchQuery]   = useState('');
 
   const loadSoumissions = async () => {
     try {
@@ -205,14 +180,6 @@ export default function AdminSubmissions() {
   };
 
   useEffect(() => { loadSoumissions(); }, []);
-
-  // Synchroniser le drawer si les données changent après validation
-  useEffect(() => {
-    if (selected) {
-      const updated = soumissions.find(s => s.id === selected.id);
-      if (updated) setSelected(updated);
-    }
-  }, [soumissions]);
 
   const validerSoumission = async (id) => {
     try {
@@ -251,8 +218,12 @@ export default function AdminSubmissions() {
           <Search
             size={16}
             style={{
-              position: 'absolute', left: 12, top: '50%',
-              transform: 'translateY(-50%)', color: '#9ca3af', pointerEvents: 'none',
+              position: 'absolute',
+              left: 12,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: '#9ca3af',
+              pointerEvents: 'none',
             }}
           />
           <input
@@ -261,12 +232,19 @@ export default function AdminSubmissions() {
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             style={{
-              paddingLeft: 36, paddingRight: 12, height: 40, width: 280,
-              border: '1px solid #E5E7EB', borderRadius: 8, fontSize: 14,
-              outline: 'none', color: '#111827', background: '#fff',
+              paddingLeft: 36,
+              paddingRight: 12,
+              height: 40,
+              width: 280,
+              border: '1px solid #E5E7EB',
+              borderRadius: 8,
+              fontSize: 14,
+              outline: 'none',
+              color: '#111827',
+              background: '#fff',
             }}
             onFocus={e => e.target.style.borderColor = '#6366F1'}
-            onBlur={e  => e.target.style.borderColor = '#E5E7EB'}
+            onBlur={e => e.target.style.borderColor = '#E5E7EB'}
           />
         </div>
       </div>
@@ -304,7 +282,10 @@ export default function AdminSubmissions() {
                       )}
                     </td>
                     <td>
-                      <button className="btn-view" onClick={() => setSelected(s)}>
+                      <button
+                        className="btn-view"
+                        onClick={() => setSelected(s)}
+                      >
                         <Eye size={16} />
                         Voir le projet
                       </button>
@@ -350,101 +331,429 @@ export default function AdminSubmissions() {
           --border-color: #E5E7EB;
           --bg-secondary: #F9FAFB;
           --bg-white: #FFFFFF;
-          --shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.05);
-          --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
-          --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
+          --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+          --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+          --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
 
-        .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
-        .page-header h1 { font-size: 24px; font-weight: 700; color: var(--text-primary); margin: 0; }
-        .page-header p { color: var(--text-muted); margin-top: 4px; }
-        .pending-badge { background: var(--danger); color: white; border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 600; }
+        .page-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 24px;
+        }
+        
+        .page-header h1 {
+          font-size: 24px;
+          font-weight: 700;
+          color: var(--text-primary);
+          margin: 0;
+        }
+        
+        .page-header p {
+          color: var(--text-muted);
+          margin-top: 4px;
+        }
+        
+        .pending-badge {
+          background: var(--danger);
+          color: white;
+          border-radius: 20px;
+          padding: 4px 12px;
+          font-size: 12px;
+          font-weight: 600;
+        }
 
-        .admin-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        .admin-table thead th { text-align: left; padding: 14px 16px; background: var(--bg-secondary); font-weight: 600; color: var(--text-primary); border-bottom: 2px solid var(--border-color); }
-        .admin-table tbody td { padding: 16px; border-bottom: 1px solid var(--border-color); color: var(--text-secondary); }
-        .student-name { font-weight: 600; color: var(--text-primary); }
-        .row-clickable { cursor: pointer; transition: all 0.2s; }
-        .row-clickable:hover { background: var(--bg-secondary) !important; }
-        .row-active { background: var(--primary-bg) !important; border-left: 3px solid var(--primary-main); }
+        .admin-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 14px;
+        }
+        
+        .admin-table thead th {
+          text-align: left;
+          padding: 14px 16px;
+          background: var(--bg-secondary);
+          font-weight: 600;
+          color: var(--text-primary);
+          border-bottom: 2px solid var(--border-color);
+        }
+        
+        .admin-table tbody td {
+          padding: 16px;
+          border-bottom: 1px solid var(--border-color);
+          color: var(--text-secondary);
+        }
+        
+        .student-name {
+          font-weight: 600;
+          color: var(--text-primary);
+        }
 
-        .badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; }
-        .badge-success { background: #D1FAE5; color: #065F46; }
-        .badge-warning { background: #FEF3C7; color: #92400E; }
-        .btn-view { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: var(--primary-main); color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
-        .btn-view:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: var(--shadow-sm); }
-        .btn-view:active { transform: translateY(0); }
-        .empty-state { text-align: center; color: var(--text-muted); padding: 48px !important; }
+        .row-clickable {
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .row-clickable:hover { 
+          background: var(--bg-secondary) !important; 
+        }
+        .row-active { 
+          background: var(--primary-bg) !important;
+          border-left: 3px solid var(--primary-main);
+        }
 
-        .alert { padding: 14px 18px; border-radius: 10px; margin-bottom: 20px; font-size: 14px; font-weight: 500; }
-        .alert-success { background: #D1FAE5; color: #065F46; border: 1px solid #A7F3D0; }
-        .alert-danger { background: #FEE2E2; color: #991B1B; border: 1px solid #FECACA; }
-        .card { background: var(--bg-white); border-radius: 16px; padding: 24px; box-shadow: var(--shadow-sm); border: 1px solid var(--border-color); }
+        .badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 5px 12px;
+          border-radius: 20px;
+          font-size: 12px;
+          font-weight: 500;
+        }
+        .badge-success {
+          background: #D1FAE5;
+          color: #065F46;
+        }
+        .badge-warning {
+          background: #FEF3C7;
+          color: #92400E;
+        }
+        
+        .btn-view {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 16px;
+          background: var(--primary-main);
+          color: white;
+          border: none;
+          border-radius: 8px;
+          font-size: 13px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .btn-view:hover {
+          background: var(--primary-dark);
+          transform: translateY(-1px);
+          box-shadow: var(--shadow-sm);
+        }
+        .btn-view:active {
+          transform: translateY(0);
+        }
+        
+        .empty-state {
+          text-align: center;
+          color: var(--text-muted);
+          padding: 48px !important;
+        }
 
-        /* ── Drawer ── */
-        .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; animation: fadeIn 0.2s ease; }
-        .drawer { position: fixed; top: 0; right: 0; height: 100vh; width: 520px; max-width: 95vw; background: var(--bg-white); border-left: 1px solid var(--border-color); z-index: 101; display: flex; flex-direction: column; box-shadow: var(--shadow-lg); animation: slideIn 0.3s cubic-bezier(0.32, 0.72, 0, 1); }
-        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
-        @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+        .alert {
+          padding: 14px 18px;
+          border-radius: 10px;
+          margin-bottom: 20px;
+          font-size: 14px;
+          font-weight: 500;
+        }
+        .alert-success {
+          background: #D1FAE5;
+          color: #065F46;
+          border: 1px solid #A7F3D0;
+        }
+        .alert-danger {
+          background: #FEE2E2;
+          color: #991B1B;
+          border: 1px solid #FECACA;
+        }
+        
+        .card {
+          background: var(--bg-white);
+          border-radius: 16px;
+          padding: 24px;
+          box-shadow: var(--shadow-sm);
+          border: 1px solid var(--border-color);
+        }
 
-        .drawer-header { display: flex; align-items: center; justify-content: space-between; padding: 24px; border-bottom: 1px solid var(--border-color); flex-shrink: 0; background: var(--bg-white); }
-        .drawer-header-left { display: flex; align-items: center; gap: 16px; }
-        .drawer-avatar { width: 52px; height: 52px; border-radius: 14px; background: linear-gradient(135deg, var(--primary-main), var(--primary-light)); color: white; font-size: 20px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .drawer-title { font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
-        .drawer-close { width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-white); cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); transition: all 0.2s; }
-        .drawer-close:hover { background: var(--bg-secondary); color: var(--text-primary); border-color: var(--primary-main); }
+        .drawer-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.6);
+          z-index: 100;
+          animation: fadeIn 0.2s ease;
+        }
 
-        .badge-pill { font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 20px; display: inline-block; }
-        .badge-warning-pill { background: #FEF3C7; color: #92400E; }
-        .badge-success-pill { background: #D1FAE5; color: #065F46; }
+        .drawer {
+          position: fixed;
+          top: 0;
+          right: 0;
+          height: 100vh;
+          width: 520px;
+          max-width: 95vw;
+          background: var(--bg-white);
+          border-left: 1px solid var(--border-color);
+          z-index: 101;
+          display: flex;
+          flex-direction: column;
+          box-shadow: var(--shadow-lg);
+          animation: slideIn 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+        }
 
-        .drawer-body { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 20px; background: var(--bg-white); }
+        @keyframes slideIn {
+          from { transform: translateX(100%); }
+          to   { transform: translateX(0); }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to   { opacity: 1; }
+        }
 
-        /* Meta grid */
-        .drawer-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .meta-item { display: flex; gap: 12px; align-items: flex-start; padding: 14px; background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border-color); }
-        .meta-icon { width: 34px; height: 34px; border-radius: 8px; background: var(--primary-bg); color: var(--primary-main); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .meta-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-        .meta-value { font-size: 14px; font-weight: 500; color: var(--text-primary); line-height: 1.4; word-break: break-word; }
-        .meta-empty { color: #9CA3AF; font-style: italic; font-weight: 400; }
+        .drawer-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 24px;
+          border-bottom: 1px solid var(--border-color);
+          flex-shrink: 0;
+          background: var(--bg-white);
+        }
+        .drawer-header-left { 
+          display: flex; 
+          align-items: center; 
+          gap: 16px; 
+        }
+        .drawer-avatar {
+          width: 52px;
+          height: 52px;
+          border-radius: 14px;
+          background: linear-gradient(135deg, var(--primary-main), var(--primary-light));
+          color: white;
+          font-size: 20px;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        .drawer-title {
+          font-size: 18px;
+          font-weight: 700;
+          color: var(--text-primary);
+          margin-bottom: 4px;
+        }
+        .drawer-close {
+          width: 36px;
+          height: 36px;
+          border-radius: 8px;
+          border: 1px solid var(--border-color);
+          background: var(--bg-white);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--text-secondary);
+          transition: all 0.2s;
+        }
+        .drawer-close:hover {
+          background: var(--bg-secondary);
+          color: var(--text-primary);
+          border-color: var(--primary-main);
+        }
 
-        /* Encadrant cards */
-        .encadrant-card { border-width: 1.5px !important; }
-        .encadrant-card--pedago { border-color: #DDD6FE !important; background: #F5F3FF !important; }
-        .encadrant-card--entreprise { border-color: #BFDBFE !important; background: #EFF6FF !important; }
-        .meta-icon--pedago { background: #EDE9FE !important; color: #7C3AED !important; }
-        .meta-icon--entreprise { background: #DBEAFE !important; color: #2563EB !important; }
+        .badge-pill {
+          font-size: 11px;
+          font-weight: 600;
+          padding: 4px 12px;
+          border-radius: 20px;
+          display: inline-block;
+        }
+        .badge-warning-pill {
+          background: #FEF3C7;
+          color: #92400E;
+        }
+        .badge-success-pill {
+          background: #D1FAE5;
+          color: #065F46;
+        }
 
-        /* Tag badge dans le label */
-        .encadrant-tag { font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.06em; }
-        .encadrant-tag--pedago { background: #EDE9FE; color: #6D28D9; }
-        .encadrant-tag--entreprise { background: #DBEAFE; color: #1D4ED8; }
+        .drawer-body {
+          flex: 1;
+          overflow-y: auto;
+          padding: 24px;
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+          background: var(--bg-white);
+        }
 
-        /* Section */
-        .drawer-section { display: flex; flex-direction: column; gap: 12px; }
-        .drawer-section-title { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
-        .drawer-section-title svg { color: var(--primary-main); }
+        .drawer-meta-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+        }
+        .meta-item {
+          display: flex;
+          gap: 12px;
+          align-items: flex-start;
+          padding: 14px;
+          background: var(--bg-secondary);
+          border-radius: 12px;
+          border: 1px solid var(--border-color);
+        }
+        .meta-icon {
+          width: 34px;
+          height: 34px;
+          border-radius: 8px;
+          background: var(--primary-bg);
+          color: var(--primary-main);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        .meta-label {
+          font-size: 11px;
+          font-weight: 600;
+          color: var(--text-muted);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-bottom: 5px;
+        }
+        .meta-value {
+          font-size: 14px;
+          font-weight: 500;
+          color: var(--text-primary);
+          line-height: 1.4;
+          word-break: break-word;
+        }
 
-        /* Description */
-        .description-block { background: var(--bg-secondary); border-left: 4px solid var(--primary-main); border-radius: 8px; padding: 18px 20px; font-size: 14px; line-height: 1.7; color: var(--text-primary); white-space: pre-wrap; word-break: break-word; max-height: 280px; overflow-y: auto; border: 1px solid var(--border-color); }
-        .description-block::-webkit-scrollbar { width: 6px; }
-        .description-block::-webkit-scrollbar-track { background: var(--bg-secondary); border-radius: 3px; }
-        .description-block::-webkit-scrollbar-thumb { background: var(--primary-light); border-radius: 3px; }
-        .description-empty { font-size: 13px; color: var(--text-muted); font-style: italic; padding: 16px; background: var(--bg-secondary); border-radius: 8px; text-align: center; }
+        .drawer-section {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .drawer-section-title {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 12px;
+          font-weight: 700;
+          color: var(--text-secondary);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+        .drawer-section-title svg {
+          color: var(--primary-main);
+        }
 
-        /* Files */
-        .files-list { display: flex; flex-direction: column; gap: 8px; }
-        .file-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--bg-white); text-decoration: none; color: var(--text-primary); transition: all 0.2s; }
-        .file-item:hover { background: var(--primary-bg); border-color: var(--primary-main); transform: translateX(4px); }
-        .file-icon { width: 38px; height: 38px; border-radius: 8px; background: var(--primary-bg); color: var(--primary-main); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .file-name { flex: 1; font-size: 14px; font-weight: 500; color: var(--text-primary); }
-        .file-arrow { color: var(--text-muted); }
+        .description-block {
+          background: var(--bg-secondary);
+          border-left: 4px solid var(--primary-main);
+          border-radius: 8px;
+          padding: 18px 20px;
+          font-size: 14px;
+          line-height: 1.7;
+          color: var(--text-primary);
+          white-space: pre-wrap;
+          word-break: break-word;
+          max-height: 280px;
+          overflow-y: auto;
+          border: 1px solid var(--border-color);
+        }
+        .description-block::-webkit-scrollbar {
+          width: 6px;
+        }
+        .description-block::-webkit-scrollbar-track {
+          background: var(--bg-secondary);
+          border-radius: 3px;
+        }
+        .description-block::-webkit-scrollbar-thumb {
+          background: var(--primary-light);
+          border-radius: 3px;
+        }
+        .description-empty {
+          font-size: 13px;
+          color: var(--text-muted);
+          font-style: italic;
+          padding: 16px;
+          background: var(--bg-secondary);
+          border-radius: 8px;
+          text-align: center;
+        }
 
-        /* Footer */
-        .drawer-footer { padding: 20px 24px; border-top: 1px solid var(--border-color); flex-shrink: 0; background: var(--bg-white); }
-        .btn-valider { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px; border-radius: 10px; background: linear-gradient(135deg, var(--success), var(--success-dark)); color: white; font-size: 14px; font-weight: 600; border: none; cursor: pointer; transition: all 0.2s; }
-        .btn-valider:hover { opacity: 0.95; transform: translateY(-1px); box-shadow: var(--shadow-sm); }
-        .btn-valider:active { transform: translateY(0); }
+        .files-list {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .file-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 12px 16px;
+          border-radius: 10px;
+          border: 1px solid var(--border-color);
+          background: var(--bg-white);
+          text-decoration: none;
+          color: var(--text-primary);
+          transition: all 0.2s;
+        }
+        .file-item:hover {
+          background: var(--primary-bg);
+          border-color: var(--primary-main);
+          transform: translateX(4px);
+        }
+        .file-icon {
+          width: 38px;
+          height: 38px;
+          border-radius: 8px;
+          background: var(--primary-bg);
+          color: var(--primary-main);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        .file-name {
+          flex: 1;
+          font-size: 14px;
+          font-weight: 500;
+          color: var(--text-primary);
+        }
+        .file-arrow {
+          color: var(--text-muted);
+        }
+
+        .drawer-footer {
+          padding: 20px 24px;
+          border-top: 1px solid var(--border-color);
+          flex-shrink: 0;
+          background: var(--bg-white);
+        }
+        .btn-valider {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          padding: 14px;
+          border-radius: 10px;
+          background: linear-gradient(135deg, var(--success), var(--success-dark));
+          color: white;
+          font-size: 14px;
+          font-weight: 600;
+          border: none;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .btn-valider:hover {
+          opacity: 0.95;
+          transform: translateY(-1px);
+          box-shadow: var(--shadow-sm);
+        }
+        .btn-valider:active {
+          transform: translateY(0);
+        }
       `}</style>
     </div>
   );

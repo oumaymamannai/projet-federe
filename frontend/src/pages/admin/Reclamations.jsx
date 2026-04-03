@@ -83,18 +83,18 @@ export default function AdminReclamations() {
     }
   };
 
-  const handleAffecterEncadrant = async () => {
+  const handleAffecterEncadreur = async () => {
     try {
       const encadreur = encadreurs.find(e => e.id == selectedEncadreur);
       
       await api.post("/admin/reclamations/" + encadreurModal.id + "/repondre", {
-        reponse: `Encadrant affecté: ${encadreur?.prenom} ${encadreur?.nom}`,
-        affecter_encadrant: true,
+        reponse: `Encadreur affecté: ${encadreur?.prenom} ${encadreur?.nom}`,
+        affecter_encadreur: true,
         encadreur_id: selectedEncadreur
-      }); 
+      });
       
       setMsgType("success");
-      setMsg(" Encadrant affecté avec succès");
+      setMsg(" Encadreur affecté avec succès");
       setEncadreurModal(null);
       setSelectedEncadreur("");
       await load();
@@ -152,7 +152,7 @@ export default function AdminReclamations() {
     }
   };
 
-  const typeLabel = (t) => t === "probleme_date" ? "Problème date" : t === "pas_encadreur" ? "Pas d'encadrant" : "Autre";
+  const typeLabel = (t) => t === "probleme_date" ? "Problème date" : t === "pas_encadreur" ? "Pas d'encadreur" : "Autre";
 
   // Compter les réclamations en attente
   const pendingCount = reclamations.filter(r => r.statut === "en_attente").length;
@@ -291,7 +291,7 @@ export default function AdminReclamations() {
                               onClick={() => setEncadreurModal(r)}
                               style={{ background: "#7c3aed" }}
                             >
-                              <UserPlus size={12} /> Affecter encadrant
+                              <UserPlus size={12} /> Affecter encadreur
                             </button>
                           )}
                           
@@ -378,11 +378,11 @@ export default function AdminReclamations() {
       {encadreurModal && (
         <div className="modal-overlay">
           <div className="modal">
-            <h3>👤 Affecter un encadrant </h3>
+            <h3>👤 Affecter un encadreur</h3>
             <p className="sub">{encadreurModal.etudiant_nom}</p>
             
             <div className="form-group">
-              <label className="form-label">Choisir un encadrant</label>
+              <label className="form-label">Choisir un encadreur</label>
               <select 
                 className="form-control"
                 value={selectedEncadreur}
@@ -404,7 +404,7 @@ export default function AdminReclamations() {
               <button className="btn btn-outline" onClick={() => setEncadreurModal(null)}>Annuler</button>
               <button 
                 className="btn btn-primary" 
-                onClick={handleAffecterEncadrant}
+                onClick={handleAffecterEncadreur}
                 disabled={!selectedEncadreur}
                 style={{ background: "#7c3aed" }}
               >
