@@ -50,20 +50,12 @@ const globalCss = `
   .badge-pop { animation: badgePop 0.25s cubic-bezier(0.34,1.4,0.64,1) both; }
 `;
 
-/* ─────────────────────────────────────────────────────────────
-   PONT ÉVÉNEMENTIEL  →  Sidebar générale
-   MessagesPage est la SEULE source de vérité pour les non-lus.
-   Elle émet 'messages-non-lus-updated' à chaque changement.
-   La Sidebar écoute et met son badge à jour immédiatement.
-   Principe identique à la sidebar de la conv (état local → UI).
-──────────────────────────────────────────────────────────────*/
 function emitUnreadCount(count) {
   window.dispatchEvent(
     new CustomEvent('messages-non-lus-updated', { detail: { count } })
   );
 }
 
-/* ─── Avatar ─── */
 function Avatar({ prenom, nom, size = 36, accent = false, online = false }) {
   const initials = `${prenom?.[0] || ''}${nom?.[0] || ''}`.toUpperCase();
   const h = ((prenom?.charCodeAt(0) || 72) * 41 + (nom?.charCodeAt(0) || 65) * 19) % 360;
@@ -89,7 +81,6 @@ function Avatar({ prenom, nom, size = 36, accent = false, online = false }) {
   );
 }
 
-/* ─── Date Divider ─── */
 function DateDivider({ date }) {
   const d = new Date(date);
   const today = new Date();
@@ -111,7 +102,6 @@ function DateDivider({ date }) {
   );
 }
 
-/* ─── Badge ─── */
 function Badge({ count }) {
   if (!count || count <= 0) return null;
   return (
@@ -128,7 +118,6 @@ function Badge({ count }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════ */
 export default function MessagesPage() {
   const [conversations, setConversations]       = useState([]);
   const [soutenanceActive, setSoutenanceActive] = useState(null);
@@ -145,28 +134,16 @@ export default function MessagesPage() {
   const soutenanceActiveRef = useRef(null);
   useEffect(() => { soutenanceActiveRef.current = soutenanceActive; }, [soutenanceActive]);
 
-  /* ─────────────────────────────────────────────────────────
-     totalUnread  =  somme de tous les non_lus locaux.
-     C'est la MÊME logique que la sidebar de la conv :
-     état local → calcul → affichage.
-     À chaque changement, on émet vers la Sidebar générale.
-  ──────────────────────────────────────────────────────────*/
   const totalUnread = conversations.reduce((s, c) => s + (c.non_lus || 0), 0);
 
   useEffect(() => {
     emitUnreadCount(totalUnread);
   }, [totalUnread]);
 
-  /* Filtre recherche */
   const filteredConversations = conversations.filter(conv =>
     `${conv.prenom} ${conv.nom}`.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  /* ─────────────────────────────────────────────────────────
-     fetchConvs : protège la conv ouverte contre l'écrasement
-     serveur (le serveur peut renvoyer non_lus > 0 tant que
-     son côté n'a pas encore traité le marquerCommeLu).
-  ──────────────────────────────────────────────────────────*/
   const fetchConvs = useCallback(async () => {
     try {
       const r = await messageAPI.getConversations();
@@ -185,13 +162,6 @@ export default function MessagesPage() {
     catch {} finally { if (!silent) setLoading(false); }
   }, []);
 
-  /* ─────────────────────────────────────────────────────────
-     selectConv — MÊME PRINCIPE que la sidebar de la conv :
-     1. Optimistic update immédiat  →  non_lus = 0 localement
-     2. totalUnread se recalcule   →  useEffect émet l'événement
-     3. Sidebar générale reçoit le bon chiffre IMMÉDIATEMENT
-     4. API fire-and-forget en arrière-plan
-  ──────────────────────────────────────────────────────────*/
   const selectConv = useCallback(async (conv) => {
     setSoutenanceActive(conv);
 
@@ -280,7 +250,7 @@ export default function MessagesPage() {
         background: C.bg, color: C.text, overflow:'hidden',
       }}>
 
-        {/* ══════ SIDEBAR CONVERSATIONS ══════ */}
+        {/* SIDEBAR CONVERSATIONS */}
         <aside className="msg-scroller" style={{
           width: 320, flexShrink: 0, background: C.surface,
           borderRight: `1px solid ${C.border}`,
@@ -297,7 +267,6 @@ export default function MessagesPage() {
                   {userRole === 'etudiant' ? 'Votre encadreur' : 'Vos étudiants encadrés'}
                 </p>
               </div>
-              {/* Badge total — même calcul que la sidebar générale */}
               {totalUnread > 0 && (
                 <div key={totalUnread} className="badge-pop" style={{
                   background: C.accent, color:'#fff',
@@ -394,7 +363,7 @@ export default function MessagesPage() {
           </div>
         </aside>
 
-        {/* ══════ ZONE CHAT ══════ */}
+        {/* ZONE CHAT */}
         <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
           {!soutenanceActive ? (
             <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:16, padding:40 }}>
@@ -516,10 +485,16 @@ export default function MessagesPage() {
               </div>
 
               {/* Input */}
-              <div style={{ padding:'14px 24px', borderTop:`1px solid ${C.border}`, background:C.surface, display:'flex', flexDirection:'column', gap:8 }}>
-                <div style={{ display:'flex', gap:8 }}>
+              <div style={{ padding:'14px 24px', borderTop:`1px solid ${C.border}`, background:C.surface, display:'flex', alignItems:'center', gap:12 }}>
+                <label htmlFor="file-input" style={{ cursor:'pointer', color:C.accent, fontSize:13, fontWeight:600, border:'1px dashed '+C.accent, padding:'8px 12px', borderRadius:10, display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
+                  📎 Piéce Jointe
+                </label>
+                <input id="file-input" type="file" style={{ display:'none' }} onChange={(e) => setFichier(e.target.files?.[0] ?? null)} />
+                
+                <div style={{ flex:1, display:'flex', gap:8 }}>
                   <textarea
-                    ref={inputRef} value={contenu}
+                    ref={inputRef}
+                    value={contenu}
                     onChange={(e) => {
                       setContenu(e.target.value);
                       e.target.style.height = 'auto';
@@ -527,7 +502,8 @@ export default function MessagesPage() {
                     }}
                     onKeyDown={handleKeyDown}
                     placeholder="Écrire un message…   ↵ pour envoyer"
-                    rows={1} className="msg-textarea"
+                    rows={1}
+                    className="msg-textarea"
                     style={{ flex:1, background:C.bg, border:`1px solid ${C.border}`, borderRadius:16, padding:'12px 18px', fontSize:14, color:C.text, resize:'none', maxHeight:120, lineHeight:1.58, fontFamily:"'DM Sans', sans-serif", overflowY:'auto' }}
                   />
                   <button className="send-btn" onClick={handleSend}
@@ -547,22 +523,13 @@ export default function MessagesPage() {
                     }
                   </button>
                 </div>
-                <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                  <label htmlFor="file-input" style={{ cursor:'pointer', color:C.accent, fontSize:13, fontWeight:600, border:'1px dashed '+C.accent, padding:'6px 10px', borderRadius:10 }}>
-                    📎 Joindre un fichier
-                  </label>
-                  <input id="file-input" type="file" style={{ display:'none' }} onChange={(e) => setFichier(e.target.files?.[0] ?? null)} />
-                  {fichier && (
-                    <div style={{ fontSize:12, color:C.textMuted }}>
-                      {fichier.name}
-                      <button type="button" onClick={() => setFichier(null)} style={{ marginLeft:8, border:'none', background:'transparent', color:C.accent, cursor:'pointer', fontWeight:700 }}>✕</button>
-                    </div>
-                  )}
-                </div>
-                <div style={{ fontSize:12, color:C.textMuted, textAlign:'center', marginTop:4 }}>
-                  L'envoi d'une pièce jointe est obligatoirement accompagné d'un message
-                </div>
               </div>
+              {fichier && (
+                <div style={{ padding:'0 24px 12px 24px', fontSize:12, color:C.textMuted, display:'flex', alignItems:'center', gap:8 }}>
+                  <span>📎 {fichier.name}</span>
+                  <button type="button" onClick={() => setFichier(null)} style={{ border:'none', background:'transparent', color:C.accent, cursor:'pointer', fontWeight:700 }}>✕</button>
+                </div>
+              )}
             </>
           )}
         </div>

@@ -1,7 +1,8 @@
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 /* Police unifiée Inter pour tout le projet */
 @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
 
 :root {
   --purple-950: #0f0520;

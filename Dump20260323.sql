@@ -202,7 +202,6 @@ CREATE TABLE `stage_soumissions` (
 --
 -- Dumping data for table `stage_soumissions`
 --
-
 LOCK TABLES `stage_soumissions` WRITE;
 /*!40000 ALTER TABLE `stage_soumissions` DISABLE KEYS */;
 /*!40000 ALTER TABLE `stage_soumissions` ENABLE KEYS */;
