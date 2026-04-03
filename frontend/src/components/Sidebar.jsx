@@ -23,7 +23,7 @@ const studentNav = [
 
 const juryNav = [
   { to: '/jury/dashboard', icon: <LayoutDashboard size={18} />, label: 'Dashboard' },
-  { to: '/jury', icon: <Calendar size={18} />, label: 'Planning' },
+  { to: '/jury', icon: <Calendar size={18} />, label: 'Planning et Evaluations' },
   { to: '/jury/messages', icon: <MessageSquare size={18} />, label: 'Messages' },
 ];
 
@@ -182,53 +182,76 @@ export default function Sidebar() {
 
   /* Setup des effets selon le rôle */
   useEffect(() => {
-    if (user?.role === 'admin') {
+  if (user?.role === 'admin') {
+    loadPendingCount();
+    loadReclamationsAdminCount();
+    
+    const interval = setInterval(() => {
       loadPendingCount();
       loadReclamationsAdminCount();
-      const interval = setInterval(() => {
-        loadPendingCount();
-        loadReclamationsAdminCount();
-      }, 30000);
-      const handleSubmissionUpdate   = () => loadPendingCount();
-      const handleReclamationsUpdate = () => loadReclamationsAdminCount();
-      window.addEventListener('submissionUpdated', handleSubmissionUpdate);
-      window.addEventListener('reclamations-admin-updated', handleReclamationsUpdate);
-      return () => {
-        clearInterval(interval);
-        window.removeEventListener('submissionUpdated', handleSubmissionUpdate);
-        window.removeEventListener('reclamations-admin-updated', handleReclamationsUpdate);
-      };
-    }
+    }, 30000);
+    
+    const handleSubmissionUpdate = () => loadPendingCount();
+    const handleReclamationsUpdate = () => loadReclamationsAdminCount();
+    
+    window.addEventListener('submissionUpdated', handleSubmissionUpdate);
+    window.addEventListener('reclamations-admin-updated', handleReclamationsUpdate);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('submissionUpdated', handleSubmissionUpdate);
+      window.removeEventListener('reclamations-admin-updated', handleReclamationsUpdate);
+    };
+  }
 
-    if (user?.role === 'etudiant') {
+  if (user?.role === 'etudiant') {
+    loadReclamationsCount();
+    checkDejaSoumis();
+    fetchNonLus();
+    
+    const interval = setInterval(() => {
       loadReclamationsCount();
-      checkDejaSoumis();
       fetchNonLus();
-      const interval = setInterval(() => {
+      checkDejaSoumis();
+    }, 30000);
+    
+    return () => clearInterval(interval);
+  }
+
+  if (user?.role === 'jury') {
+    fetchNonLus();
+    const interval = setInterval(fetchNonLus, 30000);
+    return () => clearInterval(interval);
+  }
+  
+}, [user, loadPendingCount, loadReclamationsAdminCount, loadReclamationsCount, checkDejaSoumis, fetchNonLus]);
+
+// ✅ Écouteur de visibilité pour TOUS les rôles
+useEffect(() => {
+  const handleVisibilityChange = () => {
+    if (document.visibilityState === 'visible') {
+      // Recharger selon le rôle
+      if (user?.role === 'etudiant') {
         loadReclamationsCount();
         fetchNonLus();
         checkDejaSoumis();
-      }, 30000);
-      const handleVisibilityChange = () => {
-        if (document.visibilityState === 'visible') {
-          loadReclamationsCount();
-          fetchNonLus();
-          checkDejaSoumis();
-        }
-      };
-      document.addEventListener('visibilitychange', handleVisibilityChange);
-      return () => {
-        clearInterval(interval);
-        document.removeEventListener('visibilitychange', handleVisibilityChange);
-      };
+      }
+      if (user?.role === 'jury') {
+        fetchNonLus();
+      }
+      if (user?.role === 'admin') {
+        loadPendingCount();
+        loadReclamationsAdminCount();
+      }
     }
-
-    if (user?.role === 'jury') {
-      fetchNonLus();
-      const interval = setInterval(fetchNonLus, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [user, loadPendingCount, loadReclamationsAdminCount, loadReclamationsCount, checkDejaSoumis, fetchNonLus]);
+  };
+  
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+  
+  return () => {
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
+  };
+}, [user, loadReclamationsCount, fetchNonLus, checkDejaSoumis, loadPendingCount, loadReclamationsAdminCount]);
 
   let nav = [];
   if (user?.role === 'etudiant')     nav = studentNav;
