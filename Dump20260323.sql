@@ -85,7 +85,7 @@ CREATE TABLE `reclamations` (
   `etudiant_id` int NOT NULL,
   `type` enum('probleme_date','pas_encadreur','autre') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `piece-jointe` VARCHAR(255),
+  `piece_jointe` VARCHAR(255),
   `reponse` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `statut` enum('en_attente','traitee') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'en_attente',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
