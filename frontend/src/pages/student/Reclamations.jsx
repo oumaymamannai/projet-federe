@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import api from "../../services/api";
-import { Send, MessageCircle, Upload, X, Clock, CheckCircle, AlertCircle, FileText, Calendar } from "lucide-react";
+import { Send, MessageCircle, Upload, X, Clock, CheckCircle, AlertCircle, FileText, Calendar,Lock } from "lucide-react";
 
 export default function StudentReclamations() {
   const [form, setForm] = useState({ type: "probleme_date", message: "" });
@@ -131,8 +131,8 @@ export default function StudentReclamations() {
       <div className="page-content">
 
         {/* ── Alerts ──────────────────────────────────────────── */}
-        {msg   && <div className="alert alert-success">✅ {msg}</div>}
-        {error && <div className="alert alert-danger">⚠️ {error}</div>}
+        {msg   && <div className="alert alert-success"><CheckCircle size={16} /> {msg}</div>}
+        {error && <div className="alert alert-danger"><AlertCircle size={16} /> {error}</div>}
 
         {/* ── 2-column layout ─────────────────────────────────── */}
         <div style={{
@@ -276,7 +276,7 @@ export default function StudentReclamations() {
           <div style={{ position: "sticky", top: 20 }}>
             {isTerminee ? (
               <div className="card" style={{ textAlign: "center", padding: 40 }}>
-                <div style={{ fontSize: 52, marginBottom: 12 }}>🔒</div>
+                <div style={{ fontSize: 52, marginBottom: 12 }}><Lock size={35} /></div>
                 <h3 style={{ fontWeight: 700, color: "#6B7280", marginBottom: 8 }}>
                   Réclamations désactivées
                 </h3>

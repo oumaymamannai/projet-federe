@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import api from "../../services/api";
-import { Save, Calendar, ArrowLeft, ClipboardCheck, HelpCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { Save, Calendar, ArrowLeft, ClipboardCheck, HelpCircle, ChevronDown, ChevronUp, CheckCircle } from "lucide-react";
 
 export default function JuryEvaluations() {
   const { soutenanceId } = useParams();
@@ -37,6 +37,16 @@ export default function JuryEvaluations() {
   const handleSave = async (s) => {
     setMsgs(m => ({...m, [s.id]: ""}));
     setErrors(e => ({...e, [s.id]: ""}));
+
+    // Contrôle de saisie avant envoi
+    if (s.mon_role === "president") {
+      const noteVal = parseFloat(forms[s.id]?.note);
+      if (forms[s.id]?.note !== "" && (isNaN(noteVal) || noteVal < 0 || noteVal > 20)) {
+        setErrors(e => ({...e, [s.id]: "La note doit être comprise entre 0 et 20."}));
+        return;
+      }
+    }
+
     try {
       const payload = { remarques: forms[s.id]?.remarques };
       if (s.mon_role === "president") payload.note = parseFloat(forms[s.id]?.note);
@@ -348,11 +358,11 @@ export default function JuryEvaluations() {
 
               <div style={{ marginBottom: 12, fontSize: 13, color: "#6b7280" }}>
                 Votre rôle : <strong style={{ color: s.mon_role === "president" ? "#7c3aed" : "#059669" }}>
-                  {s.mon_role === "president" ? "⚖️ Président" : s.mon_role === "encadreur" ? "📚 Encadreur" : "👤 3ème Membre"}
+                  {s.mon_role === "president" ? "⚖️ Président" : s.mon_role === "encadreur" ? "📚 Encadrant" : "👤 3ème Membre"}
                 </strong>
               </div>
 
-              {msgs[s.id] && <div className="alert alert-success">✅ {msgs[s.id]}</div>}
+              {msgs[s.id] && <div className="alert alert-success"><CheckCircle size={16} /> {msgs[s.id]}</div>}
               {errors[s.id] && <div className="alert alert-danger">⚠️ {errors[s.id]}</div>}
 
               {/* Barème indicatif pour le président */}
@@ -361,8 +371,35 @@ export default function JuryEvaluations() {
               {s.mon_role === "president" && (
                 <div className="form-group">
                   <label className="form-label">Note /20</label>
-                  <input type="number" min="0" max="20" step="0.25" className="form-control" style={{ maxWidth: 160 }}
-                    value={forms[s.id]?.note || ""} onChange={e => setForms(f => ({...f, [s.id]: {...f[s.id], note: e.target.value}}))} />
+                  <input
+                    type="number"
+                    min="0"
+                    max="20"
+                    step="0.25"
+                    className="form-control"
+                    style={{
+                      maxWidth: 160,
+                      borderColor:
+                        forms[s.id]?.note !== "" &&
+                        (parseFloat(forms[s.id]?.note) < 0 || parseFloat(forms[s.id]?.note) > 20)
+                          ? "#dc2626"
+                          : undefined,
+                    }}
+                    value={forms[s.id]?.note || ""}
+                    onChange={e => {
+                      const val = e.target.value;
+                      // Autoriser la saisie libre mais bloquer les valeurs hors [0, 20]
+                      if (val === "" || (parseFloat(val) >= 0 && parseFloat(val) <= 20)) {
+                        setForms(f => ({...f, [s.id]: {...f[s.id], note: val}}));
+                      }
+                    }}
+                  />
+                  {forms[s.id]?.note !== "" &&
+                    (parseFloat(forms[s.id]?.note) < 0 || parseFloat(forms[s.id]?.note) > 20) && (
+                      <div style={{ color: "#dc2626", fontSize: 12, marginTop: 4 }}>
+                        ⚠️ La note doit être comprise entre 0 et 20.
+                      </div>
+                  )}
                 </div>
               )}
 
@@ -380,7 +417,7 @@ export default function JuryEvaluations() {
 
               {s.note_finale !== null && s.note_finale !== undefined && (
                 <div style={{ marginTop: 12, padding: "8px 12px", background: "#f0fdf4", borderRadius: 8, fontSize: 14, color: "#166534" }}>
-                  ✅ Note finale attribuée : <strong>{s.note_finale}/20</strong>
+                  <CheckCircle size={16} /> Note finale attribuée : <strong>{s.note_finale}/20</strong>
                 </div>
               )}
             </div>

@@ -401,7 +401,7 @@ export default function JuryDashboard() {
                 <div className="icon-squircle"><Calendar size={18} /></div>
                 <div>
                   <div style={{ fontWeight: 700, fontSize: 15, color: '#1a1033' }}>Prochaines soutenances</div>
-                  <div style={{ fontSize: 12, color: '#9ca3af' }}>Les 3 prochaines à évaluer</div>
+                  <div style={{ fontSize: 12, color: '#9ca3af' }}>Les prochaines soutenances à évaluer</div>
                 </div>
               </div>
               <Link to="/jury" style={{
