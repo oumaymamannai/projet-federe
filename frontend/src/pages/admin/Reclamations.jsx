@@ -172,7 +172,7 @@ export default function AdminReclamations() {
             <span className="icon-squircle page-title-icon" aria-hidden>
               <AlertCircle size={22} />
             </span>{" "}
-            Soumissions de stage
+            Reclamations
           </h1>
             <p style={{ margin: "4px 0 0 0", color: "#6b7280" }}>
               Traitez les demandes et réclamations des étudiants
