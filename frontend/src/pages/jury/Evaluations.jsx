@@ -337,7 +337,7 @@ export default function JuryEvaluations() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
                 <div>
                   <strong style={{ fontSize: 17 }}>{s.prenom} {s.nom}</strong>
-                  <div style={{ color: "#6b7280", fontSize: 14 }}>📄 {s.sujet}</div>
+                  <div style={{ color: "#6b7280", fontSize: 14 }}>Sujet: {s.sujet}</div>
                 </div>
                 {s.date_soutenance && (
                   <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#7c3aed" }}>

@@ -268,7 +268,7 @@ export default function JuryDashboard() {
               }}>
                 <Award size={20} color="white" />
               </div>
-              {greeting}, {user?.prenom} 👋
+              {greeting}, {user?.prenom} 
             </h1>
             <p style={{ color: '#6b7280', fontSize: 14, marginTop: 4 }}>
               {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}

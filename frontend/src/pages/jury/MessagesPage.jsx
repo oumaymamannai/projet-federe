@@ -15,7 +15,7 @@ const C = {
   accent:        '#8b5cf6',      // violet vif
   accentGlow:    'rgba(139,92,246,0.15)',
   accentSoft:    'rgba(139,92,246,0.08)',
-  text:          '#1a1a2e',      // texte foncé
+  text:          '#1a1033',      // texte foncé
   textMuted:     '#6b5b7e',      // texte gris-violet
   textFaint:     '#b4a5d0',      // texte très clair
   bubble:        '#f5efff',      // bulle violet clair
@@ -117,7 +117,7 @@ function DateDivider({ date }) {
     <div style={{ display:'flex', alignItems:'center', gap:12, margin:'24px 0 14px' }}>
       <div style={{ flex:1, height:1, background:C.border }} />
       <span style={{
-        fontSize:11, color:C.textMuted, fontWeight:500,
+        fontSize:11, color:C.textMuted, fontWeight:600,
         textTransform:'uppercase', letterSpacing:'0.07em',
         padding:'3px 12px', background:C.surface,
         border:`1px solid ${C.border}`, borderRadius:20,
@@ -322,7 +322,7 @@ export default function MessagesPage() {
                         alignItems:'center', marginBottom:3,
                       }}>
                         <span style={{
-                          fontWeight: hasUnread ? 700 : 500,
+                          fontWeight: hasUnread ? 700 : 600,
                           fontSize:14,
                           color: isActive ? C.accent : C.text,
                         }}>
@@ -356,7 +356,7 @@ export default function MessagesPage() {
                         <div style={{
                           fontSize:12,
                           color: hasUnread ? C.text : C.textMuted,
-                          fontWeight: hasUnread ? 500 : 400,
+                          fontWeight: hasUnread ? 600 : 500,
                           whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
                         }}>{conv.dernier_message}</div>
                       )}
@@ -386,7 +386,7 @@ export default function MessagesPage() {
                 boxShadow:`0 0 50px ${C.accentGlow}`,
               }}>💬</div>
               <div style={{ textAlign:'center' }}>
-                <p style={{ fontSize:17, fontWeight:600, color:C.text, marginBottom:6, letterSpacing:'-0.01em' }}>
+                <p style={{ fontSize:17, fontWeight:700, color:C.text, marginBottom:6, letterSpacing:'-0.01em' }}>
                   Sélectionnez une conversation
                 </p>
                 <p style={{ fontSize:13, color:C.textMuted, lineHeight:1.65 }}>
@@ -474,7 +474,7 @@ export default function MessagesPage() {
                 ) : messages.length === 0 ? (
                   <div style={{ textAlign:'center', paddingTop:64, color:C.textMuted }}>
                     <div style={{ fontSize:42, marginBottom:12 }}>✉️</div>
-                    <p style={{ fontSize:14, fontWeight:500, marginBottom:4 }}>Aucun message</p>
+                    <p style={{ fontSize:14, fontWeight:600, marginBottom:4 }}>Aucun message</p>
                     <p style={{ fontSize:12, color:C.textFaint }}>Lancez la conversation !</p>
                   </div>
                 ) : null}
@@ -518,7 +518,7 @@ export default function MessagesPage() {
                             {showName && (
                               <div style={{
                                 fontSize:11, color:C.textMuted,
-                                fontWeight:500, marginBottom:4, marginLeft:3,
+                                fontWeight:600, marginBottom:4, marginLeft:3,
                               }}>
                                 {msg.prenom} {msg.nom}
                               </div>
