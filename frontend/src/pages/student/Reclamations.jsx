@@ -81,7 +81,7 @@ export default function StudentReclamations() {
   };
 
   const typeLabel = (t) => {
-    if (t === "probleme_date") return "Problème date";
+    if (t === "probleme_date") return "Problème avec la date";
     if (t === "pas_encadreur") return "Pas d'encadreur";
     return "Autre";
   };
@@ -304,8 +304,8 @@ export default function StudentReclamations() {
                       value={form.type}
                       onChange={e => setForm({ ...form, type: e.target.value })}
                     >
-                      <option value="probleme_date">Problème de date</option>
-                      <option value="pas_encadreur">Pas d'encadrant assigné</option>
+                      <option value="probleme_date">Problème avec la date</option>
+                      <option value="pas_encadreur">Pas d'encadreur assigné</option>
                       <option value="autre">Autre</option>
                     </select>
                   </div>
