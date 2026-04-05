@@ -74,7 +74,7 @@ function DetailDrawer({ soumission, onClose, onValider }) {
             <div className="meta-item">
               <div className="meta-icon"><User size={14} /></div>
               <div>
-                <div className="meta-label">Encadreur pédagogique</div>
+                <div className="meta-label">Encadrant pédagogique</div>
                 <div className="meta-value">{soumission.encadreur || <span style={{ color: '#9CA3AF' }}>Non renseigné</span>}</div>
               </div>
             </div>
