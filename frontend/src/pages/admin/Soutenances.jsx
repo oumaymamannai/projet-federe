@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import api from "../../services/api";
-import { Send, Users, Search ,CalendarDays } from "lucide-react";
+import { Send, Users, Search ,CalendarDays, CheckCircle } from "lucide-react";
 
 export default function AdminSoutenances() {
   const [soutenances, setSoutenances] = useState([]);
@@ -131,7 +131,7 @@ export default function AdminSoutenances() {
 
   const statusBadge = (s) => {
     if (s === "planifiee") return <span className="badge badge-purple">📅 Planifiée</span>;
-    if (s === "terminee") return <span className="badge badge-success">✅ Terminée</span>;
+    if (s === "terminee") return <span className="badge badge-success"><CheckCircle size={14} /> Terminée</span>;
     return <span className="badge badge-warning">⏳ En attente</span>;
   };
 

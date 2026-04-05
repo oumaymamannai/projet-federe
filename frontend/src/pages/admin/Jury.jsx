@@ -1,9 +1,7 @@
 import { useState, useEffect } from "react";
 import api from "../../services/api";
+import { Search, Users } from "lucide-react";
 
-import { 
-  Users
-} from 'lucide-react'
 function Modal({ member, onClose }) {
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
@@ -14,7 +12,6 @@ function Modal({ member, onClose }) {
     if (!subject.trim() || !message.trim()) return;
     setSending(true);
     try {
-      // CORRECTION: Utiliser la bonne route avec /admin/
       await api.post("/admin/jury/contact", {
         memberId: member.id,
         subject,
@@ -93,12 +90,13 @@ function Modal({ member, onClose }) {
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
                   placeholder="Ex: Convocation pour soutenance..."
+                  className="search-input"
                   style={{
                     width: "100%", padding: "10px 12px", border: "1px solid #e5e7eb",
                     borderRadius: 8, fontSize: 14, color: "#1a1a2e", outline: "none",
                     boxSizing: "border-box", transition: "border-color 0.2s",
                   }}
-                  onFocus={(e) => (e.target.style.borderColor = "#6b5ce7")}
+                  onFocus={(e) => (e.target.style.borderColor = "#7c3aed")}
                   onBlur={(e) => (e.target.style.borderColor = "#e5e7eb")}
                 />
               </div>
@@ -111,13 +109,14 @@ function Modal({ member, onClose }) {
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="Rédigez votre message ici..."
                   rows={5}
+                  className="search-input"
                   style={{
                     width: "100%", padding: "10px 12px", border: "1px solid #e5e7eb",
                     borderRadius: 8, fontSize: 14, color: "#1a1a2e", outline: "none",
                     boxSizing: "border-box", resize: "vertical", fontFamily: "inherit",
                     transition: "border-color 0.2s",
                   }}
-                  onFocus={(e) => (e.target.style.borderColor = "#6b5ce7")}
+                  onFocus={(e) => (e.target.style.borderColor = "#7c3aed")}
                   onBlur={(e) => (e.target.style.borderColor = "#e5e7eb")}
                 />
               </div>
@@ -177,7 +176,7 @@ function Modal({ member, onClose }) {
   );
 }
 
-export default function JuryPage() {
+export default function AdminJury() {
   const [juryMembers, setJuryMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
@@ -197,7 +196,6 @@ export default function JuryPage() {
     const loadJuryMembers = async () => {
       try {
         const response = await api.get("/admin/jury/members");
-        console.log("Membres jury reçus:", response.data);
         const members = response.data.map((member, index) => ({
           id: member.id,
           nom: member.nom,
@@ -218,17 +216,14 @@ export default function JuryPage() {
     loadJuryMembers();
   }, []);
 
-  // CORRECTION: Fonction pour envoyer à tous
   const handleSendToAll = async () => {
     if (!allSubject.trim() || !allMessage.trim()) return;
     setAllSending(true);
     try {
-      // CORRECTION: Utiliser la bonne route avec /admin/
-      const response = await api.post("/admin/jury/contact-all", {
+      await api.post("/admin/jury/contact-all", {
         subject: allSubject,
         message: allMessage
       });
-      console.log("Envoi groupé réussi:", response.data);
       await new Promise((r) => setTimeout(r, 500));
       setAllSent(true);
     } catch (error) {
@@ -258,7 +253,7 @@ export default function JuryPage() {
     <div style={{ 
       minHeight: "100vh", 
       background: "#f8f7ff", 
-      fontFamily: "'Segoe UI', system-ui, sans-serif",
+      fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif",
       padding: "36px 40px",
       width: "100%",
       boxSizing: "border-box"
@@ -294,6 +289,7 @@ export default function JuryPage() {
             placeholder="Rechercher un membre..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            className="search-input"
             style={{
               width: "100%", padding: "10px 12px 10px 36px",
               border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 14,
@@ -495,6 +491,7 @@ export default function JuryPage() {
                       value={allSubject}
                       onChange={(e) => setAllSubject(e.target.value)}
                       placeholder="Objet du message groupé..." 
+                      className="search-input"
                       style={{ width: "100%", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 14, boxSizing: "border-box", outline: "none" }} 
                     />
                   </div>
@@ -505,6 +502,7 @@ export default function JuryPage() {
                       value={allMessage}
                       onChange={(e) => setAllMessage(e.target.value)}
                       placeholder="Message pour tous les membres du jury..." 
+                      className="search-input"
                       style={{ width: "100%", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 14, boxSizing: "border-box", resize: "vertical", fontFamily: "inherit", outline: "none" }} 
                     />
                   </div>
