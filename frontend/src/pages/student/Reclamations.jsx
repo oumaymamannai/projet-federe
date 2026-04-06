@@ -131,8 +131,8 @@ export default function StudentReclamations() {
       <div className="page-content">
 
         {/* ── Alerts ──────────────────────────────────────────── */}
-        {msg   && <div className="alert alert-success">✅ {msg}</div>}
-        {error && <div className="alert alert-danger">⚠️ {error}</div>}
+        {msg   && <div className="alert alert-success"><CheckCircle size={16} /> {msg}</div>}
+        {error && <div className="alert alert-danger"><AlertCircle size={16} /> {error}</div>}
 
         {/* ── 2-column layout ─────────────────────────────────── */}
         <div style={{
