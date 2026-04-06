@@ -216,7 +216,7 @@ export default function FloatingChat() {
           onClick={() => setIsMinimized(!isMinimized)}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <MessageSquare size={18} />
-              <span style={{ fontWeight: 600 }}>{encadreur?.nom} - Encadreur</span>
+              <span style={{ fontWeight: 600 }}>{encadreur?.nom} - Encadrant</span>
               {nonLus > 0 && !isMinimized && (
                 <span style={{
                   background: '#ef4444',
@@ -254,7 +254,7 @@ export default function FloatingChat() {
                   <div style={{ textAlign: 'center', color: '#9ca3af', padding: '40px 20px' }}>
                     <MessageSquare size={32} style={{ marginBottom: '8px', opacity: 0.5 }} />
                     <p>Aucun message</p>
-                    <p style={{ fontSize: '12px' }}>Envoyez un message à votre encadreur</p>
+                    <p style={{ fontSize: '12px' }}>Envoyez un message à votre encadrant</p>
                   </div>
                 ) : (
                   messages.map((msg, idx) => {

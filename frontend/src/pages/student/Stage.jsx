@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import api from "../../services/api";
-import { Upload, Send, FileText, X, GraduationCap, Building2 } from "lucide-react";
+import { Upload, Send, FileText, X, GraduationCap, Building2 ,Lock  } from "lucide-react";
 import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
 
@@ -183,7 +183,7 @@ export default function StudentStage() {
           <h1> <span className="icon-squircle page-title-icon" aria-hidden>
                 <FileText size={22} />
               </span>{" "}Formulaire de stage</h1>
-          <p>Soumettez vos informations de stage</p>
+          <p>Une seule soumission est autorisé.Vérifiez soigneusement avant de soumettre.</p>
         </div>
       </div>
 
@@ -193,7 +193,7 @@ export default function StudentStage() {
 
         {isTerminee ? (
           <div className="card" style={{ textAlign: "center", padding: 32 }}>
-            <div style={{ fontSize: 48, marginBottom: 12 }}>🔒</div>
+            <div style={{ fontSize: 48, marginBottom: 12 }}><Lock size={35} /></div>
             <h3 style={{ marginBottom: 8, fontWeight: 700, color: "#6b7280" }}>Dépôt de dossier désactivé</h3>
             <p style={{ color: "#9ca3af" }}>Votre soutenance est terminée, vous ne pouvez plus déposer de dossier.</p>
           </div>
