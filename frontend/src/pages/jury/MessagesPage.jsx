@@ -276,7 +276,7 @@ export default function MessagesPage() {
     <>
       <style>{globalCss}</style>
       <div className="msg-root" style={{
-        display:'flex', height:'calc(100vh - 80px)',
+        display:'flex', height: '100vh',
         background: C.bg, color: C.text, overflow:'hidden',
       }}>
 
