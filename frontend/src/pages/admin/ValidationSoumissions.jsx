@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import api from "../../services/api";
-import { FileText, CheckCircle, X, ChevronRight, Building2, User, BookOpen, AlignLeft, Paperclip, Calendar, Eye, Search, Clock } from "lucide-react";
-
+import { FileText, CheckCircle, AlertCircle, X, ChevronRight, Building2, User, BookOpen, AlignLeft, Paperclip, Calendar, Eye, Search, Clock } from "lucide-react";
 // ── Drawer de détail ─────────────────────────────────────────────────────────
 function DetailDrawer({ soumission, onClose, onValider }) {
   const drawerRef = useRef(null);
@@ -470,23 +469,21 @@ export default function AdminSubmissions() {
           background: rgba(0, 0, 0, 0.6);
           z-index: 100;
           animation: fadeIn 0.2s ease;
-        }
-
-        .drawer {
-          position: fixed;
-          top: 0;
-          right: 0;
-          height: 100vh;
-          width: 520px;
-          max-width: 95vw;
-          background: var(--bg-white);
-          border-left: 1px solid var(--border-color);
-          z-index: 101;
-          display: flex;
-          flex-direction: column;
-          box-shadow: var(--shadow-lg);
-          animation: slideIn 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-        }
+      }.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  width: 520px;
+  max-width: 95vw;
+  background: var(--bg-white);
+  border-left: 1px solid var(--border-color);
+  z-index: 101;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-lg);
+  animation: slideIn 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
 
         @keyframes slideIn {
           from { transform: translateX(100%); }
@@ -752,6 +749,21 @@ export default function AdminSubmissions() {
           box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1) !important;
           outline: none;
         }
+          @media (max-width: 768px) {
+  .drawer {
+    top: calc(var(--header-h) + env(safe-area-inset-top));
+    height: calc(100vh - var(--header-h) - env(safe-area-inset-top));
+    width: 100%;
+    max-width: 100%;
+    border-left: none;
+    border-top: 1px solid var(--border-color);
+    border-radius: 16px 16px 0 0;
+  }
+  
+  .drawer-overlay {
+    top: calc(var(--header-h) + env(safe-area-inset-top));
+  }
+}
       `}</style>
     </div>
   );

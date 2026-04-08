@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { messageAPI, getMessageFileUrl } from '../../services/messageService';
-import { Search, X } from 'lucide-react';
+import { Search, X, ArrowLeft } from 'lucide-react';
 
 const token = localStorage.getItem('gradflow_token');
 const userId = token ? JSON.parse(atob(token.split('.')[1])).id : null;
@@ -48,12 +48,45 @@ const globalCss = `
   .online-dot { animation: pulse 2.2s infinite; }
   @keyframes badgePop { 0% { transform: scale(0.6); opacity: 0; } 70% { transform: scale(1.2); } 100% { transform: scale(1); opacity: 1; } }
   .badge-pop { animation: badgePop 0.25s cubic-bezier(0.34,1.4,0.64,1) both; }
+
+  /* ── MOBILE ── */
+  .msg-back-btn { display: none; }
+
+  @media (max-width: 768px) {
+    .msg-layout {
+      flex-direction: column !important;
+      height: calc(100vh - 60px) !important;
+    }
+    .msg-sidebar {
+      width: 100% !important;
+      flex-shrink: 0 !important;
+      border-right: none !important;
+      border-bottom: 1px solid ${C.border};
+    }
+    .msg-sidebar.hidden { display: none !important; }
+    .msg-chat { display: none; flex-direction: column; overflow: hidden; }
+    .msg-chat.visible { display: flex !important; flex: 1; overflow: hidden; }
+    .msg-back-btn {
+      display: flex !important;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: ${C.surface};
+      border: none;
+      border-bottom: 1px solid ${C.border};
+      color: ${C.accent};
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      flex-shrink: 0;
+      width: 100%;
+      font-family: 'DM Sans', sans-serif;
+    }
+  }
 `;
 
 function emitUnreadCount(count) {
-  window.dispatchEvent(
-    new CustomEvent('messages-non-lus-updated', { detail: { count } })
-  );
+  window.dispatchEvent(new CustomEvent('messages-non-lus-updated', { detail: { count } }));
 }
 
 function Avatar({ prenom, nom, size = 36, accent = false, online = false }) {
@@ -135,10 +168,7 @@ export default function MessagesPage() {
   useEffect(() => { soutenanceActiveRef.current = soutenanceActive; }, [soutenanceActive]);
 
   const totalUnread = conversations.reduce((s, c) => s + (c.non_lus || 0), 0);
-
-  useEffect(() => {
-    emitUnreadCount(totalUnread);
-  }, [totalUnread]);
+  useEffect(() => { emitUnreadCount(totalUnread); }, [totalUnread]);
 
   const filteredConversations = conversations.filter(conv =>
     `${conv.prenom} ${conv.nom}`.toLowerCase().includes(searchTerm.toLowerCase())
@@ -147,7 +177,7 @@ export default function MessagesPage() {
   const fetchConvs = useCallback(async () => {
     try {
       const r = await messageAPI.getConversations();
-      setConversations(prev => {
+      setConversations(() => {
         const activeId = soutenanceActiveRef.current?.soutenance_id;
         return r.data.map(sc =>
           activeId && sc.soutenance_id === activeId ? { ...sc, non_lus: 0 } : sc
@@ -164,18 +194,12 @@ export default function MessagesPage() {
 
   const selectConv = useCallback(async (conv) => {
     setSoutenanceActive(conv);
-
     if (conv.non_lus > 0) {
       setConversations(prev =>
-        prev.map(c =>
-          c.soutenance_id === conv.soutenance_id ? { ...c, non_lus: 0 } : c
-        )
+        prev.map(c => c.soutenance_id === conv.soutenance_id ? { ...c, non_lus: 0 } : c)
       );
-      messageAPI.marquerCommeLu(conv.soutenance_id).catch(err =>
-        console.error('Erreur marquage lu:', err)
-      );
+      messageAPI.marquerCommeLu(conv.soutenance_id).catch(console.error);
     }
-
     await fetchMsgs(conv.soutenance_id);
   }, [fetchMsgs]);
 
@@ -198,7 +222,6 @@ export default function MessagesPage() {
       inputRef.current?.focus();
     } catch {
       setContenu(txt);
-      setFichier(fichier);
     } finally {
       setSending(false);
     }
@@ -245,20 +268,29 @@ export default function MessagesPage() {
   return (
     <>
       <style>{globalCss}</style>
-      <div className="msg-root" style={{
-        display:'flex', height: '100vh',
-        background: C.bg, color: C.text, overflow:'hidden',
+      <div className="msg-root msg-layout" style={{
+        display: 'flex',
+        height: 'calc(100vh - 60px)',
+        background: C.bg,
+        color: C.text,
+        overflow: 'hidden',
       }}>
 
-        {/* SIDEBAR CONVERSATIONS */}
-        <aside className="msg-scroller" style={{
-          width: 320, flexShrink: 0, background: C.surface,
+        {/* ── SIDEBAR CONVERSATIONS ── */}
+        <aside className={`msg-sidebar msg-scroller${soutenanceActive ? ' hidden' : ''}`} style={{
+          width: 320,
+          flexShrink: 0,
+          background: C.surface,
           borderRight: `1px solid ${C.border}`,
-          display:'flex', flexDirection:'column', overflowY:'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          overflowY: 'auto',
         }}>
           <div style={{
-            padding:'22px 20px 16px', borderBottom:`1px solid ${C.border}`,
-            position:'sticky', top:0, zIndex:2, background: C.surface,
+            padding: '22px 20px 16px',
+            borderBottom: `1px solid ${C.border}`,
+            position: 'sticky', top: 0, zIndex: 2,
+            background: C.surface,
           }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom: 16 }}>
               <div>
@@ -277,7 +309,6 @@ export default function MessagesPage() {
                 </div>
               )}
             </div>
-
             <div style={{
               display:'flex', alignItems:'center', gap:8, background:C.bg,
               borderRadius:12, padding:'6px 12px', border:`1px solid ${C.border}`,
@@ -290,10 +321,7 @@ export default function MessagesPage() {
                 autoComplete="off"
               />
               {searchTerm && (
-                <button onClick={() => setSearchTerm('')} style={{
-                  background:'transparent', border:'none', cursor:'pointer',
-                  display:'flex', alignItems:'center', padding:2, borderRadius:'50%', color:C.textMuted,
-                }}>
+                <button onClick={() => setSearchTerm('')} style={{ background:'transparent', border:'none', cursor:'pointer', display:'flex', alignItems:'center', padding:2, borderRadius:'50%', color:C.textMuted }}>
                   <X size={14} />
                 </button>
               )}
@@ -363,13 +391,19 @@ export default function MessagesPage() {
           </div>
         </aside>
 
-        {/* ZONE CHAT */}
-        <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
+        {/* ── ZONE CHAT ── */}
+        <div className={`msg-chat${soutenanceActive ? ' visible' : ''}`}>
+          {soutenanceActive && (
+    <button className="msg-back-btn" onClick={() => setSoutenanceActive(null)}>
+      <ArrowLeft size={16} />
+      Retour aux conversations
+    </button>)}
+
           {!soutenanceActive ? (
             <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:16, padding:40 }}>
               <div style={{ width:80, height:80, borderRadius:24, background:C.accentSoft, border:`1px solid ${C.accentGlow}`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:36, boxShadow:`0 0 50px ${C.accentGlow}` }}>💬</div>
               <div style={{ textAlign:'center' }}>
-                <p style={{ fontSize:17, fontWeight:700, color:C.text, marginBottom:6, letterSpacing:'-0.01em' }}>Sélectionnez une conversation</p>
+                <p style={{ fontSize:17, fontWeight:700, color:C.text, marginBottom:6 }}>Sélectionnez une conversation</p>
                 <p style={{ fontSize:13, color:C.textMuted, lineHeight:1.65 }}>
                   {userRole === 'etudiant' ? 'Échangez avec votre encadreur de mémoire' : 'Échangez avec vos étudiants encadrés'}
                 </p>
@@ -377,7 +411,7 @@ export default function MessagesPage() {
             </div>
           ) : (
             <>
-              {/* Header */}
+              {/* Header chat */}
               <div style={{ padding:'14px 24px', borderBottom:`1px solid ${C.border}`, background:C.surface, display:'flex', alignItems:'center', gap:14, flexShrink:0 }}>
                 <Avatar prenom={soutenanceActive.prenom} nom={soutenanceActive.nom} size={44} online />
                 <div style={{ flex:1, minWidth:0 }}>
@@ -397,14 +431,14 @@ export default function MessagesPage() {
                     ))}
                   </div>
                 </div>
-                <div style={{ display:'flex', alignItems:'center', gap:7, padding:'6px 13px', background:'rgba(16,185,129,0.07)', border:'1px solid rgba(16,185,129,0.15)', borderRadius:20 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:7, padding:'6px 13px', background:'rgba(16,185,129,0.07)', border:'1px solid rgba(16,185,129,0.15)', borderRadius:20, flexShrink:0 }}>
                   <div className="online-dot" style={{ width:7, height:7, borderRadius:'50%', background:C.green, flexShrink:0 }} />
                   <span style={{ fontSize:11, color:C.green, fontWeight:600 }}>En ligne</span>
                 </div>
               </div>
 
               {/* Messages */}
-              <div className="msg-scroller" style={{ flex:1, overflowY:'auto', padding:'8px 36px 20px', background:C.bg }}>
+              <div className="msg-scroller" style={{ flex:1, overflowY:'auto', padding:'8px 24px 20px', background:C.bg }}>
                 {loading ? (
                   <div style={{ textAlign:'center', paddingTop:64 }}>
                     <div className="spin" style={{ width:28, height:28, margin:'0 auto 12px', border:`2px solid ${C.border}`, borderTopColor:C.accent, borderRadius:'50%' }} />
@@ -434,7 +468,7 @@ export default function MessagesPage() {
                                 {!nextSame ? <Avatar prenom={msg.prenom} nom={msg.nom} size={32} /> : <div style={{width:32}}/>}
                               </div>
                             )}
-                            <div style={{ maxWidth:'58%' }}>
+                            <div style={{ maxWidth:'75%' }}>
                               {!isMe && !prevSame && (
                                 <div style={{ fontSize:11, color:C.textMuted, fontWeight:600, marginBottom:4, marginLeft:3 }}>
                                   {msg.prenom} {msg.nom}
@@ -485,47 +519,44 @@ export default function MessagesPage() {
               </div>
 
               {/* Input */}
-              <div style={{ padding:'14px 24px', borderTop:`1px solid ${C.border}`, background:C.surface, display:'flex', alignItems:'center', gap:12 }}>
-                <label htmlFor="file-input" style={{ cursor:'pointer', color:C.accent, fontSize:13, fontWeight:600, border:'1px dashed '+C.accent, padding:'8px 12px', borderRadius:10, display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
-                  📎 Piéce Jointe
+              <div style={{ padding:'14px 16px', borderTop:`1px solid ${C.border}`, background:C.surface, display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
+                <label htmlFor="file-input" style={{ cursor:'pointer', color:C.accent, fontSize:12, fontWeight:600, border:'1px dashed '+C.accent, padding:'8px 10px', borderRadius:10, display:'flex', alignItems:'center', gap:4, flexShrink:0, whiteSpace:'nowrap' }}>
+                  📎
                 </label>
                 <input id="file-input" type="file" style={{ display:'none' }} onChange={(e) => setFichier(e.target.files?.[0] ?? null)} />
-                
-                <div style={{ flex:1, display:'flex', gap:8 }}>
-                  <textarea
-                    ref={inputRef}
-                    value={contenu}
-                    onChange={(e) => {
-                      setContenu(e.target.value);
-                      e.target.style.height = 'auto';
-                      e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
-                    }}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Écrire un message…   ↵ pour envoyer"
-                    rows={1}
-                    className="msg-textarea"
-                    style={{ flex:1, background:C.bg, border:`1px solid ${C.border}`, borderRadius:16, padding:'12px 18px', fontSize:14, color:C.text, resize:'none', maxHeight:120, lineHeight:1.58, fontFamily:"'DM Sans', sans-serif", overflowY:'auto' }}
-                  />
-                  <button className="send-btn" onClick={handleSend}
-                    disabled={(!contenu || !contenu.trim()) && !fichier || sending}
-                    style={{
-                      width:46, height:46, flexShrink:0, borderRadius:14, border:'none',
-                      background: (!contenu.trim() && !fichier) || sending ? C.border : `linear-gradient(135deg, ${C.accent}, #a78bfa)`,
-                      color: (!contenu.trim() && !fichier) || sending ? C.textMuted : '#fff',
-                      cursor: (!contenu.trim() && !fichier) || sending ? 'default' : 'pointer',
-                      display:'flex', alignItems:'center', justifyContent:'center',
-                      boxShadow: (!contenu.trim() && !fichier) || sending ? 'none' : '0 4px 16px rgba(139,92,246,0.3)',
-                    }}
-                  >
-                    {sending
-                      ? <div className="spin" style={{ width:18, height:18, border:'2px solid rgba(255,255,255,0.25)', borderTopColor:'#fff', borderRadius:'50%' }} />
-                      : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                    }
-                  </button>
-                </div>
+                <textarea
+                  ref={inputRef}
+                  value={contenu}
+                  onChange={(e) => {
+                    setContenu(e.target.value);
+                    e.target.style.height = 'auto';
+                    e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                  }}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Écrire un message…"
+                  rows={1}
+                  className="msg-textarea"
+                  style={{ flex:1, background:C.bg, border:`1px solid ${C.border}`, borderRadius:16, padding:'12px 14px', fontSize:14, color:C.text, resize:'none', maxHeight:120, lineHeight:1.58, fontFamily:"'DM Sans', sans-serif", overflowY:'auto' }}
+                />
+                <button className="send-btn" onClick={handleSend}
+                  disabled={(!contenu || !contenu.trim()) && !fichier || sending}
+                  style={{
+                    width:44, height:44, flexShrink:0, borderRadius:14, border:'none',
+                    background: (!contenu.trim() && !fichier) || sending ? C.border : `linear-gradient(135deg, ${C.accent}, #a78bfa)`,
+                    color: (!contenu.trim() && !fichier) || sending ? C.textMuted : '#fff',
+                    cursor: (!contenu.trim() && !fichier) || sending ? 'default' : 'pointer',
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                    boxShadow: (!contenu.trim() && !fichier) || sending ? 'none' : '0 4px 16px rgba(139,92,246,0.3)',
+                  }}
+                >
+                  {sending
+                    ? <div className="spin" style={{ width:18, height:18, border:'2px solid rgba(255,255,255,0.25)', borderTopColor:'#fff', borderRadius:'50%' }} />
+                    : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                  }
+                </button>
               </div>
               {fichier && (
-                <div style={{ padding:'0 24px 12px 24px', fontSize:12, color:C.textMuted, display:'flex', alignItems:'center', gap:8 }}>
+                <div style={{ padding:'0 16px 10px', fontSize:12, color:C.textMuted, display:'flex', alignItems:'center', gap:8, background:C.surface }}>
                   <span>📎 {fichier.name}</span>
                   <button type="button" onClick={() => setFichier(null)} style={{ border:'none', background:'transparent', color:C.accent, cursor:'pointer', fontWeight:700 }}>✕</button>
                 </div>
