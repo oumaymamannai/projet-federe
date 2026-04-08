@@ -154,7 +154,7 @@ exports.getSoutenances = async (req, res) => {
     const [rows] = await db.query(`
       SELECT s.*, CONCAT(u.prenom,' ',u.nom) as etudiant_nom, u.email as etudiant_email,
         (SELECT COUNT(*) FROM stage_soumissions ss WHERE ss.etudiant_id = s.etudiant_id) > 0 AS has_stage_dossier,
-        GROUP_CONCAT(DISTINCT CONCAT(uj.id, '::', uj.prenom, ' ', uj.nom, '|', sj.role) ORDER BY sj.role SEPARATOR ';;') as jury_info
+        GROUP_CONCAT(DISTINCT CONCAT(uj.id, '::', uj.prenom, ' ', uj.nom, '|', sj.role, '|', COALESCE(sj.remarques,''), '|', COALESCE(sj.note,'')) ORDER BY sj.role SEPARATOR ';;') as jury_info
       FROM soutenances s
       JOIN users u ON u.id = s.etudiant_id
       LEFT JOIN soutenance_jury sj ON sj.soutenance_id = s.id
@@ -162,17 +162,25 @@ exports.getSoutenances = async (req, res) => {
       GROUP BY s.id
       ORDER BY s.date_soutenance ASC
     `);
+
     rows.forEach((r) => {
       r.jurys = r.jury_info
         ? r.jury_info.split(";;").map((j) => {
-            const [left, role] = j.split("|");
+            const [left, role, remarques, note] = j.split("|");
             const [idStr, name] = left.split("::");
             const id = parseInt(idStr, 10);
-            return { id, nom: name, role };
+            return { 
+              id, 
+              nom: name, 
+              role,
+              remarques: remarques || null,
+              note: note || null
+            };
           })
         : [];
       delete r.jury_info;
     });
+
     res.json(rows);
   } catch (err) {
     res.status(500).json({ message: err.message });
