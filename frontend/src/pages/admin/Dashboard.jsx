@@ -323,10 +323,10 @@ export default function AdminDashboard() {
         .dashboard-subtitle { font-size: 13px; color: var(--color-text-secondary); margin: 4px 0 0; }
 
         .cards-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
-        .stat-card-main { background: var(--color-background-primary); border-radius: 12px; padding: 20px; border-left: 4px solid; border-top: 0.5px solid var(--color-border-tertiary); border-right: 0.5px solid var(--color-border-tertiary); border-bottom: 0.5px solid var(--color-border-tertiary); transition: transform 0.2s, box-shadow 0.2s; }
-        .stat-card-main:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+        .stat-card-main { background: var(--color-background-primary); border-radius: 12px; padding: 20px; border-left: 4px solid; border-top: 0.5px solid var(--color-border-tertiary); border-right: 0.5px solid var(--color-border-tertiary); border-bottom: 0.5px solid var(--color-border-tertiary); box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06); transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .stat-card-main:hover { transform: translateY(-5px) scale(1.02); box-shadow: 0 18px 36px rgba(15, 23, 42, 0.12); }
         .stat-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-        .stat-icon-wrapper { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; }
+        .stat-icon-wrapper { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; transition: transform 0.3s ease; }
         .stat-card-main:hover .stat-icon-wrapper { transform: scale(1.05); }
         .stat-value { font-size: 28px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 5px; line-height: 1; }
         .stat-label { font-size: 12px; color: var(--color-text-secondary); }
