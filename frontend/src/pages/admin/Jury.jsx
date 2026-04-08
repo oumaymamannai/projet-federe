@@ -21,7 +21,7 @@ function Modal({ member, onClose }) {
       setSent(true);
     } catch (error) {
       console.error("Erreur lors de l'envoi:", error);
-      alert("Erreur lors de l'envoi du message");
+      toast.error("Erreur lors de l'envoi du message");
     } finally {
       setSending(false);
     }
@@ -228,7 +228,7 @@ export default function AdminJury() {
       setAllSent(true);
     } catch (error) {
       console.error("Erreur lors de l'envoi à tous:", error);
-      alert("Erreur lors de l'envoi des messages");
+      toast.error("Erreur lors de l'envoi des messages");
     } finally {
       setAllSending(false);
     }

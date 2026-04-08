@@ -132,7 +132,7 @@ export default function FloatingChat() {
       await loadMessages();
     } catch (err) {
       console.error('Erreur envoi message:', err);
-      alert('Erreur lors de l\'envoi du message');
+      toast.error('Erreur lors de l\'envoi du message');
     } finally {
       setLoading(false);
     }

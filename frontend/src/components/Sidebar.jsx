@@ -22,9 +22,9 @@ const studentNav = [
   { to: '/student/reclamations', icon: <Bell size={17} />, label: 'Réclamations' },
 ];
 const juryNav = [
-  { to: '/jury/dashboard', icon: <LayoutDashboard size={17} />, label: 'Dashboard' },
-  { to: '/jury', icon: <Calendar size={17} />, label: 'Planning' },
-  { to: '/jury/messages', icon: <MessageSquare size={17} />, label: 'Messages' },
+  { to: '/jury/dashboard', icon: <LayoutDashboard size={18} />, label: 'Dashboard' },
+  { to: '/jury', icon: <Calendar size={18} />, label: 'Planning et Evaluations'},
+  { to: '/jury/messages', icon: <MessageSquare size={18} />, label: 'Messages' },
 ];
 const adminNav = [
   { to: '/admin', icon: <LayoutDashboard size={17} />, label: 'Dashboard' },
@@ -168,21 +168,52 @@ export default function Sidebar({ sidebarOpen: controlledOpen, setSidebarOpen: c
 
   useEffect(() => {
     if (user?.role === 'admin') {
-      loadPendingCount(); loadReclamationsAdminCount();
-      const interval = setInterval(() => { loadPendingCount(); loadReclamationsAdminCount(); }, 30000);
-      const h1 = () => loadPendingCount();
-      const h2 = () => loadReclamationsAdminCount();
-      window.addEventListener('submissionUpdated', h1);
-      window.addEventListener('reclamations-admin-updated', h2);
-      return () => { clearInterval(interval); window.removeEventListener('submissionUpdated', h1); window.removeEventListener('reclamations-admin-updated', h2); };
+      loadPendingCount();
+      loadReclamationsAdminCount();
+
+      const interval = setInterval(() => {
+        loadPendingCount();
+        loadReclamationsAdminCount();
+      }, 30000);
+
+      const handleSubmissionUpdate   = () => loadPendingCount();
+      const handleReclamationsUpdate = () => loadReclamationsAdminCount();
+
+      window.addEventListener('submissionUpdated', handleSubmissionUpdate);
+      window.addEventListener('reclamations-admin-updated', handleReclamationsUpdate);
+
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener('submissionUpdated', handleSubmissionUpdate);
+        window.removeEventListener('reclamations-admin-updated', handleReclamationsUpdate);
+      };
     }
+
     if (user?.role === 'etudiant') {
-      loadReclamationsCount(); checkDejaSoumis(); fetchNonLus();
-      const interval = setInterval(() => { loadReclamationsCount(); fetchNonLus(); checkDejaSoumis(); }, 30000);
-      const vis = () => { if (document.visibilityState === 'visible') { loadReclamationsCount(); fetchNonLus(); checkDejaSoumis(); } };
-      document.addEventListener('visibilitychange', vis);
-      return () => { clearInterval(interval); document.removeEventListener('visibilitychange', vis); };
+      loadReclamationsCount();
+      checkDejaSoumis();
+      fetchNonLus();
+      
+      const interval = setInterval(() => {
+        loadReclamationsCount();
+        fetchNonLus();
+        checkDejaSoumis();
+      }, 30000);
+      
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+          loadReclamationsCount();
+          fetchNonLus();
+          checkDejaSoumis();
+        }
+      };
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      return () => {
+        clearInterval(interval);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      };
     }
+
     if (user?.role === 'jury') {
       fetchNonLus();
       const interval = setInterval(fetchNonLus, 30000);
