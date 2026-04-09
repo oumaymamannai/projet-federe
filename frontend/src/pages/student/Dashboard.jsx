@@ -150,26 +150,32 @@ export default function StudentDashboard() {
                 </div>
               )}
               {countdown !== null && countdown.status === "done" && (
-                <div className="countdown" style={{ minWidth: 140, textAlign: "center" }}>
-                  {soutenance.note_finale !== null && soutenance.note_finale !== undefined ? (
-                    <div>
-                      <div style={{ fontSize: 14, opacity: 0.9, marginBottom: 4 }}>Résultat</div>
-                      <div className="countdown-number" style={{ fontSize: 36 }}>
-                        {soutenance.note_finale}<span style={{ fontSize: 18 }}>/20</span>
-                      </div>
-                      <div className="countdown-label" style={{ marginTop: 4, color: soutenance.note_finale >= 10 ? "#86efac" : "#fca5a5" }}>
-                        {soutenance.note_finale >= 10 ? "✅ Admis(e)" : "❌ Non admis(e)"}
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <CheckCircle size={40} />
-                      <div className="countdown-label" style={{ marginTop: 4 }}>Terminé</div>
-                      <div style={{ fontSize: 12, opacity: 0.7, marginTop: 2 }}>En attente de note</div>
-                    </div>
-                  )}
-                </div>
-              )}
+  <div className="countdown" style={{ minWidth: 140, textAlign: "center" }}>
+    {soutenance.note_finale !== null && soutenance.note_finale !== undefined ? (
+      <div>
+        <div style={{ fontSize: 14, opacity: 0.9, marginBottom: 4 }}>Résultat</div>
+        <div className="countdown-number" style={{ fontSize: 36 }}>
+          {soutenance.note_finale}<span style={{ fontSize: 18 }}>/20</span>
+        </div>
+        <div className="countdown-label" style={{ marginTop: 4, color: soutenance.note_finale >= 10 ? "#86efac" : "#fca5a5" }}>
+          {soutenance.note_finale >= 10 ? "Admis(e)" : "Non admis(e)"}
+        </div>
+        {/* AJOUT : Mention Très Bien */}
+        {soutenance.note_finale >= 16 && (
+          <div>
+             Mention Très Bien
+          </div>
+        )}
+      </div>
+    ) : (
+      <div>
+        <CheckCircle size={40} />
+        <div className="countdown-label" style={{ marginTop: 4 }}>Terminé</div>
+        <div style={{ fontSize: 12, opacity: 0.7, marginTop: 2 }}>En attente de note</div>
+      </div>
+    )}
+  </div>
+)}
             </div>
 
             <div style={{ marginBottom: 24 }}>
@@ -195,15 +201,6 @@ export default function StudentDashboard() {
                 )}
               </div>
             </div>
-
-            {soutenance.note_finale !== null && soutenance.note_finale !== undefined && (
-              <div style={{ marginBottom: 24 }}>
-                <div className="meta-item">
-                  <CheckCircle size={20} color="#10b981" />
-                  <strong>Note finale : {soutenance.note_finale}/20</strong>
-                </div>
-              </div>
-            )}
 
             {soutenance.jurys?.length > 0 && (
               <>
