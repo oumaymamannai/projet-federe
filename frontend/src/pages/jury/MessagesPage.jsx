@@ -48,7 +48,7 @@ const globalCss = `
   .online-dot { animation: pulse 2.2s infinite; }
   @keyframes badgePop { 0% { transform: scale(0.6); opacity: 0; } 70% { transform: scale(1.2); } 100% { transform: scale(1); opacity: 1; } }
   .badge-pop { animation: badgePop 0.25s cubic-bezier(0.34,1.4,0.64,1) both; }
-
+  .msg-chat { display: flex; flex-direction: column; flex: 1; overflow: hidden; min-width: 0; }
   /* ── MOBILE ── */
   .msg-back-btn { display: none; }
 
@@ -270,7 +270,7 @@ export default function MessagesPage() {
       <style>{globalCss}</style>
       <div className="msg-root msg-layout" style={{
         display: 'flex',
-        height: 'calc(100vh - 60px)',
+        height: '100vh',
         background: C.bg,
         color: C.text,
         overflow: 'hidden',

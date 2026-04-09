@@ -1,7 +1,175 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import api from "../../services/api";
-import { Send, Users, Search ,CalendarDays, CheckCircle ,Clock} from "lucide-react";
+import { Send, Users, Search, CalendarDays, CheckCircle, Clock, ChevronDown } from "lucide-react";
 
+/* ─────────────────────────────────────────────
+   CustomSelect : dropdown en position:fixed
+   → ne sera jamais coupé par le modal
+───────────────────────────────────────────── */
+function CustomSelect({ value, onChange, options, placeholder = "— Choisir —" }) {
+  const [open, setOpen] = useState(false);
+  const [dropStyle, setDropStyle] = useState({});
+  const triggerRef = useRef(null);
+
+  const selectedLabel = options.find(o => String(o.value) === String(value))?.label || placeholder;
+
+  const openDropdown = () => {
+    const rect = triggerRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const dropH = Math.min(options.length * 44 + 8, 220);
+
+    // Ouvre en haut si pas assez de place en bas
+    if (spaceBelow < dropH + 8 && rect.top > dropH) {
+      setDropStyle({
+        position: "fixed",
+        top: rect.top - dropH - 4,
+        left: rect.left,
+        width: rect.width,
+        zIndex: 99999,
+      });
+    } else {
+      setDropStyle({
+        position: "fixed",
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: rect.width,
+        zIndex: 99999,
+      });
+    }
+    setOpen(true);
+  };
+
+  // Ferme si clic ailleurs
+  useEffect(() => {
+    if (!open) return;
+    const close = (e) => {
+      if (triggerRef.current && !triggerRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("touchstart", close);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("touchstart", close);
+    };
+  }, [open]);
+
+  // Recalcule position si scroll
+  useEffect(() => {
+    if (!open) return;
+    const update = () => {
+      if (triggerRef.current) {
+        const rect = triggerRef.current.getBoundingClientRect();
+        setDropStyle(prev => ({ ...prev, top: rect.bottom + 4, left: rect.left, width: rect.width }));
+      }
+    };
+    window.addEventListener("scroll", update, true);
+    return () => window.removeEventListener("scroll", update, true);
+  }, [open]);
+
+  return (
+    <div ref={triggerRef} style={{ position: "relative" }}>
+      {/* Trigger */}
+      <button
+        type="button"
+        className="form-control"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          cursor: "pointer",
+          textAlign: "left",
+          background: "white",
+          color: value ? "var(--text-primary)" : "#9ca3af",
+        }}
+        onClick={() => open ? setOpen(false) : openDropdown()}
+      >
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {selectedLabel}
+        </span>
+        <ChevronDown
+          size={16}
+          style={{
+            flexShrink: 0,
+            marginLeft: 8,
+            color: "var(--text-secondary)",
+            transform: open ? "rotate(180deg)" : "none",
+            transition: "transform 0.2s",
+          }}
+        />
+      </button>
+
+      {/* Dropdown en position:fixed — jamais coupé par le modal */}
+      {open && (
+        <div
+          style={{
+            ...dropStyle,
+            background: "white",
+            border: "1.5px solid var(--purple-200)",
+            borderRadius: "var(--radius-md)",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
+            maxHeight: 220,
+            overflowY: "auto",
+            padding: "4px 0",
+          }}
+        >
+          {/* Option placeholder */}
+          <div
+            style={{
+              padding: "10px 14px",
+              fontSize: 14,
+              color: "#9ca3af",
+              cursor: "pointer",
+              background: !value ? "var(--purple-50)" : "transparent",
+            }}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              onChange("");
+              setOpen(false);
+            }}
+          >
+            {placeholder}
+          </div>
+
+          {options.map(opt => (
+            <div
+              key={opt.value}
+              style={{
+                padding: "10px 14px",
+                fontSize: 14,
+                color: "var(--text-primary)",
+                cursor: "pointer",
+                background: String(opt.value) === String(value) ? "var(--purple-100)" : "transparent",
+                fontWeight: String(opt.value) === String(value) ? 600 : 400,
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = "var(--purple-50)"}
+              onMouseLeave={e => e.currentTarget.style.background =
+                String(opt.value) === String(value) ? "var(--purple-100)" : "transparent"}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                onChange(opt.value);
+                setOpen(false);
+              }}
+            >
+              {opt.label}
+            </div>
+          ))}
+
+          {options.length === 0 && (
+            <div style={{ padding: "10px 14px", fontSize: 13, color: "#9ca3af" }}>
+              Aucune option disponible
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   Page principale
+───────────────────────────────────────────── */
 export default function AdminSoutenances() {
   const [soutenances, setSoutenances] = useState([]);
   const [jurys, setJurys] = useState([]);
@@ -21,7 +189,6 @@ export default function AdminSoutenances() {
 
   useEffect(() => { load(); }, []);
 
-  //  MODIFICATION : Recherche uniquement par nom (etudiant_nom contient prénom + nom)
   const filteredSoutenances = soutenances.filter(s =>
     s.etudiant_nom?.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -151,7 +318,6 @@ export default function AdminSoutenances() {
             boxShadow: "0 24px 80px rgba(124,58,237,.18)",
             overflow: "hidden",
           }}>
-            {/* Header violet */}
             <div style={{
               background: "linear-gradient(135deg, #4c3db5, #6b5ce7)",
               padding: "20px 24px",
@@ -183,8 +349,6 @@ export default function AdminSoutenances() {
                 }}
               >×</button>
             </div>
-
-            {/* Corps */}
             <div style={{ padding: "36px 24px", textAlign: "center" }}>
               <div style={{
                 width: 64, height: 64, borderRadius: "50%",
@@ -199,8 +363,6 @@ export default function AdminSoutenances() {
                 Les résultats ont été transmis à <strong>{successModal.nom}</strong>.
               </div>
             </div>
-
-            {/* Bouton */}
             <div style={{ padding: "0 24px 24px" }}>
               <button
                 onClick={() => setSuccessModal(null)}
@@ -233,12 +395,8 @@ export default function AdminSoutenances() {
             <Search
               size={16}
               style={{
-                position: "absolute",
-                left: 12,
-                top: "50%",
-                transform: "translateY(-50%)",
-                color: "#9ca3af",
-                pointerEvents: "none",
+                position: "absolute", left: 12, top: "50%",
+                transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none",
               }}
             />
             <input
@@ -280,10 +438,7 @@ export default function AdminSoutenances() {
                     <td style={{ maxWidth: 180 }}>{s.sujet || "—"}</td>
                     <td>
                       {s.date_soutenance ? new Date(s.date_soutenance).toLocaleString("fr-FR", {
-                        day: "2-digit",
-                        month: "2-digit",
-                        hour: "2-digit",
-                        minute: "2-digit"
+                        day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"
                       }) : "—"}
                     </td>
                     <td>{s.salle || "—"}</td>
@@ -291,7 +446,7 @@ export default function AdminSoutenances() {
                     <td><strong>{s.note_finale != null ? s.note_finale + "/20" : "—"}</strong></td>
                     <td>
                       {s.jurys?.length > 0 ? s.jurys.map((j, i) => (
-                        <div key={i} style={{ fontSize: 12}}>
+                        <div key={i} style={{ fontSize: 12 }}>
                           <span>{j.nom}</span>
                           <span style={{ color: "#9ca3af" }}>
                             {j.role === 'encadreur' ? '(Encadrant)' : j.role === 'president' ? '(Président)' : '(Membre)'}
@@ -314,11 +469,7 @@ export default function AdminSoutenances() {
                             const presidentId = s.jurys?.find(j => j.role === 'president')?.id || "";
                             const membre3Id = s.jurys?.find(j => j.role === '3eme_membre')?.id || "";
                             setAssignModal(s);
-                            setAssignForm({
-                              encadreur_id: encId,
-                              president_id: presidentId,
-                              membre3_id: membre3Id
-                            });
+                            setAssignForm({ encadreur_id: encId, president_id: presidentId, membre3_id: membre3Id });
                           }}>
                           <Users size={12} /> Jury
                         </button>
@@ -336,9 +487,7 @@ export default function AdminSoutenances() {
                                 opacity: pret ? 1 : 0.6,
                               }}
                               disabled={!pret}
-                              title={pret
-                                ? "Envoyer les résultats par email"
-                                : "Les remarques des 3 membres du jury sont requises"}
+                              title={pret ? "Envoyer les résultats par email" : "Les remarques des 3 membres du jury sont requises"}
                               onClick={() => handleSendResult(s.id)}
                             >
                               <Send size={12} /> Email
@@ -362,52 +511,49 @@ export default function AdminSoutenances() {
         </div>
       </div>
 
+      {/* ── Modal affectation jury ── */}
       {assignModal && (
         <div className="modal-overlay">
           <div className="modal">
             <h3>👥 Affecter le jury</h3>
             <p className="sub">Soutenance de {assignModal.etudiant_nom} — {assignModal.sujet || "Sujet non défini"}</p>
 
+            {/* Encadrant (lecture seule) */}
             <div className="form-group">
               <label className="form-label">Encadrant</label>
               {(() => {
                 const fixedEncadreur = assignModal.jurys?.find(j => j.role === 'encadreur');
-                if (fixedEncadreur) {
-                  return <input className="form-control" value={fixedEncadreur.nom} readOnly disabled />;
-                }
-                if (assignModal.encadreur) {
-                  return <input className="form-control" value={assignModal.encadreur} readOnly disabled />;
-                }
-                return <input className="form-control" value="Aucun encadrant assigné" readOnly disabled />;
+                const val = fixedEncadreur?.nom || assignModal.encadreur || "Aucun encadrant assigné";
+                return <input className="form-control" value={val} readOnly disabled />;
               })()}
             </div>
 
+            {/* Président — CustomSelect */}
             <div className="form-group">
               <label className="form-label">Président</label>
-              <select
-                className="form-control"
+              <CustomSelect
                 value={assignForm.president_id}
-                onChange={e => setAssignForm({ ...assignForm, president_id: e.target.value })}
-              >
-                <option value="">— Choisir —</option>
-                {getFilteredJurys('president').map(j => (
-                  <option key={j.id} value={j.id}>{j.prenom} {j.nom}</option>
-                ))}
-              </select>
+                onChange={val => setAssignForm({ ...assignForm, president_id: val })}
+                placeholder="— Choisir —"
+                options={getFilteredJurys('president').map(j => ({
+                  value: j.id,
+                  label: `${j.prenom} ${j.nom}`,
+                }))}
+              />
             </div>
 
+            {/* 3ème Membre — CustomSelect */}
             <div className="form-group">
               <label className="form-label">3ème Membre</label>
-              <select
-                className="form-control"
+              <CustomSelect
                 value={assignForm.membre3_id}
-                onChange={e => setAssignForm({ ...assignForm, membre3_id: e.target.value })}
-              >
-                <option value="">— Choisir —</option>
-                {getFilteredJurys('membre3').map(j => (
-                  <option key={j.id} value={j.id}>{j.prenom} {j.nom}</option>
-                ))}
-              </select>
+                onChange={val => setAssignForm({ ...assignForm, membre3_id: val })}
+                placeholder="— Choisir —"
+                options={getFilteredJurys('membre3').map(j => ({
+                  value: j.id,
+                  label: `${j.prenom} ${j.nom}`,
+                }))}
+              />
             </div>
 
             <div className="modal-actions">

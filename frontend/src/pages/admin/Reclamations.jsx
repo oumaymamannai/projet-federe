@@ -1,7 +1,107 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import api from "../../services/api";
-import { MessageSquare, CheckCircle, UserPlus, Calendar, FileText, Eye, Bell, Mail, Clock, Users, AlertCircle } from "lucide-react";
+import { MessageSquare, CheckCircle, UserPlus, Calendar, FileText, Eye, Mail, Clock, Users, AlertCircle, ChevronDown } from "lucide-react";
 
+/* ─────────────────────────────────────────────
+   CustomSelect : dropdown en position:fixed
+───────────────────────────────────────────── */
+function CustomSelect({ value, onChange, options, placeholder = "— Choisir —" }) {
+  const [open, setOpen] = useState(false);
+  const [dropStyle, setDropStyle] = useState({});
+  const triggerRef = useRef(null);
+
+  const selectedLabel = options.find(o => String(o.value) === String(value))?.label || placeholder;
+
+  const openDropdown = () => {
+    const rect = triggerRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const dropH = Math.min(options.length * 44 + 8, 220);
+    if (spaceBelow < dropH + 8 && rect.top > dropH) {
+      setDropStyle({ position: "fixed", top: rect.top - dropH - 4, left: rect.left, width: rect.width, zIndex: 99999 });
+    } else {
+      setDropStyle({ position: "fixed", top: rect.bottom + 4, left: rect.left, width: rect.width, zIndex: 99999 });
+    }
+    setOpen(true);
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e) => { if (triggerRef.current && !triggerRef.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("touchstart", close);
+    return () => { document.removeEventListener("mousedown", close); document.removeEventListener("touchstart", close); };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const update = () => {
+      if (triggerRef.current) {
+        const rect = triggerRef.current.getBoundingClientRect();
+        setDropStyle(prev => ({ ...prev, top: rect.bottom + 4, left: rect.left, width: rect.width }));
+      }
+    };
+    window.addEventListener("scroll", update, true);
+    return () => window.removeEventListener("scroll", update, true);
+  }, [open]);
+
+  return (
+    <div ref={triggerRef} style={{ position: "relative" }}>
+      <button
+        type="button"
+        className="form-control"
+        style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          cursor: "pointer", textAlign: "left", background: "white",
+          color: value ? "var(--text-primary)" : "#9ca3af",
+        }}
+        onClick={() => open ? setOpen(false) : openDropdown()}
+      >
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {selectedLabel}
+        </span>
+        <ChevronDown size={16} style={{ flexShrink: 0, marginLeft: 8, color: "var(--text-secondary)", transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
+      </button>
+
+      {open && (
+        <div style={{
+          ...dropStyle,
+          background: "white", border: "1.5px solid var(--purple-200)",
+          borderRadius: "var(--radius-md)", boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
+          maxHeight: 220, overflowY: "auto", padding: "4px 0",
+        }}>
+          <div
+            style={{ padding: "10px 14px", fontSize: 14, color: "#9ca3af", cursor: "pointer", background: !value ? "var(--purple-50)" : "transparent" }}
+            onMouseDown={(e) => { e.preventDefault(); onChange(""); setOpen(false); }}
+          >
+            {placeholder}
+          </div>
+          {options.map(opt => (
+            <div
+              key={opt.value}
+              style={{
+                padding: "10px 14px", fontSize: 14, color: "var(--text-primary)", cursor: "pointer",
+                background: String(opt.value) === String(value) ? "var(--purple-100)" : "transparent",
+                fontWeight: String(opt.value) === String(value) ? 600 : 400,
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = "var(--purple-50)"}
+              onMouseLeave={e => e.currentTarget.style.background = String(opt.value) === String(value) ? "var(--purple-100)" : "transparent"}
+              onMouseDown={(e) => { e.preventDefault(); onChange(opt.value); setOpen(false); }}
+            >
+              {opt.label}
+            </div>
+          ))}
+          {options.length === 0 && (
+            <div style={{ padding: "10px 14px", fontSize: 13, color: "#9ca3af" }}>Aucune option disponible</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   Page principale
+───────────────────────────────────────────── */
 export default function AdminReclamations() {
   const [reclamations, setReclamations] = useState([]);
   const [encadreurs, setEncadreurs] = useState([]);
@@ -36,42 +136,32 @@ export default function AdminReclamations() {
       setLoading(false);
     }
   };
-  
+
   useEffect(() => { load(); }, []);
 
-  const updateSidebarBadge = () => {
-    window.dispatchEvent(new Event('reclamations-admin-updated'));
-  };
+  const updateSidebarBadge = () => window.dispatchEvent(new Event('reclamations-admin-updated'));
 
   const getFileUrl = (filePath) => {
     if (!filePath) return null;
     let filename = filePath;
-    if (filename.includes('\\') || filename.includes('/')) {
-      filename = filename.split(/[\\/]/).pop();
-    }
+    if (filename.includes('\\') || filename.includes('/')) filename = filename.split(/[\\/]/).pop();
     const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-    const cleanBaseUrl = baseUrl.replace(/\/api$/, '');
-    return `${cleanBaseUrl}/uploads/reclamations/${filename}`;
+    return `${baseUrl.replace(/\/api$/, '')}/uploads/reclamations/${filename}`;
   };
 
   const isImage = (filename) => {
     if (!filename) return false;
-    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
-    return imageExtensions.some(ext => filename.toLowerCase().endsWith(ext));
+    return ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'].some(ext => filename.toLowerCase().endsWith(ext));
   };
 
   const handleRepondre = async () => {
     try {
       await api.post("/admin/reclamations/" + modal.id + "/repondre", { reponse });
-      setMsgType("success");
-      setMsg("Réponse envoyée !"); 
-      setModal(null); 
-      setReponse(""); 
-      await load();
-      updateSidebarBadge();
-    } catch (error) { 
+      setMsgType("success"); setMsg("Réponse envoyée !");
+      setModal(null); setReponse(""); await load(); updateSidebarBadge();
+    } catch (error) {
       setMsgType("error");
-      setMsg("❌ Erreur: " + (error.response?.data?.message || "Erreur lors de l'envoi")); 
+      setMsg("❌ Erreur: " + (error.response?.data?.message || "Erreur lors de l'envoi"));
     }
   };
 
@@ -83,12 +173,8 @@ export default function AdminReclamations() {
         affecter_encadreur: true,
         encadreur_id: selectedEncadreur
       });
-      setMsgType("success");
-      setMsg(" Encadrant affecté avec succès");
-      setEncadreurModal(null);
-      setSelectedEncadreur("");
-      await load();
-      updateSidebarBadge();
+      setMsgType("success"); setMsg("Encadrant affecté avec succès");
+      setEncadreurModal(null); setSelectedEncadreur(""); await load(); updateSidebarBadge();
     } catch (err) {
       setMsgType("error");
       setMsg("❌ " + (err.response?.data?.message || "Erreur lors de l'affectation"));
@@ -100,24 +186,14 @@ export default function AdminReclamations() {
     setLoadingSalles(true);
     try {
       const res = await api.get(`/admin/salles-disponibles?date=${date}&heure=${heure}`);
-      setSallesDisponibles(res.data);
-      setNouvelleSalle("");
-    } catch (error) {
+      setSallesDisponibles(res.data); setNouvelleSalle("");
+    } catch {
       setSallesDisponibles(["Salle A101", "Salle B203", "Amphi 1"]);
-    } finally {
-      setLoadingSalles(false);
-    }
+    } finally { setLoadingSalles(false); }
   };
 
-  const handleDateChange = (val) => {
-    setNouvelleDate(val);
-    fetchSallesDisponibles(val, nouvelleHeure);
-  };
-
-  const handleHeureChange = (val) => {
-    setNouvelleHeure(val);
-    fetchSallesDisponibles(nouvelleDate, val);
-  };
+  const handleDateChange = (val) => { setNouvelleDate(val); fetchSallesDisponibles(val, nouvelleHeure); };
+  const handleHeureChange = (val) => { setNouvelleHeure(val); fetchSallesDisponibles(nouvelleDate, val); };
 
   const handleChangerDate = async () => {
     try {
@@ -127,14 +203,9 @@ export default function AdminReclamations() {
         nouvelle_date: dateTime,
         nouvelle_salle: nouvelleSalle || null
       });
-      setMsgType("success");
-      setMsg(" Nouvelle date attribuée !");
-      setDateModal(null);
-      setNouvelleDate("");
-      setNouvelleHeure("");
-      setNouvelleSalle("");
-      await load();
-      updateSidebarBadge();
+      setMsgType("success"); setMsg("Nouvelle date attribuée !");
+      setDateModal(null); setNouvelleDate(""); setNouvelleHeure(""); setNouvelleSalle("");
+      await load(); updateSidebarBadge();
     } catch (err) {
       setMsgType("error");
       setMsg("❌ Erreur : " + (err.response?.data?.message || "Erreur lors du changement de date"));
@@ -142,8 +213,16 @@ export default function AdminReclamations() {
   };
 
   const typeLabel = (t) => t === "probleme_date" ? "Problème date" : t === "pas_encadreur" ? "Pas d'encadrant" : "Autre";
-
   const pendingCount = reclamations.filter(r => r.statut === "en_attente").length;
+
+  // Options heures
+  const heuresOptions = [
+    { value: "08:30", label: "08:30" },
+    { value: "09:00", label: "09:00" },
+    { value: "10:30", label: "10:30" },
+    { value: "11:30", label: "11:30" },
+    { value: "14:00", label: "14:00" },
+  ];
 
   if (loading) return (
     <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "400px" }}>
@@ -156,9 +235,7 @@ export default function AdminReclamations() {
     <div>
       <div className="page-header">
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <div className="icon-squircle">
-            <AlertCircle size={22} color="#7c3aed" />
-          </div>
+          <div className="icon-squircle"><AlertCircle size={22} color="#7c3aed" /></div>
           <div>
             <h1 style={{ margin: 0, display: "flex", alignItems: "center", gap: "10px" }}>
               Gestion des réclamations
@@ -168,101 +245,85 @@ export default function AdminReclamations() {
                 </span>
               )}
             </h1>
-            <p style={{ margin: "4px 0 0 0", color: "#6b7280" }}>
-              Traitez les demandes et réclamations des étudiants
-            </p>
+            <p style={{ margin: "4px 0 0 0", color: "#6b7280" }}>Traitez les demandes et réclamations des étudiants</p>
           </div>
         </div>
       </div>
-      
+
       <div className="page-content">
         {msg && (
           <div className={`alert alert-${msgType === "success" ? "success" : "danger"}`}>
             {msgType === "success" ? <CheckCircle size={16} /> : <AlertCircle size={16} />} {msg}
           </div>
         )}
-        
         <div className="card">
           <div className="table-wrap">
             <table className="table">
               <thead>
                 <tr>
-                  <th>Étudiant</th>
-                  <th>Type</th>
-                  <th>Message</th>
-                  <th>Pièce jointe</th>
-                  <th>Statut</th>
-                  <th>Date</th>
-                  <th>Action</th>
+                  <th>Étudiant</th><th>Type</th><th>Message</th>
+                  <th>Pièce jointe</th><th>Statut</th><th>Date</th><th>Action</th>
                 </tr>
               </thead>
               <tbody>
-                {reclamations.length > 0 ? (
-                  reclamations.map(r => (
-                    <tr key={r.id}>
-                      <td>
-                        <strong>{r.etudiant_nom}</strong>
-                        <br /><small style={{color:"#9ca3af"}}>{r.etudiant_email}</small>
-                      </td>
-                      <td>
-                        <span className="badge badge-purple">
-                          {r.type === "probleme_date" && <Calendar size={12} style={{ marginRight: "4px" }} />}
-                          {r.type === "pas_encadreur" && <Users size={12} style={{ marginRight: "4px" }} />}
-                          {r.type === "autre" && <AlertCircle size={12} style={{ marginRight: "4px" }} />}
-                          {typeLabel(r.type)}
-                        </span>
-                      </td>
-                      <td style={{ maxWidth: 200, fontSize: 13 }}>{r.message}</td>
-                      <td>
-                        {r.piece_jointe && (
-                          <div>
-                            {isImage(r.piece_jointe) ? (
-                              <button className="btn btn-sm btn-outline" onClick={() => setFileModal(r)} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                                <Eye size={14} /> Voir image
-                              </button>
-                            ) : (
-                              <a href={getFileUrl(r.piece_jointe)} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-outline" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                                <FileText size={14} /> Voir fichier
-                              </a>
-                            )}
+                {reclamations.length > 0 ? reclamations.map(r => (
+                  <tr key={r.id}>
+                    <td><strong>{r.etudiant_nom}</strong><br /><small style={{ color: "#9ca3af" }}>{r.etudiant_email}</small></td>
+                    <td>
+                      <span className="badge badge-purple">
+                        {r.type === "probleme_date" && <Calendar size={12} style={{ marginRight: "4px" }} />}
+                        {r.type === "pas_encadreur" && <Users size={12} style={{ marginRight: "4px" }} />}
+                        {r.type === "autre" && <AlertCircle size={12} style={{ marginRight: "4px" }} />}
+                        {typeLabel(r.type)}
+                      </span>
+                    </td>
+                    <td style={{ maxWidth: 200, fontSize: 13 }}>{r.message}</td>
+                    <td>
+                      {r.piece_jointe ? (
+                        isImage(r.piece_jointe) ? (
+                          <button className="btn btn-sm btn-outline" onClick={() => setFileModal(r)} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                            <Eye size={14} /> Voir image
+                          </button>
+                        ) : (
+                          <a href={getFileUrl(r.piece_jointe)} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-outline" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                            <FileText size={14} /> Voir fichier
+                          </a>
+                        )
+                      ) : <span style={{ fontSize: 12, color: "#9ca3af" }}>Aucune pièce jointe</span>}
+                    </td>
+                    <td>
+                      <span className={"badge " + (r.statut === "traitee" ? "badge-success" : "badge-warning")}>
+                        {r.statut === "traitee" ? "Traitée" : "En attente"}
+                      </span>
+                    </td>
+                    <td style={{ fontSize: 12 }}>{new Date(r.created_at).toLocaleDateString("fr-FR")}</td>
+                    <td>
+                      <div style={{ display: "flex", gap: 6, flexDirection: "column" }}>
+                        {r.statut === "en_attente" && (
+                          <button className="btn btn-outline btn-sm" onClick={() => { setModal(r); setReponse(""); }}>
+                            <MessageSquare size={12} /> Répondre
+                          </button>
+                        )}
+                        {r.type === "pas_encadreur" && r.statut === "en_attente" && (
+                          <button className="btn btn-primary btn-sm" onClick={() => setEncadreurModal(r)} style={{ background: "#7c3aed" }}>
+                            <UserPlus size={12} /> Affecter encadrant
+                          </button>
+                        )}
+                        {r.type === "probleme_date" && r.statut === "en_attente" && (
+                          <button className="btn btn-primary btn-sm" onClick={() => setDateModal(r)} style={{ background: "#16a34a" }}>
+                            <Calendar size={12} /> Changer la date
+                          </button>
+                        )}
+                        {r.reponse && (
+                          <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
+                            <Mail size={10} style={{ display: "inline", marginRight: "4px" }} />
+                            {r.reponse.substring(0, 30)}...
                           </div>
                         )}
-                        {!r.piece_jointe && <span style={{ fontSize: 12, color: "#9ca3af" }}>Aucune pièce jointe</span>}
-                      </td>
-                      <td>
-                        <span className={"badge " + (r.statut === "traitee" ? "badge-success" : "badge-warning")}>
-                          {r.statut === "traitee" ? "Traitée" : "En attente"}
-                        </span>
-                      </td>
-                      <td style={{ fontSize: 12 }}>{new Date(r.created_at).toLocaleDateString("fr-FR")}</td>
-                      <td>
-                        <div style={{ display: "flex", gap: 6, flexDirection: "column" }}>
-                          {r.statut === "en_attente" && (
-                            <button className="btn btn-outline btn-sm" onClick={() => { setModal(r); setReponse(""); }}>
-                              <MessageSquare size={12} /> Répondre
-                            </button>
-                          )}
-                          {r.type === "pas_encadreur" && r.statut === "en_attente" && (
-                            <button className="btn btn-primary btn-sm" onClick={() => setEncadreurModal(r)} style={{ background: "#7c3aed" }}>
-                              <UserPlus size={12} /> Affecter encadrant
-                            </button>
-                          )}
-                          {r.type === "probleme_date" && r.statut === "en_attente" && (
-                            <button className="btn btn-primary btn-sm" onClick={() => setDateModal(r)} style={{ background: "#16a34a" }}>
-                              <Calendar size={12} /> Changer la date
-                            </button>
-                          )}
-                          {r.reponse && (
-                            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
-                              <Mail size={10} style={{ display: "inline", marginRight: "4px" }} />
-                              {r.reponse.substring(0, 30)}...
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
+                      </div>
+                    </td>
+                  </tr>
+                )) : (
                   <tr>
                     <td colSpan={7} style={{ textAlign: "center", color: "#9ca3af", padding: 32 }}>
                       <AlertCircle size={32} style={{ marginBottom: "12px", opacity: 0.5 }} />
@@ -276,6 +337,7 @@ export default function AdminReclamations() {
         </div>
       </div>
 
+      {/* Modal répondre */}
       {modal && (
         <div className="modal-overlay">
           <div className="modal">
@@ -297,13 +359,15 @@ export default function AdminReclamations() {
         </div>
       )}
 
+      {/* Modal image */}
       {fileModal && (
         <div className="modal-overlay">
           <div className="modal" style={{ maxWidth: "90vw", maxHeight: "90vh" }}>
             <h3>📷 Pièce jointe</h3>
             <p className="sub">{fileModal.etudiant_nom}</p>
             <div style={{ textAlign: "center", marginBottom: 16 }}>
-              <img src={getFileUrl(fileModal.piece_jointe)} alt="Pièce jointe" style={{ maxWidth: "100%", maxHeight: "70vh", borderRadius: 8 }}
+              <img src={getFileUrl(fileModal.piece_jointe)} alt="Pièce jointe"
+                style={{ maxWidth: "100%", maxHeight: "70vh", borderRadius: 8 }}
                 onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<p style="color:red">❌ Impossible de charger l\'image</p>'; }} />
             </div>
             <div className="modal-actions">
@@ -313,6 +377,7 @@ export default function AdminReclamations() {
         </div>
       )}
 
+      {/* Modal affecter encadrant — CustomSelect */}
       {encadreurModal && (
         <div className="modal-overlay">
           <div className="modal">
@@ -320,17 +385,17 @@ export default function AdminReclamations() {
             <p className="sub">{encadreurModal.etudiant_nom}</p>
             <div className="form-group">
               <label className="form-label">Choisir un encadrant</label>
-              <select className="form-control" value={selectedEncadreur} onChange={(e) => setSelectedEncadreur(e.target.value)}>
-                <option value="">— Choisir —</option>
-                {encadreurs
+              <CustomSelect
+                value={selectedEncadreur}
+                onChange={setSelectedEncadreur}
+                placeholder="— Choisir —"
+                options={encadreurs
                   .filter(e => e.id !== Number(encadreurModal?.president_id) && e.id !== Number(encadreurModal?.membre3_id))
-                  .map(e => (
-                    <option key={e.id} value={e.id}>{e.prenom} {e.nom} ({e.email})</option>
-                  ))}
-              </select>
+                  .map(e => ({ value: e.id, label: `${e.prenom} ${e.nom} (${e.email})` }))}
+              />
             </div>
             <div className="modal-actions">
-              <button className="btn btn-outline" onClick={() => setEncadreurModal(null)}>Annuler</button>
+              <button className="btn btn-outline" onClick={() => { setEncadreurModal(null); setSelectedEncadreur(""); }}>Annuler</button>
               <button className="btn btn-primary" onClick={handleAffecterEncadreur} disabled={!selectedEncadreur} style={{ background: "#7c3aed" }}>
                 <CheckCircle size={14} /> Confirmer
               </button>
@@ -339,6 +404,7 @@ export default function AdminReclamations() {
         </div>
       )}
 
+      {/* Modal changer date — CustomSelect pour heure et salle */}
       {dateModal && (
         <div className="modal-overlay">
           <div className="modal">
@@ -353,14 +419,12 @@ export default function AdminReclamations() {
             </div>
             <div className="form-group">
               <label className="form-label">Heure</label>
-              <select className="form-control" value={nouvelleHeure} onChange={e => handleHeureChange(e.target.value)}>
-                <option value="">— Choisir —</option>
-                <option value="08:30">08:30</option>
-                <option value="09:00">09:00</option>
-                <option value="10:30">10:30</option>
-                <option value="11:30">11:30</option>
-                <option value="14:00">14:00</option>
-              </select>
+              <CustomSelect
+                value={nouvelleHeure}
+                onChange={handleHeureChange}
+                placeholder="— Choisir —"
+                options={heuresOptions}
+              />
             </div>
             <div className="form-group">
               <label className="form-label">Salle</label>
@@ -371,15 +435,18 @@ export default function AdminReclamations() {
               ) : sallesDisponibles.length === 0 ? (
                 <p style={{ fontSize: 13, color: "#ef4444", margin: 0 }}>❌ Aucune salle disponible pour ce créneau</p>
               ) : (
-                <select className="form-control" value={nouvelleSalle} onChange={e => setNouvelleSalle(e.target.value)}>
-                  <option value="">— Choisir une salle —</option>
-                  {sallesDisponibles.map(s => (<option key={s} value={s}>{s}</option>))}
-                </select>
+                <CustomSelect
+                  value={nouvelleSalle}
+                  onChange={setNouvelleSalle}
+                  placeholder="— Choisir une salle —"
+                  options={sallesDisponibles.map(s => ({ value: s, label: s }))}
+                />
               )}
             </div>
             <div className="modal-actions">
               <button className="btn btn-outline" onClick={() => { setDateModal(null); setNouvelleDate(""); setNouvelleHeure(""); setNouvelleSalle(""); }}>Annuler</button>
-              <button className="btn btn-primary" onClick={handleChangerDate} disabled={!nouvelleDate || !nouvelleHeure || !nouvelleSalle} style={{ background: "#16a34a" }}>
+              <button className="btn btn-primary" onClick={handleChangerDate}
+                disabled={!nouvelleDate || !nouvelleHeure || !nouvelleSalle} style={{ background: "#16a34a" }}>
                 <Clock size={14} /> Confirmer la nouvelle date
               </button>
             </div>
