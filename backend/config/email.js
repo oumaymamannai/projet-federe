@@ -60,30 +60,6 @@ const sendResultatEmail = async (to, etudiant, soutenance, jurys) => {
       </div>`
   });
 };
-//nahyneha lfaza juste tji lreponse fel page mtaa letudiant meghyr ma tetbaath par email 
-/*
-const sendReclamationReponse = async (to, etudiant, reclamation) => {
-  await transporter.sendMail({
-    from: process.env.EMAIL_FROM,
-    to,
-    subject: `GradFlow — Réponse à votre réclamation`,
-    html: `
-      <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;">
-        <div style="background:#2d1b69;padding:20px;border-radius:8px 8px 0 0;">
-          <h1 style="color:#fff;margin:0;">🎓 GradFlow</h1>
-        </div>
-        <div style="background:#f8f7ff;padding:24px;border-radius:0 0 8px 8px;">
-          <p>Bonjour <strong>${etudiant.prenom} ${etudiant.nom}</strong>,</p>
-          <p>Votre réclamation a reçu une réponse :</p>
-          <blockquote style="border-left:4px solid #7c3aed;padding:12px;background:#ede9fe;border-radius:4px;">
-            ${reclamation.reponse}
-          </blockquote>
-        </div>
-      </div>`
-  });
-};
-module.exports = { sendResultatEmail, sendReclamationReponse };
-*/
 module.exports = { 
   sendResultatEmail,
   transporter  // Ajoutez cette ligne
