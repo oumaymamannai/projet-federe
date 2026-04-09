@@ -194,7 +194,7 @@ export default function FloatingChat() {
           position: 'fixed',
           bottom: '24px',
           right: '24px',
-          width: isMinimized ? '300px' : '540px',
+          width: isMinimized ? '260px' : '380px',
           height: isMinimized ? 'auto' : '500px',
           background: 'white',
           borderRadius: '12px',
