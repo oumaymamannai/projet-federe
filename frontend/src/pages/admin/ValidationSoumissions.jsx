@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import api from "../../services/api";
-import { FileText, CheckCircle, X, ChevronRight, Building2, User, BookOpen, AlignLeft, Paperclip, Calendar, Eye, Search } from "lucide-react";
+import { FileText, CheckCircle, X, ChevronRight, Building2, User, BookOpen, AlignLeft, Paperclip, Calendar, Eye, Search, Clock } from "lucide-react";
 
 // ── Drawer de détail ─────────────────────────────────────────────────────────
 function DetailDrawer({ soumission, onClose, onValider }) {
@@ -46,7 +46,7 @@ function DetailDrawer({ soumission, onClose, onValider }) {
               <div className="drawer-title">{soumission.etudiant_nom}</div>
               <div className="drawer-sub">
                 {isPending
-                  ? <span className="badge-pill badge-warning-pill">⏳ En attente</span>
+                  ? <span className="badge-pill badge-warning-pill"><Clock size={14} /> En attente</span>
                   : <span className="badge-pill badge-success-pill"><CheckCircle size={14} /> Validé</span>
                 }
               </div>
@@ -175,7 +175,7 @@ export default function AdminSubmissions() {
     try {
       await api.post(`/admin/soumissions/${id}/valider`);
       await loadSoumissions();
-      setMsg('✅ Soumission validée avec succès');
+      setMsg(' Soumission validée avec succès');
       window.dispatchEvent(new Event('submissionUpdated'));
       setTimeout(() => setMsg(''), 4000);
     } catch (err) {
@@ -246,8 +246,8 @@ export default function AdminSubmissions() {
       </div>
 
       <div className="page-content">
-        {msg   && <div className="alert alert-success">{msg}</div>}
-        {error && <div className="alert alert-danger">⚠️ {error}</div>}
+        {msg   && <div className="alert alert-success"><CheckCircle size={16} /> {msg}</div>}
+        {error && <div className="alert alert-danger"><AlertCircle size={16} /> {error}</div>}
 
         <div className="card">
           <h3 style={{ fontWeight: 700, marginBottom: 16 }}> Liste des soumissions</h3>
@@ -274,7 +274,7 @@ export default function AdminSubmissions() {
                       {s.statut === 'traite' ? (
                         <span className="badge badge-success"><CheckCircle size={14} />Validé</span>
                       ) : (
-                        <span className="badge badge-warning">⏳ En attente</span>
+                        <span className="badge badge-warning"><Clock size={14} />En attente</span>
                       )}
                     </td>
                     <td>

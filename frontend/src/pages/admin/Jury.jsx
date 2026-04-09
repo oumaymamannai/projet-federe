@@ -234,11 +234,11 @@ export default function AdminJury() {
     }
   };
 
+  // ✅ MODIFICATION : Recherche uniquement par nom et prénom (sans email)
   const filtered = juryMembers.filter(
     (m) =>
       (m.nom?.toLowerCase().includes(search.toLowerCase()) || false) ||
-      (m.prenom?.toLowerCase().includes(search.toLowerCase()) || false) ||
-      (m.email?.toLowerCase().includes(search.toLowerCase()) || false)
+      (m.prenom?.toLowerCase().includes(search.toLowerCase()) || false)
   );
 
   if (loading) {

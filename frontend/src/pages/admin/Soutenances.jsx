@@ -21,9 +21,9 @@ export default function AdminSoutenances() {
 
   useEffect(() => { load(); }, []);
 
+  //  MODIFICATION : Recherche uniquement par nom (etudiant_nom contient prénom + nom)
   const filteredSoutenances = soutenances.filter(s =>
-    s.etudiant_nom?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    s.etudiant_email?.toLowerCase().includes(searchQuery.toLowerCase())
+    s.etudiant_nom?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleAssign = async () => {
@@ -46,7 +46,8 @@ export default function AdminSoutenances() {
       if (membre3_id) payload.membre3_id = membre3_id;
 
       await api.post(`/admin/jury/${assignModal.id}`, payload);
-      setMsg("✅ Jury affecté avec succès !");
+      <CheckCircle size={14} />
+      setMsg(" Jury affecté avec succès !");
       setAssignModal(null);
       load();
     } catch (err) {
@@ -257,7 +258,7 @@ export default function AdminSoutenances() {
         {msg && <div className="alert alert-success">{msg}</div>}
         <div className="card">
           <div className="table-wrap">
-            <table>
+            <table className="table">
               <thead>
                 <tr>
                   <th>Étudiant</th>
@@ -290,7 +291,7 @@ export default function AdminSoutenances() {
                     <td>{statusBadge(s.statut)}</td>
                     <td><strong>{s.note_finale != null ? s.note_finale + "/20" : "—"}</strong></td>
                     <td>
-                    {s.jurys?.length > 0 ? s.jurys.map((j, i) => (
+                      {s.jurys?.length > 0 ? s.jurys.map((j, i) => (
                         <div key={i} style={{ fontSize: 12}}>
                           <span>{j.nom}</span>
                           <span style={{ color: "#9ca3af" }}>
