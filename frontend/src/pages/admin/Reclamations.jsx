@@ -52,7 +52,7 @@ function CustomSelect({ value, onChange, options, placeholder = "— Choisir —
         style={{
           display: "flex", alignItems: "center", justifyContent: "space-between",
           cursor: "pointer", textAlign: "left", background: "white",
-          color: value ? "var(--text-primary)" : "#9ca3af",
+          color: value ? "var(--text-primary)" : "#a89caf",
         }}
         onClick={() => open ? setOpen(false) : openDropdown()}
       >
@@ -70,7 +70,7 @@ function CustomSelect({ value, onChange, options, placeholder = "— Choisir —
           maxHeight: 220, overflowY: "auto", padding: "4px 0",
         }}>
           <div
-            style={{ padding: "10px 14px", fontSize: 14, color: "#9ca3af", cursor: "pointer", background: !value ? "var(--purple-50)" : "transparent" }}
+            style={{ padding: "10px 14px", fontSize: 14, color: "#a69caf", cursor: "pointer", background: !value ? "var(--purple-50)" : "transparent" }}
             onMouseDown={(e) => { e.preventDefault(); onChange(""); setOpen(false); }}
           >
             {placeholder}
@@ -91,7 +91,7 @@ function CustomSelect({ value, onChange, options, placeholder = "— Choisir —
             </div>
           ))}
           {options.length === 0 && (
-            <div style={{ padding: "10px 14px", fontSize: 13, color: "#9ca3af" }}>Aucune option disponible</div>
+            <div style={{ padding: "10px 14px", fontSize: 13, color: "#a69caf" }}>Aucune option disponible</div>
           )}
         </div>
       )}
@@ -292,7 +292,7 @@ export default function AdminReclamations() {
                       ) : <span style={{ fontSize: 12, color: "#9ca3af" }}>Aucune pièce jointe</span>}
                     </td>
                     <td>
-                      <span className={"badge " + (r.statut === "traitee" ? "badge-success" : "badge-warning")}>
+                      <span className={"badge " + (r.statut === "traitee" ? "badge-success" : "badge-danger")}>
                         {r.statut === "traitee" ? "Traitée" : "En attente"}
                       </span>
                     </td>
@@ -345,7 +345,7 @@ export default function AdminReclamations() {
             <p className="sub">{modal.etudiant_nom} — {typeLabel(modal.type)}</p>
             <div style={{ background: "#f9fafb", borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 14 }}>
               <strong>Message :</strong>
-              <p style={{ margin: "8px 0 0 0", color: "#374151" }}>{modal.message}</p>
+              <p style={{ margin: "8px 0 0 0", color: "#493751" }}>{modal.message}</p>
             </div>
             <div className="form-group">
               <label className="form-label">Votre réponse</label>

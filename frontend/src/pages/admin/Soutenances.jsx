@@ -297,9 +297,9 @@ export default function AdminSoutenances() {
   };
 
   const statusBadge = (s) => {
-    if (s === "planifiee") return <span className="badge badge-purple"><CalendarDays size={14} /> Planifiée</span>;
+    if (s === "planifiee") return <span className="badge badge-warning"><CalendarDays size={14} /> Planifiée</span>;
     if (s === "terminee") return <span className="badge badge-success"><CheckCircle size={14} /> Terminée</span>;
-    return <span className="badge badge-warning"><Clock size={14} /> En attente</span>;
+    return <span className="badge badge-danger"><Clock size={14} /> En attente</span>;
   };
 
   if (loading) return <div className="spinner" />;
@@ -449,7 +449,7 @@ export default function AdminSoutenances() {
                         <div key={i} style={{ fontSize: 12 }}>
                           <span>{j.nom}</span>
                           <span style={{ color: "#9ca3af" }}>
-                            {j.role === 'encadreur' ? '(Encadrant)' : j.role === 'president' ? '(Président)' : '(Membre)'}
+                            {j.role === 'encadreur' ? '(Encadrant)' : j.role === 'president' ? '(Président)' : '(3éme Membre)'}
                           </span>
                         </div>
                       )) : <span style={{ color: "#9ca3af" }}>Non assigné</span>}
@@ -500,7 +500,7 @@ export default function AdminSoutenances() {
                 ))}
                 {filteredSoutenances.length === 0 && (
                   <tr>
-                    <td colSpan={8} style={{ textAlign: "center", padding: "40px", color: "#9ca3af" }}>
+                    <td colSpan={8} style={{ textAlign: "center", padding: "40px", color: "#a79caf" }}>
                       {searchQuery ? `Aucun résultat pour "${searchQuery}"` : "Aucune soutenance trouvée"}
                     </td>
                   </tr>

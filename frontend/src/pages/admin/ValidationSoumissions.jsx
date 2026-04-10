@@ -45,7 +45,7 @@ function DetailDrawer({ soumission, onClose, onValider }) {
               <div className="drawer-title">{soumission.etudiant_nom}</div>
               <div className="drawer-sub">
                 {isPending
-                  ? <span className="badge-pill badge-warning-pill"><Clock size={14} /> En attente</span>
+                  ? <span className="badge-pill badge-danger-pill"><Clock size={14} /> En attente</span>
                   : <span className="badge-pill badge-success-pill"><CheckCircle size={14} /> Validé</span>
                 }
               </div>
@@ -273,7 +273,7 @@ export default function AdminSubmissions() {
                       {s.statut === 'traite' ? (
                         <span className="badge badge-success"><CheckCircle size={14} />Validé</span>
                       ) : (
-                        <span className="badge badge-warning"><Clock size={14} />En attente</span>
+                        <span className="badge badge-danger"><Clock size={14} />En attente</span>
                       )}
                     </td>
                     <td>
@@ -312,15 +312,15 @@ export default function AdminSubmissions() {
 
       <style>{`
         :root {
-          --primary-dark: #4F46E5;
-          --primary-main: #6366F1;
-          --primary-light: #818CF8;
+          --primary-dark: #8846e5;
+          --primary-main: #7c3aed;
+          --primary-light: #c181f8;
           --primary-bg: #EEF2FF;
           --success: #10B981;
           --success-dark: #059669;
           --warning: #F59E0B;
           --danger: #EF4444;
-          --text-primary: #111827;
+          --text-primary: #1a1127;
           --text-secondary: #4B5563;
           --text-muted: #6B7280;
           --border-color: #E5E7EB;
@@ -363,7 +363,6 @@ export default function AdminSubmissions() {
           padding: 14px 16px;
           background: var(--bg-secondary);
           font-weight: 600;
-          color: var(--text-primary);
           border-bottom: 2px solid var(--border-color);
         }
         
@@ -561,7 +560,10 @@ export default function AdminSubmissions() {
           background: #D1FAE5;
           color: #065F46;
         }
-
+        .badge-danger-pill {
+          background: #FEE2E2;
+            color: #991B1B;
+        }
         .drawer-body {
           flex: 1;
           overflow-y: auto;

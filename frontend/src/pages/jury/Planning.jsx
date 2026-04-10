@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import api from "../../services/api";
-import { CalendarDays, Search, Calendar } from "lucide-react";
+import { CalendarDays, Search, Calendar , AlertCircle } from "lucide-react";
 
 function getCountdownStatus(dateStr) {
   const today = new Date();
@@ -36,15 +36,15 @@ function formatDateShort(dateStr) {
 const FILTERS = ["Tous", "Aujourd'hui", "À venir", "Cette semaine", "Terminés"];
 
 const ROLE_STYLES = {
-  president: { stripe: "#7c3aed", badge: { background: "#EEEDFE", color: "#3C3489" } },
-  encadreur: { stripe: "#10b981", badge: { background: "#EAF3DE", color: "#27500A" } },
+  president: { stripe: "#7c3aed", badge: { background: "#EEEDFE", color: "#7c3aed" } },
+  encadreur: { stripe: "#10b981", badge: { background: "#EAF3DE", color: "#060606" } },
   membre:    { stripe: "#9ca3af", badge: { background: "#f3f4f6", color: "#6b7280" } },
 };
 
 const STATUS_STYLES = {
-  today:   { background: "#FAEEDA", color: "#633806" },
-  pending: { background: "#E6F1FB", color: "#0C447C" },
-  done:    { background: "#f3f4f6", color: "#9ca3af" },
+  today:   { background: "#FAEEDA", color: "#a70909" },
+  pending: { background: "#E6F1FB", color: "#5c0c7c" },
+  done:    { background: "#f3f4f6", color: "#27500A" },
 };
 
 function RoleStripe({ role }) {
@@ -103,8 +103,8 @@ function ActionButton({ s }) {
     return (
       <button disabled style={{
         fontSize: 11, padding: "6px 12px", borderRadius: 8, fontWeight: 600,
-        background: "#f3f4f6", color: "#9ca3af",
-        border: "0.5px solid #e5e7eb", cursor: "not-allowed",
+        background: "#f5f3f6", color: "#a89caf",
+        border: "0.5px solid #e8e5eb", cursor: "not-allowed",
         display: "inline-flex", alignItems: "center", gap: 5
       }}>
         Disponible le {formatDateShort(s.date_soutenance)}
@@ -153,10 +153,10 @@ function SoutenanceCard({ s }) {
         {s.date_soutenance && (
           <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
             <span style={{ fontSize: 11, color: "#9ca3af", display: "flex", alignItems: "center", gap: 4 }}>
-              <MetaDot color="#7c3aed" />{formatDate(s.date_soutenance)}
+              <MetaDot color="#a53aed" />{formatDate(s.date_soutenance)}
             </span>
-            <span style={{ fontSize: 11, color: "#9ca3af", display: "flex", alignItems: "center", gap: 4 }}>
-              <MetaDot color="#378ADD" />{formatTime(s.date_soutenance)}
+            <span style={{ fontSize: 11, color: "#a79caf", display: "flex", alignItems: "center", gap: 4 }}>
+              <MetaDot color="#480554" />{formatTime(s.date_soutenance)}
             </span>
             <span style={{ fontSize: 11, color: "#9ca3af", display: "flex", alignItems: "center", gap: 4 }}>
               <MetaDot color="#E24B4A" />{s.salle}
@@ -235,20 +235,20 @@ export default function JuryPlanning() {
 
         {/* Tip */}
         <div style={{
-          background: "#E6F1FB", borderLeft: "3px solid #378ADD", borderRadius: 8,
-          padding: "10px 14px", fontSize: 12, color: "#0C447C",
+          background: "#f5eeff", borderLeft: "3px solid #7c3aed", borderRadius: 8,
+          padding: "10px 14px", fontSize: 12, color: "#7c3aed",
           marginBottom: 20, display: "flex", gap: 8, alignItems: "flex-start", lineHeight: 1.5
         }}>
-          <span style={{ flexShrink: 0, marginTop: 1 }}>ℹ️</span>
+          <span style={{ flexShrink: 0, marginTop: 1 }}><AlertCircle size={14} color="#7c3aed"/></span>
           <span>
             Le <strong>Président</strong> saisit la note finale.
-            Les autres membres laissent leurs <strong>remarques</strong> après la soutenance.
+            Les autres membres laissent leurs <strong>remarques</strong> lors/après la soutenance.
           </span>
         </div>
 
         {/* Recherche */}
         <div style={{ position: "relative", maxWidth: 360, marginBottom: 12 }}>
-          <Search size={13} style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }} />
+          <Search size={13} style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: "#a79caf" }} />
           <input
             type="text"
             placeholder="Nom, prénom ou sujet…"
@@ -257,7 +257,7 @@ export default function JuryPlanning() {
             style={{
               width: "100%", padding: "8px 12px 8px 34px",
               border: "0.5px solid #d1d5db", borderRadius: 8,
-              fontSize: 13, outline: "none", background: "white", color: "#111827"
+              fontSize: 13, outline: "none", background: "white", color: "#1d1127"
             }}
             onFocus={e => e.target.style.borderColor = "#7c3aed"}
             onBlur={e => e.target.style.borderColor = "#d1d5db"}
@@ -285,7 +285,7 @@ export default function JuryPlanning() {
         </div>
 
         {/* Compteur */}
-        <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 16 }}>
+        <div style={{ fontSize: 11, color: "#a79caf", marginBottom: 16 }}>
           {filtered.length} soutenance{filtered.length > 1 ? "s" : ""}
           {searchTerm && ` · "${searchTerm}"`}
           {activeFilter !== "Tous" && ` · ${activeFilter}`}
@@ -296,8 +296,8 @@ export default function JuryPlanning() {
           <div style={{ textAlign: "center", padding: "48px 24px", background: "white", borderRadius: 12, border: "0.5px solid #e5e7eb" }}>
             {searchTerm || activeFilter !== "Tous" ? (
               <>
-                <Search size={36} color="#ddd6fe" style={{ margin: "0 auto 12px", display: "block" }} />
-                <p style={{ color: "#9ca3af", fontSize: 14, marginBottom: 12 }}>
+                <Search size={36} color="#efd6fe" style={{ margin: "0 auto 12px", display: "block" }} />
+                <p style={{ color: "#ab9caf", fontSize: 14, marginBottom: 12 }}>
                   Aucun résultat
                   {searchTerm && ` pour "${searchTerm}"`}
                   {activeFilter !== "Tous" && ` · filtre "${activeFilter}"`}
@@ -312,7 +312,7 @@ export default function JuryPlanning() {
             ) : (
               <>
                 <Calendar size={36} color="#ddd6fe" style={{ margin: "0 auto 12px", display: "block" }} />
-                <p style={{ color: "#9ca3af", fontSize: 14 }}>Aucune soutenance assignée</p>
+                <p style={{ color: "#ab9caf", fontSize: 14 }}>Aucune soutenance assignée</p>
               </>
             )}
           </div>
@@ -327,7 +327,7 @@ export default function JuryPlanning() {
                   marginBottom: 8, display: "flex", alignItems: "center", gap: 8
                 }}>
                   {dateKey}{isToday && " — Aujourd'hui"}
-                  <span style={{ flex: 1, height: "0.5px", background: "#f3f4f6" }} />
+                  <span style={{ flex: 1, height: "0.5px", background: "#7c3aed" }} />
                 </div>
                 {items.map(s => <SoutenanceCard key={s.id} s={s} />)}
               </div>

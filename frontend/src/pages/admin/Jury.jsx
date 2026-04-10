@@ -39,9 +39,9 @@ function Modal({ member, onClose }) {
         background: "#fff", borderRadius: 16, width: 480, maxWidth: "calc(100vw - 32px)",
         boxShadow: "0 24px 60px rgba(0,0,0,0.18)", overflow: "hidden",
       }}>
-        <div style={{ background: "linear-gradient(135deg, #4c3db5 0%, #6b5ce7 100%)", padding: "20px 24px", display: "flex", alignItems: "center", gap: 14 }}>
+        <div style={{ background: "linear-gradient(135deg, #773db5, #7c3aed)", padding: "20px 24px", display: "flex", alignItems: "center", gap: 14 }}>
           <div style={{
-            width: 48, height: 48, borderRadius: "50%", background: member.color || "#7F77DD",
+            width: 48, height: 48, borderRadius: "50%", background: member.color || "#ac77dd",
             display: "flex", alignItems: "center", justifyContent: "center",
             color: "#fff", fontWeight: 700, fontSize: 16, flexShrink: 0,
             border: "2px solid rgba(255,255,255,0.3)",
@@ -74,7 +74,7 @@ function Modal({ member, onClose }) {
                 Votre message a été transmis à {member.prenom} {member.nom}.
               </div>
               <button onClick={onClose} style={{
-                background: "linear-gradient(135deg, #4c3db5, #6b5ce7)", color: "#fff",
+                background: "linear-gradient(135deg, #773db5, #9b5ce7)", color: "#fff",
                 border: "none", borderRadius: 8, padding: "10px 28px", cursor: "pointer",
                 fontSize: 14, fontWeight: 500,
               }}>Fermer</button>
@@ -82,7 +82,7 @@ function Modal({ member, onClose }) {
           ) : (
             <>
               <div style={{ marginBottom: 16 }}>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 500, color: "#374151", marginBottom: 6 }}>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 500, color: "#483751", marginBottom: 6 }}>
                   Objet *
                 </label>
                 <input
@@ -93,7 +93,7 @@ function Modal({ member, onClose }) {
                   className="search-input"
                   style={{
                     width: "100%", padding: "10px 12px", border: "1px solid #e5e7eb",
-                    borderRadius: 8, fontSize: 14, color: "#1a1a2e", outline: "none",
+                    borderRadius: 8, fontSize: 14, color: "#241a2e", outline: "none",
                     boxSizing: "border-box", transition: "border-color 0.2s",
                   }}
                   onFocus={(e) => (e.target.style.borderColor = "#7c3aed")}
@@ -156,9 +156,9 @@ function Modal({ member, onClose }) {
                   disabled={!subject.trim() || !message.trim() || sending}
                   style={{
                     background: subject.trim() && message.trim() && !sending
-                      ? "linear-gradient(135deg, #4c3db5, #6b5ce7)"
-                      : "#e5e7eb",
-                    color: subject.trim() && message.trim() && !sending ? "#fff" : "#9ca3af",
+                      ? "linear-gradient(135deg, #773db5, #7c3aed)"
+                      : "#e9e5eb",
+                    color: subject.trim() && message.trim() && !sending ? "#fff" : "#a69caf",
                     border: "none", borderRadius: 8, padding: "10px 24px",
                     cursor: subject.trim() && message.trim() && !sending ? "pointer" : "not-allowed",
                     fontSize: 14, fontWeight: 500, display: "flex", alignItems: "center", gap: 6,
@@ -272,7 +272,7 @@ export default function AdminJury() {
         </div>
         <div style={{ display: "flex", gap: 12 }}>
           <div style={{ background: "#fff", border: "1px solid #ede9fe", borderRadius: 10, padding: "10px 18px", textAlign: "center" }}>
-            <div style={{ fontSize: 22, fontWeight: 700, color: "#6b5ce7" }}>{juryMembers.length}</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: "#9f5ce7" }}>{juryMembers.length}</div>
             <div style={{ fontSize: 12, color: "#9ca3af" }}>Membres actifs</div>
           </div>
         </div>
@@ -301,7 +301,7 @@ export default function AdminJury() {
         <button
           onClick={() => setSelected({ id: 0, nom: "Tous les membres", email: "all", initials: "★", color: "#7F77DD", isAll: true })}
           style={{
-            background: "linear-gradient(135deg, #4c3db5, #6b5ce7)", color: "#fff",
+            background: "linear-gradient(135deg, #773db5, #7c3aed)", color: "#fff",
             border: "none", borderRadius: 8, padding: "10px 20px",
             cursor: "pointer", fontSize: 14, fontWeight: 500, whiteSpace: "nowrap",
             display: "flex", alignItems: "center", gap: 6,
@@ -331,7 +331,6 @@ export default function AdminJury() {
                   textAlign: i === 4 ? "center" : "left",
                   fontSize: 12, 
                   fontWeight: 600, 
-                  color: "#7c3aed",
                   textTransform: "uppercase", 
                   letterSpacing: "0.06em",
                   whiteSpace: "nowrap"
@@ -362,13 +361,13 @@ export default function AdminJury() {
                     }}>
                       {member.initials}
                     </div>
-                    <span style={{ fontWeight: 600, color: "#1a1a2e", fontSize: 14, wordBreak: "break-word" }}>
+                    <span style={{ fontWeight: 600, color: "#271a2e", fontSize: 14, wordBreak: "break-word" }}>
                       {member.prenom} {member.nom}
                     </span>
                   </div>
                 </td>
                 <td style={{ padding: "16px 20px" }}>
-                  <a href={`mailto:${member.email}`} style={{ color: "#6b5ce7", fontSize: 14, textDecoration: "none", wordBreak: "break-all" }}>
+                  <a href={`mailto:${member.email}`} style={{ color: "#a15ce7", fontSize: 14, textDecoration: "none", wordBreak: "break-all" }}>
                     {member.email}
                   </a>
                 </td>
@@ -385,9 +384,9 @@ export default function AdminJury() {
                     onClick={() => setSelected(member)}
                     style={{
                       background: hovered === member.id
-                        ? "linear-gradient(135deg, #4c3db5, #6b5ce7)"
+                        ? "linear-gradient(135deg, #773db5, #7c3aed)"
                         : "transparent",
-                      color: hovered === member.id ? "#fff" : "#6b5ce7",
+                      color: hovered === member.id ? "#fff" : "#9f5ce7",
                       border: "1px solid #ddd6fe",
                       borderRadius: 8, padding: "7px 16px", cursor: "pointer",
                       fontSize: 13, fontWeight: 500, transition: "all 0.2s",
@@ -401,7 +400,7 @@ export default function AdminJury() {
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={5} style={{ padding: 40, textAlign: "center", color: "#9ca3af", fontSize: 14 }}>
+                <td colSpan={5} style={{ padding: 40, textAlign: "center", color: "#a79caf", fontSize: 14 }}>
                   Aucun membre trouvé
                 </td>
               </tr>
@@ -410,7 +409,7 @@ export default function AdminJury() {
         </table>
       </div>
 
-      <div style={{ marginTop: 12, fontSize: 13, color: "#9ca3af" }}>
+      <div style={{ marginTop: 12, fontSize: 13, color: "#a79caf" }}>
         {filtered.length} membre{filtered.length > 1 ? "s" : ""} affiché{filtered.length > 1 ? "s" : ""}
       </div>
 
@@ -430,7 +429,7 @@ export default function AdminJury() {
             background: "#fff", borderRadius: 16, width: 480, maxWidth: "calc(100vw - 32px)",
             boxShadow: "0 24px 60px rgba(0,0,0,0.18)", overflow: "hidden",
           }}>
-            <div style={{ background: "linear-gradient(135deg, #4c3db5 0%, #6b5ce7 100%)", padding: "20px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ background: "linear-gradient(135deg, #773db5 0%, #7c3aed 100%)", padding: "20px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div>
                 <div style={{ color: "#fff", fontWeight: 600, fontSize: 16 }}>Contacter tous les membres</div>
                 <div style={{ color: "rgba(255,255,255,0.7)", fontSize: 13 }}>{juryMembers.length} destinataires</div>
@@ -453,7 +452,7 @@ export default function AdminJury() {
                     display: "flex", alignItems: "center", justifyContent: "center",
                     margin: "0 auto 16px", fontSize: 28,
                   }}>✓</div>
-                  <div style={{ fontWeight: 600, fontSize: 17, color: "#1a1a2e", marginBottom: 8 }}>
+                  <div style={{ fontWeight: 600, fontSize: 17, color: "#241a2e", marginBottom: 8 }}>
                     Messages envoyés !
                   </div>
                   <div style={{ color: "#6b7280", fontSize: 14, marginBottom: 24 }}>
@@ -465,7 +464,7 @@ export default function AdminJury() {
                     setAllSubject("");
                     setAllMessage("");
                   }} style={{
-                    background: "linear-gradient(135deg, #4c3db5, #6b5ce7)", color: "#fff",
+                    background: "linear-gradient(135deg, #773db5, #7c3aed)", color: "#fff",
                     border: "none", borderRadius: 8, padding: "10px 28px", cursor: "pointer",
                     fontSize: 14, fontWeight: 500,
                   }}>Fermer</button>
@@ -476,7 +475,7 @@ export default function AdminJury() {
                     {juryMembers.map((m) => (
                       <div key={m.id} style={{
                         display: "flex", alignItems: "center", gap: 6,
-                        background: "#f5f3ff", border: "1px solid #ddd6fe",
+                        background: "#f9f3ff", border: "1px solid #ddd6fe",
                         borderRadius: 20, padding: "4px 10px 4px 6px", fontSize: 12, color: "#7c3aed",
                       }}>
                         <div style={{ width: 20, height: 20, borderRadius: "50%", background: m.color, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 9, fontWeight: 700 }}>{m.initials}</div>
@@ -485,25 +484,25 @@ export default function AdminJury() {
                     ))}
                   </div>
                   <div style={{ marginBottom: 16 }}>
-                    <label style={{ display: "block", fontSize: 13, fontWeight: 500, color: "#374151", marginBottom: 6 }}>Objet *</label>
+                    <label style={{ display: "block", fontSize: 13, fontWeight: 500, color: "#463751", marginBottom: 6 }}>Objet *</label>
                     <input 
                       type="text" 
                       value={allSubject}
                       onChange={(e) => setAllSubject(e.target.value)}
                       placeholder="Objet du message groupé..." 
                       className="search-input"
-                      style={{ width: "100%", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 14, boxSizing: "border-box", outline: "none" }} 
+                      style={{ width: "100%", padding: "10px 12px", border: "1px solid #e8e5eb", borderRadius: 8, fontSize: 14, boxSizing: "border-box", outline: "none" }} 
                     />
                   </div>
                   <div style={{ marginBottom: 20 }}>
-                    <label style={{ display: "block", fontSize: 13, fontWeight: 500, color: "#374151", marginBottom: 6 }}>Message *</label>
+                    <label style={{ display: "block", fontSize: 13, fontWeight: 500, color: "#4a3751", marginBottom: 6 }}>Message *</label>
                     <textarea 
                       rows={4} 
                       value={allMessage}
                       onChange={(e) => setAllMessage(e.target.value)}
                       placeholder="Message pour tous les membres du jury..." 
                       className="search-input"
-                      style={{ width: "100%", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 14, boxSizing: "border-box", resize: "vertical", fontFamily: "inherit", outline: "none" }} 
+                      style={{ width: "100%", padding: "10px 12px", border: "1px solid #e9e5eb", borderRadius: 8, fontSize: 14, boxSizing: "border-box", resize: "vertical", fontFamily: "inherit", outline: "none" }} 
                     />
                   </div>
                   <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
@@ -511,15 +510,15 @@ export default function AdminJury() {
                       setSelected(null);
                       setAllSubject("");
                       setAllMessage("");
-                    }} style={{ background: "transparent", border: "1px solid #e5e7eb", borderRadius: 8, padding: "10px 20px", cursor: "pointer", fontSize: 14, color: "#6b7280" }}>Annuler</button>
+                    }} style={{ background: "transparent", border: "1px solid #e9e5eb", borderRadius: 8, padding: "10px 20px", cursor: "pointer", fontSize: 14, color: "#746b80" }}>Annuler</button>
                     <button 
                       onClick={handleSendToAll}
                       disabled={!allSubject.trim() || !allMessage.trim() || allSending}
                       style={{ 
                         background: allSubject.trim() && allMessage.trim() && !allSending
-                          ? "linear-gradient(135deg, #4c3db5, #6b5ce7)"
-                          : "#e5e7eb",
-                        color: allSubject.trim() && allMessage.trim() && !allSending ? "#fff" : "#9ca3af",
+                          ? "linear-gradient(135deg, #773db5, #7c3aed)"
+                          : "#e9e5eb",
+                        color: allSubject.trim() && allMessage.trim() && !allSending ? "#fff" : "#aa9caf",
                         border: "none", 
                         borderRadius: 8, 
                         padding: "10px 24px", 

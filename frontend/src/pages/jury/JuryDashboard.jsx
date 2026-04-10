@@ -123,12 +123,12 @@ function TimelineItem({ soutenance, index }) {
             {soutenance.prenom} {soutenance.nom}
           </span>
           {isToday && (
-            <span style={{ fontSize: 10, fontWeight: 700, background: '#fef3c7', color: '#d97706', padding: '1px 6px', borderRadius: 99 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, background: '#fee2e2', color: '#dc2626', padding: '1px 6px', borderRadius: 99 }}>
               Aujourd'hui
             </span>
           )}
           {isSoon && (
-            <span style={{ fontSize: 10, fontWeight: 700, background: '#fee2e2', color: '#dc2626', padding: '1px 6px', borderRadius: 99 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, background: '#fef3c7', color: '#d97706', padding: '1px 6px', borderRadius: 99 }}>
               Bientôt
             </span>
           )}

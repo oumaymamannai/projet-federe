@@ -372,7 +372,7 @@ export default function PlanificationWizard({ onDone }) {
           align-items: center;
           gap: 8px;
           padding: 10px 22px;
-          background: #7c3aed;
+          background: linear-gradient(135deg, #773db5, #7c3aed);
           color: #fff;
           border: none;
           border-radius: 10px;
@@ -494,12 +494,12 @@ export default function PlanificationWizard({ onDone }) {
           display: flex;
           align-items: flex-start;
           gap: 8px;
-          background: #eef2ff;
-          border: 1px solid #c7d2fe;
+          background: #f5eeff;
+          border: 1px solid #e2c7fe;
           border-radius: 8px;
           padding: 10px 14px;
           font-size: 13px;
-          color: #3730a3;
+          color: #6630a3;
         }
 
         .wizard-form-row {

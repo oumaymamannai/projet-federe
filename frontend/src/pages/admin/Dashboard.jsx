@@ -21,14 +21,14 @@ function initiales(nom) {
 }
 
 // ── Couleurs avatar déterministes ────────────────────────────────────────────
-const AVATAR_COLORS = ['#534AB7', '#7F77DD', '#AFA9EC', '#26215C', '#8B7FE8', '#6C63C7']
+const AVATAR_COLORS = ['#46215c', '#643981', '#8860b2', '#b690d6', '#46215c', '#643981']
 function avatarColor(id) { return AVATAR_COLORS[id % AVATAR_COLORS.length] }
 
 // ── Étiquette de rôle ────────────────────────────────────────────────────────
 const ROLE_LABELS = {
-  encadreur: { label: 'Enc.', color: '#7F77DD', bg: '#EEEDFE' },
-  president: { label: 'Prés.', color: '#534AB7', bg: '#E8E6FF' },
-  membre:    { label: 'Mbr.', color: '#AFA9EC', bg: '#F3F2FE' },
+  encadreur: { label: 'Enc.', color: '#ad77dd', bg: '#f5edfe' },
+  president: { label: 'Prés.', color: '#864ab7', bg: '#f2e6ff' },
+  membre:    { label: 'Mbr.', color: '#c5a9ec', bg: '#f7f2fe' },
 }
 
 // ── Mention depuis note ──────────────────────────────────────────────────────
@@ -44,7 +44,7 @@ function getMention(note) {
 // ── Top performer card ───────────────────────────────────────────────────────
 function TopCard({ rank, student }) {
   const icons    = [Trophy, Medal, Star]
-  const colors   = ['#F59E0B', '#94A3B8', '#C084FC']
+  const colors   = ['#F59E0B', '#a494b8', '#C084FC']
   const bgColors = ['#FEF3C7', '#F1F5F9', '#FAF5FF']
   const Icon     = icons[rank]
 
@@ -153,11 +153,11 @@ export default function AdminDashboard() {
     .slice(0, 3)
 
   const intervals = [
-    { label: '< 10',  count: notesRepartition.moins_10     || 0, color: '#CECBF6' },
-    { label: '10-12', count: notesRepartition.entre_10_12  || 0, color: '#AFA9EC' },
-    { label: '12-14', count: notesRepartition.entre_12_14  || 0, color: '#7F77DD' },
-    { label: '14-16', count: notesRepartition.entre_14_16  || 0, color: '#534AB7' },
-    { label: '≥ 16',  count: notesRepartition.plus_16      || 0, color: '#26215C' },
+    { label: '< 10',  count: notesRepartition.moins_10     || 0, color: '#d6b3f4' },
+    { label: '10-12', count: notesRepartition.entre_10_12  || 0, color: '#b690d6' },
+    { label: '12-14', count: notesRepartition.entre_12_14  || 0, color: '#8860b2' },
+    { label: '14-16', count: notesRepartition.entre_14_16  || 0, color: '#643981' },
+    { label: '≥ 16',  count: notesRepartition.plus_16      || 0, color: '#46215c' },
   ]
 
   const chartData = {
@@ -336,7 +336,7 @@ export default function AdminDashboard() {
         .secondary-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
         .card-header { padding: 16px 20px; border-bottom: 0.5px solid var(--color-border-tertiary); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
         .card-title-wrapper { display: flex; align-items: center; gap: 8px; }
-        .card-icon { color: #534AB7; }
+        .card-icon { color: #724ab7; }
         .card-title { font-weight: 500; font-size: 14px; color: var(--color-text-primary); }
         .card-badge { font-size: 11px; background: var(--color-background-secondary); padding: 3px 10px; border-radius: 99px; color: var(--color-text-secondary); }
         .card-body { padding: 20px; }
