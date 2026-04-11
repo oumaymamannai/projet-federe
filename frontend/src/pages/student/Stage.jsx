@@ -463,7 +463,7 @@ export default function StudentStage() {
         onConfirm={confirmSubmit}
         onCancel={cancelSubmit}
         title="Confirmation de soumission"
-        message="⚠️ Vous ne pourrez soumettre qu'une seule fois. Voulez-vous vraiment envoyer votre dossier de stage ?"
+        message=" ⚠ Vous ne pourrez soumettre qu'une seule fois. Voulez-vous vraiment envoyer votre dossier de stage ?"
       />
 
       <style>{`

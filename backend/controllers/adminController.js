@@ -98,8 +98,6 @@ exports.getDashboard = async (req, res) => {
     `);
 
     const notesRepartition = repartition[0] || {};
-
-    // FIX #1 — juryStats : exclure les encadrants externes (est_externe = 1)
     const [juryStats] = await db.query(`
       SELECT 
         u.id,
@@ -111,7 +109,6 @@ exports.getDashboard = async (req, res) => {
       FROM users u
       JOIN soutenance_jury sj ON sj.jury_id = u.id
       WHERE (u.role = 'jury' OR (u.role = 'admin' AND u.email != 'admin@gradflow.dz'))
-        AND u.est_externe = 0
       GROUP BY u.id, u.nom, u.prenom
       ORDER BY total_soutenances DESC
       LIMIT 6
@@ -187,15 +184,12 @@ exports.getSoutenances = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
-// FIX #2 — getJuryMembers : exclure les encadrants externes (est_externe = 1)
 exports.getJuryMembers = async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT id, nom, prenom, email
       FROM users
       WHERE (role = 'jury' OR (role = 'admin' AND email != 'admin@gradflow.dz'))
-        AND est_externe = 0
       ORDER BY nom, prenom
     `);
     res.json(rows);
@@ -740,8 +734,6 @@ exports.creerSoutenance = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
-// FIX #3 — validerSoumission : marquer l'encadrant externe avec est_externe = 1
 exports.validerSoumission = async (req, res) => {
   const { soumission_id } = req.params;
 
@@ -775,13 +767,11 @@ exports.validerSoumission = async (req, res) => {
         );
 
         if (encadreur.length === 0) {
-          // Encadrant introuvable dans la BD → c'est un externe
           const [prenom, ...nomParts] = soumission.encadreur.split(" ");
           const nom = nomParts.join(" ") || prenom;
 
           const [result] = await db.query(
-            // FIX : ajout de est_externe = 1 pour marquer cet utilisateur comme externe
-            'INSERT INTO users (nom, prenom, email, password, role, est_externe) VALUES (?, ?, ?, ?, "jury", 1)',
+            'INSERT INTO users (nom, prenom, email, password, role) VALUES (?, ?, ?, ?, "jury", 1)',
             [
               nom,
               prenom,
@@ -791,7 +781,6 @@ exports.validerSoumission = async (req, res) => {
           );
           encadreur_id = result.insertId;
         } else {
-          // Encadrant trouvé dans la BD → c'est un jury interne, on ne touche pas est_externe
           encadreur_id = encadreur[0].id;
         }
 
@@ -893,11 +882,10 @@ exports.sendEmailToMember = async (req, res) => {
       });
     }
 
-    // FIX #4 — sendEmailToMember : exclure les externes de la récupération
     const [rows] = await db.query(`
       SELECT id, nom, prenom, email 
       FROM users 
-      WHERE id = ? AND (role = 'jury' OR role = 'admin') AND est_externe = 0
+      WHERE id = ? AND (role = 'jury' OR role = 'admin')
     `, [memberId]);
     
     if (rows.length === 0) {
@@ -946,7 +934,6 @@ exports.sendEmailToMember = async (req, res) => {
   }
 };
 
-// FIX #5 — sendEmailToAllJury : exclure les encadrants externes (est_externe = 1)
 exports.sendEmailToAllJury = async (req, res) => {
   const { subject, message } = req.body;
   
@@ -961,7 +948,6 @@ exports.sendEmailToAllJury = async (req, res) => {
       SELECT id, nom, prenom, email 
       FROM users 
       WHERE (role = 'jury' OR (role = 'admin' AND email != 'admin@gradflow.dz'))
-        AND est_externe = 0
     `);
     
     if (members.length === 0) {

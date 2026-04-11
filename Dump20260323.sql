@@ -254,6 +254,3 @@ UNLOCK TABLES;
 ALTER TABLE stage_soumissions
   ADD COLUMN encadrant_entreprise VARCHAR(255) NULL
     AFTER encadreur;
-    
-    
-    ALTER TABLE users ADD COLUMN est_externe TINYINT(1) NOT NULL DEFAULT 0;
