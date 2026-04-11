@@ -286,7 +286,7 @@ export default function Sidebar({ sidebarOpen: controlledOpen, setSidebarOpen: c
                 cursor: isDisabled ? 'not-allowed' : 'pointer',
                 pointerEvents: isDisabled ? 'none' : 'auto',
               }}
-              title={isDisabled ? '✅ Vous avez déjà soumis votre formulaire.' : ''}
+              title={isDisabled ? 'Vous avez déjà soumis votre formulaire.' : ''}
               aria-current={location.pathname === item.to ? 'page' : undefined}
             >
               {item.icon}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import api from "../../services/api";
-import { Upload, Send, FileText, X, GraduationCap, Building2 ,Lock  } from "lucide-react";
+import { Upload, Send, FileText, X, GraduationCap, Building2, Lock, CheckCircle, AlertCircle } from "lucide-react";
 import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
 
@@ -22,7 +22,28 @@ function Field({ label, required, error, hint, children }) {
         <div className="sf-hint">{hint}</div>
       )}
     </div>
-  )
+  );
+}
+
+// ── Modale de confirmation ──────────────────────────────────────────────────
+function ConfirmModal({ isOpen, onConfirm, onCancel, title, message }) {
+  if (!isOpen) return null;
+  return (
+    <div className="modal-overlay">
+      <div className="modal-container">
+        <h3>{title}</h3>
+        <p>{message}</p>
+        <div className="modal-buttons">
+          <button type="button" className="btn btn-secondary" onClick={onCancel}>
+            Annuler
+          </button>
+          <button type="button" className="btn btn-danger" onClick={onConfirm}>
+            Confirmer
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function StudentStage() {
@@ -33,7 +54,7 @@ export default function StudentStage() {
     prenom_etudiant:      "",
     email_contact:        "",
     encadreur:            "",   // encadrant pédagogique (faculté)
-    encadrant_entreprise: "",   // encadrant entreprise (nouveau)
+    encadrant_entreprise: "",   // encadrant entreprise
     societe:              "",
     sujet:                "",
     description:          "",
@@ -48,6 +69,11 @@ export default function StudentStage() {
   const [soutenance,      setSoutenance]      = useState(null);
   const [initialLoading,  setInitialLoading]  = useState(true);
   const [aDejaSoumis,     setADejaSoumis]     = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false); // 👈 État pour la modale
+
+  // États pour la liste des membres du jury
+  const [juryMembers,     setJuryMembers]     = useState([]);
+  const [loadingJury,     setLoadingJury]     = useState(true);
 
   const isTerminee = soutenance && soutenance.statut === "terminee";
 
@@ -63,24 +89,30 @@ export default function StudentStage() {
     }
   }, [user]);
 
-  // Chargement initial
+  // Chargement initial : soumissions, soutenance, et membres du jury
   useEffect(() => {
     const fetchData = async () => {
       try {
         setInitialLoading(true);
+        setLoadingJury(true);
+        
         const dejaSoumisRes = await api.get("/etudiant/a-deja-soumis");
         if (dejaSoumisRes.data.dejaSoumis) setADejaSoumis(true);
 
-        const [soumissionsRes, soutenanceRes] = await Promise.all([
+        const [soumissionsRes, soutenanceRes, juryRes] = await Promise.all([
           api.get("/etudiant/stage/soumissions").catch(() => ({ data: [] })),
           api.get("/etudiant/soutenance").catch(() => ({ data: null })),
+          api.get("/etudiant/jury/membres").catch(() => ({ data: [] }))
         ]);
+        
         setSoumissions(soumissionsRes.data || []);
         setSoutenance(soutenanceRes.data);
+        setJuryMembers(juryRes.data || []);
       } catch {
         setError("Erreur de chargement des données");
       } finally {
         setInitialLoading(false);
+        setLoadingJury(false);
       }
     };
     fetchData();
@@ -116,7 +148,6 @@ export default function StudentStage() {
 
     setFichiers(prev => [...prev, ...selected]);
     setError("");
-    // clear fichiers error
     setFieldErrors(prev => { const n = {...prev}; delete n.fichiers; return n; });
     e.target.value = '';
   };
@@ -132,16 +163,27 @@ export default function StudentStage() {
     return (b / (1024 * 1024)).toFixed(1) + ' Mo';
   };
 
-  // ── Soumission ──────────────────────────────────────────────────────────────
-  const handleSubmit = async (e) => {
+  // ── Gestion de la soumission avec modale ────────────────────────────────────
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (aDejaSoumis) return;
 
     const errs = validate();
-    if (Object.keys(errs).length) { setFieldErrors(errs); return; }
+    if (Object.keys(errs).length) {
+      setFieldErrors(errs);
+      return;
+    }
     setFieldErrors({});
+    // Afficher la modale de confirmation
+    setShowConfirmModal(true);
+  };
 
-    setMsg(""); setError(""); setLoading(true);
+  // Fonction appelée si l'utilisateur confirme
+  const confirmSubmit = async () => {
+    setShowConfirmModal(false);
+    setMsg("");
+    setError("");
+    setLoading(true);
     try {
       const fd = new FormData();
       Object.entries(form).forEach(([k, v]) => fd.append(k, v));
@@ -160,6 +202,10 @@ export default function StudentStage() {
     }
   };
 
+  const cancelSubmit = () => {
+    setShowConfirmModal(false);
+  };
+
   const handleChange = (k, v) => {
     setForm(prev => ({ ...prev, [k]: v }));
     if (fieldErrors[k]) setFieldErrors(prev => { const n = {...prev}; delete n[k]; return n; });
@@ -173,7 +219,6 @@ export default function StudentStage() {
     </div>
   );
 
-  // ── Champs readonly ─────────────────────────────────────────────────────────
   const readonlyStyle = { background: "#f3f0ff", color: "#6b7280" };
 
   return (
@@ -182,14 +227,14 @@ export default function StudentStage() {
         <div>
           <h1> <span className="icon-squircle page-title-icon" aria-hidden>
                 <FileText size={22} />
-              </span>{" "}Formulaire de stage</h1>
-          <p>Une seule soumission est autorisé.Vérifiez soigneusement avant de soumettre.</p>
+              </span> Formulaire de stage</h1>
+          <p>Une seule soumission est autorisée. Vérifiez soigneusement avant de soumettre.</p>
         </div>
       </div>
 
       <div className="page-content">
-        {msg   && <div className="alert alert-success">✅ {msg}</div>}
-        {error && <div className="alert alert-danger">⚠️ {error}</div>}
+        {msg   && <div className="alert alert-success"><CheckCircle size={14} /> {msg}</div>}
+        {error && <div className="alert alert-danger"><AlertCircle size={14} /> {error}</div>}
 
         {isTerminee ? (
           <div className="card" style={{ textAlign: "center", padding: 32 }}>
@@ -203,7 +248,7 @@ export default function StudentStage() {
 
             <form onSubmit={handleSubmit} noValidate>
 
-              {/* ── Infos personnelles (readonly) ── */}
+              {/* Infos personnelles (readonly) */}
               <div className="sf-section-label">Informations personnelles</div>
               <div className="sf-grid">
                 <Field label="Nom">
@@ -217,25 +262,33 @@ export default function StudentStage() {
                 </Field>
               </div>
 
-              {/* ── Encadrants ── */}
+              {/* Encadrants */}
               <div className="sf-section-label" style={{ marginTop: 24 }}>
                 Encadrants
               </div>
               <div className="sf-grid">
-                {/* Encadrant pédagogique */}
+                {/* Encadrant pédagogique → Liste déroulante */}
                 <Field
                   label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><GraduationCap size={14} color="#534AB7" /> Encadrant pédagogique <span style={{ fontSize: 11, color: '#7F77DD', fontWeight: 400 }}>(faculté)</span></span>}
-                  hint={<>⚠️ Si vous n'avez pas d'encadrant pédagogique, soumettez une réclamation depuis la page <Link to="/student/reclamations" style={{ color: "#7c3aed", textDecoration: "underline" }}>Réclamations</Link></>}
+                  hint={<>⚠️ Si aucun encadrant n’est listé, soumettez une réclamation depuis la page <Link to="/student/reclamations" style={{ color: "#7c3aed", textDecoration: "underline" }}>Réclamations</Link></>}
                 >
-                  <input
+                  <select
                     className="form-control"
-                    placeholder="Nom de votre encadrant pédagogique (si vous en avez un)"
                     value={form.encadreur}
                     onChange={e => handleChange('encadreur', e.target.value)}
-                  />
+                    disabled={aDejaSoumis || loadingJury}
+                  >
+                    <option value="">-- Aucun encadrant pédagogique --</option>
+                    {juryMembers.map(member => (
+                      <option key={member.id} value={`${member.nom} ${member.prenom}`}>
+                        {member.nom} {member.prenom}
+                      </option>
+                    ))}
+                  </select>
+                  {loadingJury && <div className="sf-hint">Chargement des membres du jury...</div>}
                 </Field>
 
-                {/* Encadrant entreprise — NOUVEAU, obligatoire */}
+                {/* Encadrant entreprise — obligatoire */}
                 <Field
                   label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Building2 size={14} color="#534AB7" /> Encadrant entreprise <span style={{ fontSize: 11, color: '#7F77DD', fontWeight: 400 }}>(société)</span></span>}
                   required
@@ -246,11 +299,12 @@ export default function StudentStage() {
                     placeholder="Nom de votre encadrant en entreprise"
                     value={form.encadrant_entreprise}
                     onChange={e => handleChange('encadrant_entreprise', e.target.value)}
+                    disabled={aDejaSoumis}
                   />
                 </Field>
               </div>
 
-              {/* ── Stage ── */}
+              {/* Stage */}
               <div className="sf-section-label" style={{ marginTop: 24 }}>Informations du stage</div>
               <div className="sf-grid">
                 <Field label="Société" required error={fieldErrors.societe}>
@@ -259,6 +313,7 @@ export default function StudentStage() {
                     placeholder="Nom de la société"
                     value={form.societe}
                     onChange={e => handleChange('societe', e.target.value)}
+                    disabled={aDejaSoumis}
                   />
                 </Field>
                 <Field label="Sujet" required error={fieldErrors.sujet}>
@@ -267,11 +322,12 @@ export default function StudentStage() {
                     placeholder="Sujet de votre stage"
                     value={form.sujet}
                     onChange={e => handleChange('sujet', e.target.value)}
+                    disabled={aDejaSoumis}
                   />
                 </Field>
               </div>
 
-              {/* ── Description — obligatoire ── */}
+              {/* Description */}
               <Field label="Description du projet" required error={fieldErrors.description}>
                 <textarea
                   className={`form-control ${fieldErrors.description ? 'sf-input-error' : ''}`}
@@ -279,10 +335,11 @@ export default function StudentStage() {
                   value={form.description}
                   onChange={e => handleChange('description', e.target.value)}
                   rows={5}
+                  disabled={aDejaSoumis}
                 />
               </Field>
 
-              {/* ── Pièces jointes — obligatoires ── */}
+              {/* Pièces jointes */}
               <Field
                 label={`Pièces jointes (PDF, Word) — ${fichiers.length} fichier(s) sélectionné(s)`}
                 required
@@ -298,6 +355,7 @@ export default function StudentStage() {
                     onChange={handleFileChange}
                     style={{ display: "none" }}
                     id="files-upload" multiple
+                    disabled={aDejaSoumis}
                   />
                   <span style={{ color: "#7c3aed", fontWeight: 600, cursor: "pointer" }}>
                     Cliquez pour sélectionner des fichiers
@@ -338,7 +396,7 @@ export default function StudentStage() {
           </div>
         )}
 
-        {/* ── Ma soumission ── */}
+        {/* Ma soumission */}
         {soumissions.length > 0 && (
           <div className="card">
             <h3 style={{ marginBottom: 16, fontWeight: 700 }}>Ma soumission</h3>
@@ -363,7 +421,12 @@ export default function StudentStage() {
                       <tr key={s.id}>
                         <td>{s.sujet}</td>
                         <td>{s.societe}</td>
-                        <td>{s.encadreur?.trim() || <span style={{opacity:0.4}}>—</span>}</td>
+                        <td>
+                          {s.encadreur?.trim() 
+                            ? s.encadreur 
+                            : <span style={{ opacity: 0.6, fontStyle: 'italic' }}>En attente d'attribution</span>
+                          }
+                        </td>
                         <td>{s.encadrant_entreprise?.trim() || <span style={{opacity:0.4}}>—</span>}</td>
                         <td>
                           {files.length > 0 ? (
@@ -393,6 +456,15 @@ export default function StudentStage() {
           </div>
         )}
       </div>
+
+      {/* Modale de confirmation */}
+      <ConfirmModal
+        isOpen={showConfirmModal}
+        onConfirm={confirmSubmit}
+        onCancel={cancelSubmit}
+        title="Confirmation de soumission"
+        message="⚠️ Vous ne pourrez soumettre qu'une seule fois. Voulez-vous vraiment envoyer votre dossier de stage ?"
+      />
 
       <style>{`
         /* ── Section labels ── */
@@ -503,6 +575,53 @@ export default function StudentStage() {
           transition: color 0.15s, background 0.15s;
         }
         .sf-file-remove:hover { color: #ef4444; background: #fff5f5; }
+
+        /* ── Modale ── */
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+        }
+        .modal-container {
+          background: white;
+          border-radius: 16px;
+          padding: 24px;
+          max-width: 400px;
+          width: 90%;
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        .modal-container h3 {
+          margin-top: 0;
+          margin-bottom: 12px;
+          font-weight: 700;
+        }
+        .modal-buttons {
+          display: flex;
+          justify-content: flex-end;
+          gap: 12px;
+          margin-top: 24px;
+        }
+        .btn-danger {
+          background: #ef4444;
+          color: white;
+        }
+        .btn-danger:hover {
+          background: #dc2626;
+        }
+        .btn-secondary {
+          background: #e5e7eb;
+          color: #1f2937;
+        }
+        .btn-secondary:hover {
+          background: #d1d5db;
+        }
       `}</style>
     </div>
   );

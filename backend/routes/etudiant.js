@@ -14,5 +14,6 @@ router.get("/documents", ctrl.getDocuments);
 router.post("/demander-encadreur", ctrl.demanderEncadreur);
 router.get("/statut-encadreur", ctrl.verifierStatutEncadreur);
 router.get("/a-deja-soumis", ctrl.aDejaSoumis); // ← NOUVEAU
-
+// Ajoutez cette ligne après les autres routes GET
+router.get("/jury/membres", ctrl.getJuryMembers);
 module.exports = router;

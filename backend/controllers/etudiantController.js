@@ -241,3 +241,17 @@ exports.aDejaSoumis = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+exports.getJuryMembers = async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT id, nom, prenom
+      FROM users
+      WHERE role = 'jury'
+      ORDER BY nom, prenom
+    `);
+    res.json(rows);
+  } catch (err) {
+    console.error("ERREUR getJuryMembers:", err);
+    res.status(500).json({ message: err.message });
+  }
+};

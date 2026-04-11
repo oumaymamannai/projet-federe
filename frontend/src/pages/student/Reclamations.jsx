@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import api from "../../services/api";
-import { Send, MessageCircle, Upload, X, Clock, CheckCircle, AlertCircle, FileText, Calendar, Lock, ChevronDown } from "lucide-react";
+import { Send, MessageCircle, Upload, X, Clock, CheckCircle, AlertCircle, FileText, Calendar, Lock, ChevronDown , Pen } from "lucide-react";
 
 /* ─────────────────────────────────────────────
    CustomSelect : dropdown en position:fixed
@@ -279,7 +279,7 @@ export default function StudentReclamations() {
             ) : (
               <div className="card">
                 <h3 style={{ marginBottom: 20, fontWeight: 700, fontSize: 16, display: "flex", alignItems: "center", gap: 8, paddingBottom: 14, borderBottom: "1px solid #F3F4F6" }}>
-                  ✏️ Nouvelle réclamation
+                  <Pen size={16} /> Nouvelle réclamation
                 </h3>
 
                 <form onSubmit={handleSubmit}>
