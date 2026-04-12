@@ -60,14 +60,26 @@ export default function StudentDashboard() {
         setDocs(d.data);
         setSoumissions(soum.data);
         setReclamations(recl.data);
+        
+        // 🔴 SOLUTION : Vérifier dans localStorage UNIQUEMENT s'il y a des documents
+        if (user?.id) {
+          const hasDocuments = d.data && d.data.length > 0;
+          const consultedKey = `documents_consulted_${user.id}`;
+          const storedConsulted = localStorage.getItem(consultedKey);
+          
+          if (!hasDocuments) {
+            // Si aucun document n'existe dans la BD, forcer à false
+            setDocumentsConsulted(false);
+            localStorage.removeItem(consultedKey);
+          } else if (storedConsulted === 'true') {
+            // Sinon, garder la valeur stockée
+            setDocumentsConsulted(true);
+          } else {
+            setDocumentsConsulted(false);
+          }
+        }
       })
       .finally(() => setLoading(false));
-    
-    // Vérifier si l'étudiant a consulté des documents (par ID utilisateur)
-    if (user?.id) {
-      const consulted = localStorage.getItem(`documents_consulted_${user.id}`);
-      setDocumentsConsulted(consulted === 'true');
-    }
   }, [user?.id]);
 
   const countdown = soutenance?.date_soutenance ? getCountdownStatus(soutenance.date_soutenance) : null;

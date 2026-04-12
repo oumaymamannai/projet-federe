@@ -15,9 +15,12 @@ export default function StudentDocuments() {
       .finally(() => setLoading(false));
   }, []);
 
+  // 🔴 MODIFICATION : Ajouter un événement pour notifier le dashboard
   const handleConsultDocument = () => {
     if (user?.id) {
       localStorage.setItem(`documents_consulted_${user.id}`, 'true');
+      // Déclencher un événement pour que le dashboard se mette à jour
+      window.dispatchEvent(new Event('documentsConsulted'));
     }
   };
 
@@ -59,8 +62,7 @@ export default function StudentDocuments() {
       </div>
 
       <div className="page-content">
-
-        {/* ── Filtres cliquables avec compteurs ── */}
+        {/* Filtres */}
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
           {filters.map(({ key, label }) => (
             <button
@@ -98,7 +100,7 @@ export default function StudentDocuments() {
           ))}
         </div>
 
-        {/* ── Liste des documents filtrés ── */}
+        {/* Liste des documents */}
         {filteredDocs.length === 0 ? (
           <div className="card" style={{ textAlign: "center", padding: 48 }}>
             <FileText size={48} color="#ddd6fe" style={{ margin: "0 auto 16px", display: "block" }} />
@@ -139,8 +141,8 @@ export default function StudentDocuments() {
 
                 <div style={{ display: "flex", gap: "8px" }}>
                   {doc.fichier_path && isPdf(doc.fichier_path) && (
-                    
-                      <a href={`/uploads/${doc.fichier_path}`}
+                    <a
+                      href={`/uploads/${doc.fichier_path}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="btn btn-outline btn-sm"
@@ -151,8 +153,8 @@ export default function StudentDocuments() {
                     </a>
                   )}
                   {doc.fichier_path && (
-                    
-                      <a href={`/uploads/${doc.fichier_path}`}
+                    <a
+                      href={`/uploads/${doc.fichier_path}`}
                       download
                       className="btn btn-outline btn-sm"
                       style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
