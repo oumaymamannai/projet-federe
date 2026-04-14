@@ -5,54 +5,54 @@ import { MessageSquare, CheckCircle, UserPlus, Calendar, FileText, Eye, Mail, Cl
 /* ─────────────────────────────────────────────
    CustomSelect : dropdown en position:fixed
 ───────────────────────────────────────────── */
-function CustomSelect({ value, onChange, options, placeholder = "— Choisir —" }) {
+function CustomSelect({ value, onChange, options, placeholder = "— Choisir —" }) { // Fonction pour afficher le dropdown
   const [open, setOpen] = useState(false);
-  const [dropStyle, setDropStyle] = useState({});
-  const triggerRef = useRef(null);
+  const [dropStyle, setDropStyle] = useState({}); // État pour la position du dropdown
+  const triggerRef = useRef(null); // Référence pour le trigger
 
-  const selectedLabel = options.find(o => String(o.value) === String(value))?.label || placeholder;
+  const selectedLabel = options.find(o => String(o.value) === String(value))?.label || placeholder; // Label sélectionné
 
-  const openDropdown = () => {
-    const rect = triggerRef.current.getBoundingClientRect();
-    const spaceBelow = window.innerHeight - rect.bottom;
-    const dropH = Math.min(options.length * 44 + 8, 220);
+  const openDropdown = () => { // Fonction pour ouvrir le dropdown
+    const rect = triggerRef.current.getBoundingClientRect(); // Récupération de la position du trigger
+    const spaceBelow = window.innerHeight - rect.bottom; // Espace disponible en bas
+    const dropH = Math.min(options.length * 44 + 8, 220); // Hauteur du dropdown
     if (spaceBelow < dropH + 8 && rect.top > dropH) {
-      setDropStyle({ position: "fixed", top: rect.top - dropH - 4, left: rect.left, width: rect.width, zIndex: 99999 });
+      setDropStyle({ position: "fixed", top: rect.top - dropH - 4, left: rect.left, width: rect.width, zIndex: 99999 }); // Position du dropdown
     } else {
-      setDropStyle({ position: "fixed", top: rect.bottom + 4, left: rect.left, width: rect.width, zIndex: 99999 });
+      setDropStyle({ position: "fixed", top: rect.bottom + 4, left: rect.left, width: rect.width, zIndex: 99999 }); // Position du dropdown
     }
-    setOpen(true);
+    setOpen(true); // Ouvre le dropdown
   };
 
   useEffect(() => {
-    if (!open) return;
-    const close = (e) => { if (triggerRef.current && !triggerRef.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", close);
-    document.addEventListener("touchstart", close);
-    return () => { document.removeEventListener("mousedown", close); document.removeEventListener("touchstart", close); };
+    if (!open) return; // Ferme le dropdown
+    const close = (e) => { if (triggerRef.current && !triggerRef.current.contains(e.target)) setOpen(false); }; // Ferme le dropdown
+    document.addEventListener("mousedown", close); // Écouteur d'événement pour fermer le dropdown  
+    document.addEventListener("touchstart", close); // Écouteur d'événement pour fermer le dropdown  
+    return () => { document.removeEventListener("mousedown", close); document.removeEventListener("touchstart", close); }; // Suppression des écouteurs d'événement pour fermer le dropdown  
   }, [open]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) return; // Ferme le dropdown
     const update = () => {
-      if (triggerRef.current) {
-        const rect = triggerRef.current.getBoundingClientRect();
-        setDropStyle(prev => ({ ...prev, top: rect.bottom + 4, left: rect.left, width: rect.width }));
+      if (triggerRef.current) { // Si le trigger existe
+        const rect = triggerRef.current.getBoundingClientRect(); // Récupération de la position du trigger
+        setDropStyle(prev => ({ ...prev, top: rect.bottom + 4, left: rect.left, width: rect.width })); // Position du dropdown
       }
     };
-    window.addEventListener("scroll", update, true);
+    window.addEventListener("scroll", update, true); // Écouteur d'événement pour mettre à jour la position du dropdown  
     return () => window.removeEventListener("scroll", update, true);
-  }, [open]);
+  }, [open]); // Dépendances
 
   return (
     <div ref={triggerRef} style={{ position: "relative" }}>
       <button
         type="button"
-        className="form-control"
+        className="form-control" // Classe pour le bouton
         style={{
           display: "flex", alignItems: "center", justifyContent: "space-between",
-          cursor: "pointer", textAlign: "left", background: "white",
-          color: value ? "var(--text-primary)" : "#a89caf",
+          cursor: "pointer", textAlign: "left", background: "white", // Couleur de fond
+          color: value ? "var(--text-primary)" : "#a89caf", // Couleur du texte
         }}
         onClick={() => open ? setOpen(false) : openDropdown()}
       >
@@ -103,37 +103,37 @@ function CustomSelect({ value, onChange, options, placeholder = "— Choisir —
    Page principale
 ───────────────────────────────────────────── */
 export default function AdminReclamations() {
-  const [reclamations, setReclamations] = useState([]);
-  const [encadreurs, setEncadreurs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [modal, setModal] = useState(null);
-  const [encadreurModal, setEncadreurModal] = useState(null);
-  const [dateModal, setDateModal] = useState(null);
-  const [reponse, setReponse] = useState("");
-  const [selectedEncadreur, setSelectedEncadreur] = useState("");
-  const [nouvelleDate, setNouvelleDate] = useState("");
-  const [nouvelleHeure, setNouvelleHeure] = useState("");
-  const [nouvelleSalle, setNouvelleSalle] = useState("");
-  const [sallesDisponibles, setSallesDisponibles] = useState([]);
-  const [loadingSalles, setLoadingSalles] = useState(false);
-  const [msg, setMsg] = useState("");
-  const [msgType, setMsgType] = useState("success");
-  const [fileModal, setFileModal] = useState(null);
+  const [reclamations, setReclamations] = useState([]); // État pour les réclamations
+  const [encadreurs, setEncadreurs] = useState([]); // État pour les encadrants 
+    const [loading, setLoading] = useState(true); // État pour le chargement
+  const [modal, setModal] = useState(null); // État pour le modal
+  const [encadreurModal, setEncadreurModal] = useState(null); // État pour le modal d'affectation d'encadrant
+  const [dateModal, setDateModal] = useState(null); // État pour le modal de changement de date
+  const [reponse, setReponse] = useState(""); // État pour la réponse
+  const [selectedEncadreur, setSelectedEncadreur] = useState(""); // État pour le sélecteur d'encadrant
+  const [nouvelleDate, setNouvelleDate] = useState(""); // État pour la nouvelle date
+  const [nouvelleHeure, setNouvelleHeure] = useState(""); // État pour la nouvelle heure
+  const [nouvelleSalle, setNouvelleSalle] = useState(""); // État pour la nouvelle salle
+  const [sallesDisponibles, setSallesDisponibles] = useState([]); // État pour les salles disponibles
+  const [loadingSalles, setLoadingSalles] = useState(false); // État pour le chargement des salles disponibles
+  const [msg, setMsg] = useState(""); // État pour le message
+  const [msgType, setMsgType] = useState("success"); // État pour le type de message
+  const [fileModal, setFileModal] = useState(null); // État pour le modal de pièce jointe
 
-  const load = async () => {
+  const load = async () => { // Fonction pour charger les réclamations
     try {
       setLoading(true);
-      const [reclamationsRes, juryRes] = await Promise.all([
-        api.get("/admin/reclamations"),
-        api.get("/admin/jury/members")
+      const [reclamationsRes, juryRes] = await Promise.all([ // Chargement des réclamations et des encadrants
+        api.get("/admin/reclamations"), // Chargement des réclamations
+        api.get("/admin/jury/members") // Chargement des encadrants
       ]);
-      setReclamations(reclamationsRes.data || []);
-      setEncadreurs(juryRes.data || []);
+      setReclamations(reclamationsRes.data || []); // Définition des réclamations
+      setEncadreurs(juryRes.data || []); // Définition des encadrants
     } catch (error) {
-      setMsgType("error");
-      setMsg("Erreur de chargement: " + (error.response?.data?.message || error.message));
+      setMsgType("error"); // Définition du type de message
+      setMsg("Erreur de chargement: " + (error.response?.data?.message || error.message)); // Définition du message
     } finally {
-      setLoading(false);
+      setLoading(false); // Définition du chargement
     }
   };
 
@@ -141,79 +141,79 @@ export default function AdminReclamations() {
 
   const updateSidebarBadge = () => window.dispatchEvent(new Event('reclamations-admin-updated'));
 
-  const getFileUrl = (filePath) => {
-    if (!filePath) return null;
-    let filename = filePath;
-    if (filename.includes('\\') || filename.includes('/')) filename = filename.split(/[\\/]/).pop();
-    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-    return `${baseUrl.replace(/\/api$/, '')}/uploads/reclamations/${filename}`;
+  const getFileUrl = (filePath) => { // Fonction pour obtenir l'URL de la pièce jointe
+    if (!filePath) return null; // Si le chemin de la pièce jointe est null, retourne null
+    let filename = filePath; // Nom du fichier
+    if (filename.includes('\\') || filename.includes('/')) filename = filename.split(/[\\/]/).pop(); // Si le nom du fichier contient un \ ou un /, retire le dernier élément
+    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'; // URL de l'API
+    return `${baseUrl.replace(/\/api$/, '')}/uploads/reclamations/${filename}`; // URL de la pièce jointe
   };
 
-  const isImage = (filename) => {
-    if (!filename) return false;
+  const isImage = (filename) => { // Fonction pour vérifier si le fichier est une image
+    if (!filename) return false; // Si le nom du fichier est null, retourne false
     return ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'].some(ext => filename.toLowerCase().endsWith(ext));
-  };
+  }; // Fonction pour vérifier si le fichier est une image
 
-  const handleRepondre = async () => {
+  const handleRepondre = async () => { // Fonction pour répondre à la réclamation
     try {
-      await api.post("/admin/reclamations/" + modal.id + "/repondre", { reponse });
-      setMsgType("success"); setMsg("Réponse envoyée !");
+      await api.post("/admin/reclamations/" + modal.id + "/repondre", { reponse }); // Envoi de la réponse
+      setMsgType("success"); setMsg("Réponse envoyée !"); // Définition du type de message et du message
       setModal(null); setReponse(""); await load(); updateSidebarBadge();
     } catch (error) {
-      setMsgType("error");
-      setMsg("❌ Erreur: " + (error.response?.data?.message || "Erreur lors de l'envoi"));
+      setMsgType("error"); // Définition du type de message
+      setMsg("❌ Erreur: " + (error.response?.data?.message || "Erreur lors de l'envoi")); // Définition du message
     }
   };
 
-  const handleAffecterEncadreur = async () => {
+  const handleAffecterEncadreur = async () => { // Fonction pour affecter un encadrant
     try {
-      const encadreur = encadreurs.find(e => e.id == selectedEncadreur);
+      const encadreur = encadreurs.find(e => e.id == selectedEncadreur); // Recherche de l'encadrant
       await api.post("/admin/reclamations/" + encadreurModal.id + "/repondre", {
-        reponse: `Encadrant affecté: ${encadreur?.prenom} ${encadreur?.nom}`,
-        affecter_encadreur: true,
-        encadreur_id: selectedEncadreur
+        reponse: `Encadrant affecté: ${encadreur?.prenom} ${encadreur?.nom}`, // Définition de la réponse avec le prénom et le nom de l'encadrant
+        affecter_encadreur: true, // Définition de l'affectation de l'encadrant
+        encadreur_id: selectedEncadreur // Définition de l'ID de l'encadrant
       });
-      setMsgType("success"); setMsg("Encadrant affecté avec succès");
+      setMsgType("success"); setMsg("Encadrant affecté avec succès"); // Définition du type de message et du message
       setEncadreurModal(null); setSelectedEncadreur(""); await load(); updateSidebarBadge();
     } catch (err) {
-      setMsgType("error");
-      setMsg("❌ " + (err.response?.data?.message || "Erreur lors de l'affectation"));
+      setMsgType("error"); // Définition du type de message
+      setMsg("❌ " + (err.response?.data?.message || "Erreur lors de l'affectation")); // Définition du message
     }
   };
 
-  const fetchSallesDisponibles = async (date, heure) => {
+  const fetchSallesDisponibles = async (date, heure) => { // Fonction pour charger les salles disponibles
     if (!date || !heure) { setSallesDisponibles([]); return; }
-    setLoadingSalles(true);
+    setLoadingSalles(true); // Définition du chargement des salles disponibles
     try {
       const res = await api.get(`/admin/salles-disponibles?date=${date}&heure=${heure}`);
-      setSallesDisponibles(res.data); setNouvelleSalle("");
+      setSallesDisponibles(res.data); setNouvelleSalle(""); // Définition des salles disponibles
     } catch {
-      setSallesDisponibles(["Salle A101", "Salle B203", "Amphi 1"]);
-    } finally { setLoadingSalles(false); }
+      setSallesDisponibles(["Salle A101", "Salle B203", "Amphi 1"]); // Définition des salles disponibles
+    } finally { setLoadingSalles(false); } // Définition du chargement des salles disponibles
   };
 
-  const handleDateChange = (val) => { setNouvelleDate(val); fetchSallesDisponibles(val, nouvelleHeure); };
-  const handleHeureChange = (val) => { setNouvelleHeure(val); fetchSallesDisponibles(nouvelleDate, val); };
+  const handleDateChange = (val) => { setNouvelleDate(val); fetchSallesDisponibles(val, nouvelleHeure); }; // Fonction pour changer la date
+  const handleHeureChange = (val) => { setNouvelleHeure(val); fetchSallesDisponibles(nouvelleDate, val); }; // Fonction pour changer l'heure
 
-  const handleChangerDate = async () => {
+  const handleChangerDate = async () => { // Fonction pour changer la date
     try {
-      const dateTime = `${nouvelleDate} ${nouvelleHeure || "09:00"}:00`;
+      const dateTime = `${nouvelleDate} ${nouvelleHeure || "09:00"}:00`; // Définition de la date et de l'heure
       await api.post("/admin/reclamations/" + dateModal.id + "/repondre", {
-        reponse: `Nouvelle date attribuée : ${new Date(dateTime).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })} à ${nouvelleHeure || "09:00"}${nouvelleSalle ? " — Salle : " + nouvelleSalle : ""}`,
-        nouvelle_date: dateTime,
-        nouvelle_salle: nouvelleSalle || null
+        reponse: `Nouvelle date attribuée : ${new Date(dateTime).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })} à ${nouvelleHeure || "09:00"}${nouvelleSalle ? " — Salle : " + nouvelleSalle : ""}`, // Définition de la réponse avec la date et l'heure
+        nouvelle_date: dateTime, // Définition de la nouvelle date
+        nouvelle_salle: nouvelleSalle || null // Définition de la nouvelle salle
       });
-      setMsgType("success"); setMsg("Nouvelle date attribuée !");
+      setMsgType("success"); setMsg("Nouvelle date attribuée !"); // Définition du type de message et du message
       setDateModal(null); setNouvelleDate(""); setNouvelleHeure(""); setNouvelleSalle("");
-      await load(); updateSidebarBadge();
+      await load(); updateSidebarBadge(); // Définition du chargement des réclamations
     } catch (err) {
-      setMsgType("error");
-      setMsg("❌ Erreur : " + (err.response?.data?.message || "Erreur lors du changement de date"));
+      setMsgType("error"); // Définition du type de message
+      setMsg("❌ Erreur : " + (err.response?.data?.message || "Erreur lors du changement de date")); // Définition du message
     }
   };
 
-  const typeLabel = (t) => t === "probleme_date" ? "Problème date" : t === "pas_encadreur" ? "Pas d'encadrant" : "Autre";
-  const pendingCount = reclamations.filter(r => r.statut === "en_attente").length;
+  const typeLabel = (t) => t === "probleme_date" ? "Problème date" : t === "pas_encadreur" ? "Pas d'encadrant" : "Autre"; // Fonction pour afficher le type de réclamation
+  const pendingCount = reclamations.filter(r => r.statut === "en_attente").length; // Nombre de réclamations en attente
 
   // Options heures
   const heuresOptions = [
@@ -274,7 +274,7 @@ export default function AdminReclamations() {
                         {r.type === "probleme_date" && <Calendar size={12} style={{ marginRight: "4px" }} />}
                         {r.type === "pas_encadreur" && <Users size={12} style={{ marginRight: "4px" }} />}
                         {r.type === "autre" && <AlertCircle size={12} style={{ marginRight: "4px" }} />}
-                        {typeLabel(r.type)}
+                        {typeLabel(r.type)} 
                       </span>
                     </td>
                     <td style={{ maxWidth: 200, fontSize: 13 }}>{r.message}</td>
@@ -387,11 +387,11 @@ export default function AdminReclamations() {
               <label className="form-label">Choisir un encadrant</label>
               <CustomSelect
                 value={selectedEncadreur}
-                onChange={setSelectedEncadreur}
+                onChange={setSelectedEncadreur} // Fonction pour changer le sélecteur d'encadrant
                 placeholder="— Choisir —"
                 options={encadreurs
                   .filter(e => e.id !== Number(encadreurModal?.president_id) && e.id !== Number(encadreurModal?.membre3_id))
-                  .map(e => ({ value: e.id, label: `${e.prenom} ${e.nom} (${e.email})` }))}
+                  .map(e => ({ value: e.id, label: `${e.prenom} ${e.nom} (${e.email})` }))} // Définition des encadrants disponibles
               />
             </div>
             <div className="modal-actions">
@@ -421,9 +421,9 @@ export default function AdminReclamations() {
               <label className="form-label">Heure</label>
               <CustomSelect
                 value={nouvelleHeure}
-                onChange={handleHeureChange}
+                onChange={handleHeureChange} // Fonction pour changer l'heure
                 placeholder="— Choisir —"
-                options={heuresOptions}
+                options={heuresOptions} // Définition des heures disponibles
               />
             </div>
             <div className="form-group">
@@ -437,9 +437,9 @@ export default function AdminReclamations() {
               ) : (
                 <CustomSelect
                   value={nouvelleSalle}
-                  onChange={setNouvelleSalle}
+                  onChange={setNouvelleSalle} // Fonction pour changer la salle
                   placeholder="— Choisir une salle —"
-                  options={sallesDisponibles.map(s => ({ value: s, label: s }))}
+                  options={sallesDisponibles.map(s => ({ value: s, label: s }))} // Définition des salles disponibles
                 />
               )}
             </div>

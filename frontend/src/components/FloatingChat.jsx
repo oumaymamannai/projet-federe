@@ -1,80 +1,80 @@
 // src/components/FloatingChat.jsx
-import { useState, useEffect, useRef } from 'react';
-import { MessageSquare, X, Send, Minimize2, Maximize2, Paperclip } from 'lucide-react';
-import api from '../services/api';
-import { useAuth } from '../context/AuthContext';
-import { getMessageFileUrl } from '../services/messageService';
-
+import { useState, useEffect, useRef } from 'react'; // Importation des hooks de React    
+import { MessageSquare, X, Send, Minimize2, Maximize2, Paperclip } from 'lucide-react'; // Importation des icônes de Lucide React
+import api from '../services/api'; // Importation de l'API
+import { useAuth } from '../context/AuthContext'; // Importation du contexte d'authentification
+import { getMessageFileUrl } from '../services/messageService'; // Importation de la fonction pour construire l'URL de la pièce jointe
+import toast from 'react-hot-toast';
 export default function FloatingChat() {
-  const { user } = useAuth();
-  const [isOpen, setIsOpen] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
-  const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [soutenanceId, setSoutenanceId] = useState(null);
-  const [encadreur, setEncadreur] = useState(null);
-  const [nonLus, setNonLus] = useState(0);
-  const [fichier, setFichier] = useState(null);
-  const messagesEndRef = useRef(null);
-  const intervalRef = useRef(null);
+  const { user } = useAuth(); // Récupération de l'utilisateur connecté
+  const [isOpen, setIsOpen] = useState(false); // État pour ouvrir/fermer le chat 
+  const [isMinimized, setIsMinimized] = useState(false); // État pour minimiser/maximiser le chat
+  const [messages, setMessages] = useState([]); // État pour les messages
+  const [newMessage, setNewMessage] = useState(''); // État pour le nouveau message
+  const [loading, setLoading] = useState(false); // État pour le chargement
+  const [soutenanceId, setSoutenanceId] = useState(null); // État pour l'ID de la soutenance
+  const [encadreur, setEncadreur] = useState(null); // État pour l'encadreur
+  const [nonLus, setNonLus] = useState(0); // État pour les messages non lus
+  const [fichier, setFichier] = useState(null); // État pour le fichier
+  const messagesEndRef = useRef(null); // Référence pour le messagesEndRef 
+  const intervalRef = useRef(null); // Référence pour le intervalle
 
   // Récupérer la soutenance et l'encadreur de l'étudiant
   useEffect(() => {
     if (user?.role === 'etudiant') {
-      loadSoutenance();
+      loadSoutenance(); // Charger la soutenance
     }
   }, [user]);
 
   // Vérifier les nouveaux messages toutes les 3 secondes
   useEffect(() => {
     if (soutenanceId) {
-      loadNonLus();
+      loadNonLus(); // Charger les messages non lus
       const interval = setInterval(() => {
-        loadNonLus();
+        loadNonLus(); // Charger les messages non lus toutes les 3 secondes
       }, 3000);
-      return () => clearInterval(interval);
+      return () => clearInterval(interval); // Nettoyer l'intervalle
     }
   }, [soutenanceId]);
 
-  const loadSoutenance = async () => {
+  const loadSoutenance = async () => { // Fonction pour charger la soutenance
     try {
-      const res = await api.get('/etudiant/soutenance');
-      const data = res.data;
+      const res = await api.get('/etudiant/soutenance'); // Récupérer la soutenance
+      const data = res.data; // Récupérer les données de la soutenance
       if (data && data.id) {
-        setSoutenanceId(data.id);
+        setSoutenanceId(data.id); // Définir l'ID de la soutenance
         const encad = data.jurys?.find(j => 
           j.role === 'encadreur' || j.role === 'encadrant'
         );
         if (encad) {
-          setEncadreur(encad);
+          setEncadreur(encad); // Définir l'encadreur
         }
-        await loadMessages();
+        await loadMessages(); // Charger les messages
       }
     } catch (err) {
-      console.error('Erreur chargement soutenance:', err);
+      console.error('Erreur chargement soutenance:', err); // Afficher l'erreur
     }
   };
 
-  const loadNonLus = async () => {
+  const loadNonLus = async () => { // Fonction pour charger les messages non lus
     if (!soutenanceId) return;
     try {
-      const res = await api.get(`/messages/${soutenanceId}/non-lus`);
+      const res = await api.get(`/messages/${soutenanceId}/non-lus`); // Récupérer les messages non lus
       const count = res.data.count || 0;
-      setNonLus(count);
+      setNonLus(count); // Définir le nombre de messages non lus
       console.log('Messages non lus:', count);
     } catch (err) {
-      console.error('Erreur chargement non lus:', err);
+      console.error('Erreur chargement non lus:', err); // Afficher l'erreur
     }
   };
 
   // Charger les messages quand le chat est ouvert
   useEffect(() => {
     if (isOpen && !isMinimized && soutenanceId) {
-      loadMessages();
-      intervalRef.current = setInterval(loadMessages, 3000);
+      loadMessages(); // Charger les messages quand le chat est ouvert
+      intervalRef.current = setInterval(loadMessages, 3000); // Charger les messages toutes les 3 secondes
       return () => {
-        if (intervalRef.current) clearInterval(intervalRef.current);
+        if (intervalRef.current) clearInterval(intervalRef.current); // Nettoyer l'intervalle
       };
     }
   }, [isOpen, isMinimized, soutenanceId]);
@@ -82,136 +82,136 @@ export default function FloatingChat() {
   // Marquer comme lus quand le chat s'ouvre
   useEffect(() => {
     if (isOpen && nonLus > 0) {
-      markAsRead();
+      markAsRead(); // Marquer comme lus quand le chat s'ouvre
     }
   }, [isOpen]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); // Faire défiler les messages
   }, [messages]);
 
-  const loadMessages = async () => {
+  const loadMessages = async () => { // Fonction pour charger les messages  
     if (!soutenanceId) return;
     try {
-      const res = await api.get(`/messages/${soutenanceId}`);
-      setMessages(res.data);
+      const res = await api.get(`/messages/${soutenanceId}`); // Récupérer les messages
+      setMessages(res.data); // Définir les messages
       await loadNonLus();
     } catch (err) {
-      console.error('Erreur chargement messages:', err);
+      console.error('Erreur chargement messages:', err); // Afficher l'erreur
     }
   };
 
-  const markAsRead = async () => {
+  const markAsRead = async () => { // Fonction pour marquer comme lus
     if (!soutenanceId) return;
     try {
-      await api.post(`/messages/${soutenanceId}/read`);
-      setNonLus(0);
+      await api.put(`/messages/${soutenanceId}/read`); // Marquer comme lus
+      setNonLus(0); // Définir le nombre de messages non lus à 0
     } catch (err) {
-      console.error('Erreur marquage lu:', err);
+      console.error('Erreur marquage lu:', err); // Afficher l'erreur
     }
   };
 
-  const sendMessage = async (e) => {
+  const sendMessage = async (e) => { // Fonction pour envoyer un message
     e.preventDefault();
     if ((!newMessage.trim() && !fichier) || !soutenanceId) return;
     
-    setLoading(true);
+    setLoading(true); // Définir le chargement à true pour éviter les doublons
     try {
       if (fichier) {
-        const formData = new FormData();
+        const formData = new FormData(); // Créer un objet FormData pour envoyer le message avec la pièce jointe
         if (newMessage.trim()) formData.append('contenu', newMessage.trim());
-        formData.append('fichier', fichier);
-        await api.post(`/messages/${soutenanceId}`, formData, {
+        formData.append('fichier', fichier); // Ajouter la pièce jointe au formData
+        await api.post(`/messages/${soutenanceId}`, formData, { // Envoyer le message avec la pièce jointe
           headers: { 'Content-Type': 'multipart/form-data' },
         });
       } else {
-        await api.post(`/messages/${soutenanceId}`, { contenu: newMessage.trim() });
+        await api.post(`/messages/${soutenanceId}`, { contenu: newMessage.trim() }); // Envoyer le message sans pièce jointe
       }
-      setNewMessage('');
-      setFichier(null);
-      await loadMessages();
+      setNewMessage(''); // Définir le nouveau message à vide pour éviter les doublons
+      setFichier(null); // Définir le fichier à null
+      await loadMessages(); // Charger les messages
     } catch (err) {
-      console.error('Erreur envoi message:', err);
-      toast.error('Erreur lors de l\'envoi du message');
+      console.error('Erreur envoi message:', err); // Afficher l'erreur
+      toast.error('Erreur lors de l\'envoi du message'); // Afficher l'erreur
     } finally {
-      setLoading(false);
+      setLoading(false); // Définir le chargement à false pour éviter les doublons
     }
   };
 
-  if (!soutenanceId || !encadreur) return null;
+  if (!soutenanceId || !encadreur) return null; // Si il n'y a pas de soutenance ou d'encadreur, retourner null
 
   return (
     <>
-      {!isOpen && (
+      {!isOpen && ( // Si le chat n'est pas ouvert, afficher le bouton pour ouvrir le chat
         <button
-          onClick={() => setIsOpen(true)}
+          onClick={() => setIsOpen(true)} // Ouvrir le chat
           style={{
-            position: 'fixed',
+            position: 'fixed', // Position fixe
             bottom: '24px',
             right: '24px',
-            width: '56px',
-            height: '56px',
+            width: '56px', // Largeur du bouton
+            height: '56px', // Hauteur du bouton
             borderRadius: '50%',
-            background: 'linear-gradient(135deg, #7c3aed, #a78bfa)',
+            background: 'linear-gradient(135deg, #7c3aed, #a78bfa)', // Gradient de couleur
             border: 'none',
-            cursor: 'pointer',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            cursor: 'pointer', // Cursor de pointeur
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)', // Ombre
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             color: 'white',
-            zIndex: 1000
+            zIndex: 1000 // Z-index
           }}
         >
-          <MessageSquare size={24} />
+          <MessageSquare size={24} /> 
           {nonLus > 0 && (
             <span style={{
-              position: 'absolute',
+              position: 'absolute', // Position absolue
               top: '-8px',
               right: '-8px',
-              background: '#ef4444',
-              color: 'white',
-              fontSize: '12px',
+              background: '#ef4444', // Couleur de fond     
+              color: 'white', // Couleur du texte
+              fontSize: '12px', // Taille de la police
               fontWeight: 'bold',
-              minWidth: '20px',
-              height: '20px',
+              minWidth: '20px', // Largeur minimale
+              height: '20px', // Hauteur
               borderRadius: '20px',
-              display: 'flex',
+              display: 'flex', // Afficher en flex
               alignItems: 'center',
-              justifyContent: 'center',
+              justifyContent: 'center', // Centrer le texte
               border: '2px solid white',
               padding: '0 6px',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+              boxShadow: '0 2px 4px rgba(0,0,0,0.2)' // Ombre
             }}>
-              {nonLus > 99 ? '99+' : nonLus}
+              {nonLus > 99 ? '99+' : nonLus} 
             </span>
           )}
         </button>
       )}
 
-      {isOpen && (
+      {isOpen && ( // Si le chat est ouvert, afficher le chat
         <div style={{
-          position: 'fixed',
-          bottom: '24px',
-          right: '24px',
-          width: isMinimized ? '260px' : '380px',
-          height: isMinimized ? 'auto' : '500px',
-          background: 'white',
-          borderRadius: '12px',
+          position: 'fixed', // Position fixe 
+          bottom: '24px', // Bas
+          right: '24px', // Droite
+          width: isMinimized ? '260px' : '380px', // Largeur
+          height: isMinimized ? 'auto' : '500px', // Hauteur
+          background: 'white', // Couleur de fond
+          borderRadius: '12px', // Bords arrondis   
           boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          zIndex: 1001,
+          display: 'flex', // Afficher en flex
+          flexDirection: 'column', // Direction de flex
+          overflow: 'hidden', // Masquer le débordement
+          zIndex: 1001, // Z-index
         }}>
           <div style={{
             padding: '12px 16px',
             background: 'linear-gradient(135deg, #7c3aed, #a78bfa)',
             color: 'white',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            cursor: 'pointer'
+            display: 'flex', // Afficher en flex
+            justifyContent: 'space-between', // Espacer les éléments
+            alignItems: 'center', // Centrer les éléments     
+            cursor: 'pointer', // Cursor de pointeur
           }}
           onClick={() => setIsMinimized(!isMinimized)}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -219,11 +219,11 @@ export default function FloatingChat() {
               <span style={{ fontWeight: 600 }}>{encadreur?.nom} - Encadrant</span>
               {nonLus > 0 && !isMinimized && (
                 <span style={{
-                  background: '#ef4444',
+                  background: '#ef4444', // Couleur de fond
                   padding: '2px 8px',
-                  borderRadius: '20px',
-                  fontSize: '11px',
-                  fontWeight: 'bold'
+                  borderRadius: '20px', // Bords arrondis
+                  fontSize: '11px', // Taille de la police
+                  fontWeight: 'bold', // Gras
                 }}>
                   {nonLus} nouveau{nonLus > 1 ? 'x' : ''}
                 </span>
@@ -239,18 +239,18 @@ export default function FloatingChat() {
             </div>
           </div>
 
-          {!isMinimized && (
+          {!isMinimized && ( // Si le chat n'est pas minimisé, afficher le chat
             <>
               <div style={{
                 flex: 1,
-                overflowY: 'auto',
+                overflowY: 'auto', // Défiler les messages
                 padding: '16px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '12px',
-                background: '#f9fafb'
+                display: 'flex', // Afficher en flex  
+                flexDirection: 'column', // Direction de flex
+                gap: '12px', // Espacer les éléments
+                background: '#f9fafb', // Couleur de fond
               }}>
-                {messages.length === 0 ? (
+                {messages.length === 0 ? ( // Si il n'y a pas de messages, afficher le message "Aucun message"
                   <div style={{ textAlign: 'center', color: '#9ca3af', padding: '40px 20px' }}>
                     <MessageSquare size={32} style={{ marginBottom: '8px', opacity: 0.5 }} />
                     <p>Aucun message</p>

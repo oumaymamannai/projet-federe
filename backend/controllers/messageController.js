@@ -3,6 +3,10 @@ const db = require('../config/db');
 /**
  * Vérifie si l'utilisateur est autorisé à accéder à la messagerie d'une soutenance.
  * Seuls l'étudiant concerné et son encadreur sont autorisés.
+ * * Accès autorisé uniquement pour :
+ *   - L'étudiant concerné par la soutenance
+ *   - L'encadreur direct (encadreur_id dans la table soutenances)
+ *   - L'encadreur via la table soutenance_jury (rôle encadreur/encadrant/supervisor)
  */
 async function verifierAccesEncadreur(soutenanceId, userId) {
   const [rows] = await db.query(`
@@ -14,34 +18,37 @@ async function verifierAccesEncadreur(soutenanceId, userId) {
     FROM soutenances s
     LEFT JOIN soutenance_jury sj 
       ON sj.soutenance_id = s.id 
-      AND sj.jury_id = ?
-      AND LOWER(sj.role) IN ('encadreur', 'encadrant', 'supervisor')
+      AND sj.jury_id = ?     
+      AND LOWER(sj.role) IN ('encadreur', 'encadrant', 'supervisor') 
     WHERE s.id = ?
     LIMIT 1
   `, [userId, soutenanceId]);
 
-  if (!rows.length) return false;
+  if (!rows.length) return false; // Pas d'accès autorisé
 
   const row = rows[0];
-  const estEtudiant = row.etudiant_id === userId;
-  const estEncadreurDirect = row.encadreur_id === userId;
-  const estEncadreurViaJury = row.jury_id === userId;
+  const estEtudiant = row.etudiant_id === userId; // Vérifie si l'étudiant est bien celui concerné
+  const estEncadreurDirect = row.encadreur_id === userId;  // Vérifie si l'encadreur est direct
+  const estEncadreurViaJury = row.jury_id === userId; // Vérifie si l'encadreur est via la table soutenance_jury
 
-  return estEtudiant || estEncadreurDirect || estEncadreurViaJury;
+  return estEtudiant || estEncadreurDirect || estEncadreurViaJury; // Retourne true si l'accès est autorisé
 }
 
 /**
  * Envoyer un message (étudiant ↔ encadreur uniquement)
+ * POST /api/messages/:soutenance_id
+ * Permet à un étudiant ou son encadreur d'envoyer un message.
+ * Supporte : texte seul | fichier seul | texte + fichier
  */
 exports.envoyerMessage = async (req, res) => {
-  const { soutenance_id } = req.params;
+  const { soutenance_id } = req.params; // Récupère l'ID de la soutenance
   let { contenu, fichiers } = req.body;
 
   let pieceJointe = null;
 
-  if (req.file) {
+  if (req.file) { // Si un fichier est uploadé
     pieceJointe = `messages/${req.file.filename}`;
-  } else if (fichiers) {
+  } else if (fichiers) { // Si un fichier est passé dans le body
     try {
       const f = typeof fichiers === 'string' ? JSON.parse(fichiers) : fichiers;
       if (Array.isArray(f) && f.length > 0) {
@@ -83,12 +90,12 @@ exports.envoyerMessage = async (req, res) => {
  * Récupérer les messages d'une soutenance (étudiant ↔ encadreur uniquement)
  */
 exports.getMessages = async (req, res) => {
-  const { soutenance_id } = req.params;
+  const { soutenance_id } = req.params; // Récupère l'ID de la soutenance
 
   try {
-    const autorise = await verifierAccesEncadreur(soutenance_id, req.user.id);
+    const autorise = await verifierAccesEncadreur(soutenance_id, req.user.id); // Vérifie si l'accès est autorisé
     if (!autorise) {
-      return res.status(403).json({ message: 'Accès refusé' });
+      return res.status(403).json({ message: 'Accès refusé' }); // Retourne une erreur si l'accès n'est pas autorisé
     }
 
     const [messages] = await db.query(`
@@ -96,7 +103,7 @@ exports.getMessages = async (req, res) => {
              u.id as user_id, u.nom, u.prenom, u.role
       FROM messages m
       JOIN users u ON u.id = m.expediteur_id
-      WHERE m.soutenance_id = ?
+      WHERE m.soutenance_id = ? 
       ORDER BY m.created_at ASC
     `, [soutenance_id]);
 
