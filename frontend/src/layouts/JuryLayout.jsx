@@ -1,10 +1,10 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
-
+// Définition des éléments de navigation du menu latéral
 const navItems = [
   { to: '/jury', label: 'Mes Soutenances', icon: 'soutenances', end: true },
 ]
-
+// Mapping des chemins vers les titres affichés dans l'en-tête
 export default function JuryLayout() {
   const { pathname } = useLocation()
   const isEval = pathname.includes('/evaluation/')

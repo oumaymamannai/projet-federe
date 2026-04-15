@@ -1,21 +1,17 @@
 import { useState, useEffect } from 'react'
 import { adminAPI } from '../../services/api'
 
-/**
- * PlanificationWizard
- * Remplace les 2 boutons "Définir la période" et "Affecter les dates automatiquement"
- * par un seul bouton "Commencer" qui ouvre un wizard 2 étapes.
- */
+
 export default function PlanificationWizard({ onDone }) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(false)// Ouvre/ferme la modale
   const [step, setStep] = useState(1) // 1 = définir période, 2 = affecter dates
   const [periode, setPeriode] = useState(null)    // période existante chargée depuis le backend
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(false)// Chargement lors de l'enregistrement de la période
   const [affectLoading, setAffectLoading] = useState(false)
-  const [affectDone, setAffectDone] = useState(false)
+  const [affectDone, setAffectDone] = useState(false) // Indique si l'affectation est terminée
   const [msg, setMsg] = useState(null) // { type: 'success'|'error', text }
-  const [affectResult, setAffectResult] = useState(null)
-
+  const [affectResult, setAffectResult] = useState(null)// Résultat détaillé de l'affectation
+  // Formulaire de l'étape 1 : dates et salles
   const [form, setForm] = useState({
     date_debut: '',
     date_fin: '',
@@ -28,8 +24,8 @@ export default function PlanificationWizard({ onDone }) {
     setMsg(null)
     setAffectResult(null)
     setAffectDone(false)
-    setStep(1)
-    fetchPeriode()
+    setStep(1)// On revient toujours à l'étape 1 quand on rouvre
+    fetchPeriode()// Appel API pour récupérer la période enregistrée
   }, [open])
 
   // Supprimer les messages d'erreur/success quand on passe à l'étape 2
@@ -38,7 +34,9 @@ export default function PlanificationWizard({ onDone }) {
       setMsg(null)
     }
   }, [step])
-
+/**
+   * Récupère la période actuelle depuis le backend et met à jour le formulaire.
+   */
   async function fetchPeriode() {
     try {
       const res = await adminAPI.getPeriode?.()
@@ -58,15 +56,19 @@ export default function PlanificationWizard({ onDone }) {
       setPeriode(null)
     }
   }
-
+  // Date minimum pour les champs date (aujourd'hui)
   const today = new Date().toISOString().slice(0, 10)
-
+  /**
+   * Enregistre la période définie par l'utilisateur (étape 1).
+   * Valide les dates, appelle l'API, puis passe à l'étape 2 après succès.
+   */
   async function handleDefinir() {
+    // Validation : les deux dates doivent être renseignées
     if (!form.date_debut || !form.date_fin) {
       setMsg({ type: 'error', text: 'Veuillez renseigner les deux dates.' })
       return
     }
-
+    // Vérification que la date de fin n'est pas antérieure à la date de début
     if (form.date_fin < form.date_debut) {
       setMsg({ type: 'error', text: 'Veuillez entrer une période valide.' })
       return
@@ -75,9 +77,12 @@ export default function PlanificationWizard({ onDone }) {
     setLoading(true)
     setMsg(null)
     try {
+      // Appel API pour sauvegarder la période et les salles
       await adminAPI.setPeriode(form)
       setMsg({ type: 'success', text: 'Période enregistrée avec succès.' })
       await fetchPeriode()
+      // Recharge la période pour mettre à jour l'affichage
+      // Attendre 2 secondes pour laisser lire le message, puis passer à l'étape 2
       setTimeout(() => {
         setMsg(null)
         setStep(2)
@@ -88,7 +93,7 @@ export default function PlanificationWizard({ onDone }) {
       setLoading(false)
     }
   }
-
+//Lance l'affectation automatique des dates (étape 2)
   async function handleAffecter() {
     setAffectLoading(true)
     setAffectDone(false)
@@ -107,7 +112,7 @@ export default function PlanificationWizard({ onDone }) {
       setAffectLoading(false)
     }
   }
-
+//Ajoute ou retire une salle de la liste des salles sélectionnées.
   function handleSalleToggle(salle) {
     setForm(f => {
       const s = f.salles.includes(salle)
@@ -116,7 +121,7 @@ export default function PlanificationWizard({ onDone }) {
       return { ...f, salles: s }
     })
   }
-
+  // Liste de toutes les salles possibles (fixe)
   const allSalles = ['Salle A101', 'Salle B203', 'Amphi 1']
 
   function formatDateForInput(dateStr) {
@@ -216,7 +221,7 @@ export default function PlanificationWizard({ onDone }) {
                 <div
                   key={n}
                   className={`wizard-step ${step === n ? 'active' : ''} ${step > n ? 'done' : ''}`}
-                  onClick={() => n < step && setStep(n)}
+                  onClick={() => n < step && setStep(n)}// Permet de revenir à l'étape précédente
                   style={{ cursor: n < step ? 'pointer' : 'default' }}
                 >
                   <div className="wizard-step-bubble">
@@ -237,6 +242,7 @@ export default function PlanificationWizard({ onDone }) {
               {/* ── Étape 1 : Définir la période ── */}
               {step === 1 && (
                 <div className="wizard-step-content">
+                   {/* Bannière d'information si une période existe déjà */}
                   {periode && (
                     <div className="periode-banner">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}>
@@ -245,7 +251,7 @@ export default function PlanificationWizard({ onDone }) {
                       <span>Période actuelle&nbsp;: <strong>{formatDate(formatDateForInput(periode.date_debut))}</strong> → <strong>{formatDate(formatDateForInput(periode.date_fin))}</strong>. Vous pouvez la modifier ci-dessous.</span>
                     </div>
                   )}
-
+                   {/* Champs date début et date fin */}
                   <div className="wizard-form-row">
                     <div className="wizard-field">
                       <label>Date début</label>
@@ -266,7 +272,7 @@ export default function PlanificationWizard({ onDone }) {
                       />
                     </div>
                   </div>
-
+                  {/* Sélection des salles sous forme de "pills" */}
                   <div className="wizard-field">
                     <label>Salles disponibles</label>
                     <div className="salle-pills">
@@ -282,12 +288,13 @@ export default function PlanificationWizard({ onDone }) {
                       ))}
                     </div>
                   </div>
-
+                  {/* Affichage d'un éventuel message (succès/erreur) */}
                   {msg && <div className={`wizard-msg ${msg.type}`}>{msg.text}</div>}
-
+                  {/* Boutons d'action de l'étape 1 */}
                   <div className="wizard-actions">
                     <button className="btn-secondary" onClick={() => setOpen(false)}>Annuler</button>
                     {periode ? (
+                      // Cas où une période existe déjà : deux options
                       <>
                         <button className="btn-secondary" onClick={handleContinuerSansModifier} style={{ marginRight: '8px' }}>
                           Continuer sans modifier
@@ -295,6 +302,7 @@ export default function PlanificationWizard({ onDone }) {
                             <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
                           </svg>
                         </button>
+                        
                         <button className="btn-primary" onClick={handleDefinir} disabled={loading || !hasDatesChanged()}>
                           {loading ? 'Mise à jour…' : 'Mettre à jour et continuer'}
                           {!loading && (
@@ -305,6 +313,7 @@ export default function PlanificationWizard({ onDone }) {
                         </button>
                       </>
                     ) : (
+                      // Pas de période existante : un seul bouton pour définir
                       <button className="btn-primary" onClick={handleDefinir} disabled={loading}>
                         {loading ? 'Enregistrement…' : 'Définir et continuer'}
                         {!loading && (
@@ -321,6 +330,7 @@ export default function PlanificationWizard({ onDone }) {
               {/* ── Étape 2 : Affecter les dates ── */}
               {step === 2 && (
                 <div className="wizard-step-content">
+                  {/* Récapitulatif de la période et des salles choisies */}
                   <div className="recap-card">
                     <div className="recap-row">
                       <span className="recap-label">Période définie</span>
@@ -335,7 +345,7 @@ export default function PlanificationWizard({ onDone }) {
                   <p className="wizard-info-text">
                     Cette action va assigner automatiquement une date, une heure et une salle à chaque étudiant sans soutenance planifiée, en évitant les weekends et les créneaux déjà occupés.
                   </p>
-
+                  {/* Affichage du résultat de l'affectation (nombre d'étudiants affectés, etc.) */}
                   {affectResult && (
                     <div className="affect-result-grid">
                       <div className="affect-result-card">
@@ -344,9 +354,9 @@ export default function PlanificationWizard({ onDone }) {
                       </div>
                     </div>
                   )}
-
+                  {/* Messages de succès/erreur pour l'affectation */}
                   {msg && <div className={`wizard-msg ${msg.type}`}>{msg.text}</div>}
-
+                  {/* Boutons de l'étape 2 */}
                   <div className="wizard-actions">
                     <button className="btn-secondary" onClick={() => setStep(1)}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

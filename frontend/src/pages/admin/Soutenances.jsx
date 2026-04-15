@@ -4,15 +4,18 @@ import { Send, Users, Search, CalendarDays, CheckCircle, Clock, ChevronDown } fr
 
 /* ─────────────────────────────────────────────
    CustomSelect : dropdown en position:fixed
-   → ne sera jamais coupé par le modal
+   → ne sera jamais coupé par le modal→ Se ferme au clic en dehors
 ───────────────────────────────────────────── */
 function CustomSelect({ value, onChange, options, placeholder = "— Choisir —" }) {
+  // Contrôle l'ouverture/fermeture du dropdown
   const [open, setOpen] = useState(false);
+  // Style CSS calculé dynamiquement pour positionner le dropdown
   const [dropStyle, setDropStyle] = useState({});
+  // Référence sur l'élément déclencheur (bouton), pour lire sa position dans la page
   const triggerRef = useRef(null);
-
+  // Label de l'option sélectionnée, ou placeholder si aucune
   const selectedLabel = options.find(o => String(o.value) === String(value))?.label || placeholder;
-
+  // Ouvre le dropdown et calcule sa position (en dessous ou au-dessus du trigger selon l'espace disponible)
   const openDropdown = () => {
     const rect = triggerRef.current.getBoundingClientRect();
     const spaceBelow = window.innerHeight - rect.bottom;
@@ -28,6 +31,7 @@ function CustomSelect({ value, onChange, options, placeholder = "— Choisir —
         zIndex: 99999,
       });
     } else {
+      // Ouverture vers le bas (cas par défaut)
       setDropStyle({
         position: "fixed",
         top: rect.bottom + 4,
@@ -100,7 +104,7 @@ function CustomSelect({ value, onChange, options, placeholder = "— Choisir —
         />
       </button>
 
-      {/* Dropdown en position:fixed — jamais coupé par le modal */}
+      {/* ── Liste déroulante (rendue en position:fixed pour échapper au modal) ── */}
       {open && (
         <div
           style={{
@@ -140,6 +144,7 @@ function CustomSelect({ value, onChange, options, placeholder = "— Choisir —
                 fontSize: 14,
                 color: "var(--text-primary)",
                 cursor: "pointer",
+                // Mise en avant de l'option actuellement sélectionnée
                 background: String(opt.value) === String(value) ? "var(--purple-100)" : "transparent",
                 fontWeight: String(opt.value) === String(value) ? 600 : 400,
               }}
@@ -155,7 +160,7 @@ function CustomSelect({ value, onChange, options, placeholder = "— Choisir —
               {opt.label}
             </div>
           ))}
-
+          {/* Message affiché si la liste est vide */}
           {options.length === 0 && (
             <div style={{ padding: "10px 14px", fontSize: 13, color: "#9ca3af" }}>
               Aucune option disponible
@@ -171,15 +176,16 @@ function CustomSelect({ value, onChange, options, placeholder = "— Choisir —
    Page principale
 ───────────────────────────────────────────── */
 export default function AdminSoutenances() {
-  const [soutenances, setSoutenances] = useState([]);
-  const [jurys, setJurys] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [assignModal, setAssignModal] = useState(null);
+  const [soutenances, setSoutenances] = useState([]);// Liste de toutes les soutenances
+  const [jurys, setJurys] = useState([]);// Liste des membres de jury disponibles
+  const [loading, setLoading] = useState(true);// Indicateur de chargement initial
+  const [assignModal, setAssignModal] = useState(null);// Soutenance en cours d'affectation (null = modal fermé)
   const [assignForm, setAssignForm] = useState({ encadreur_id: "", president_id: "", membre3_id: "" });
   const [msg, setMsg] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [successModal, setSuccessModal] = useState(null);
-
+// load : charge en parallèle les soutenances et les membres jury
+    // depuis l'API, puis met à jour les états correspondants.
   const load = () => Promise.all([api.get("/admin/soutenances"), api.get("/admin/jury/members")])
     .then(([s, j]) => {
       setSoutenances(s.data);
@@ -188,11 +194,11 @@ export default function AdminSoutenances() {
     .finally(() => setLoading(false));
 
   useEffect(() => { load(); }, []);
-
+    // filteredSoutenances : liste des soutenances filtrée selon la requête de recherche (searchQuery)
   const filteredSoutenances = soutenances.filter(s =>
     s.etudiant_nom?.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
+  // handleAssign : gère la soumission du formulaire d'affectation du jury
   const handleAssign = async () => {
     const president_id = assignForm.president_id ? String(assignForm.president_id) : "";
     const membre3_id = assignForm.membre3_id ? String(assignForm.membre3_id) : "";
@@ -215,27 +221,28 @@ export default function AdminSoutenances() {
       await api.post(`/admin/jury/${assignModal.id}`, payload);
       setMsg("✓ Jury affecté avec succès !");
       setAssignModal(null);
-      load();
+      load();// Recharge les données pour refléter le changement
     } catch (err) {
       console.error("Erreur lors de l'affectation:", err.response?.data);
       setMsg(err.response?.data?.message || "Erreur lors de l'affectation du jury");
     }
   };
-
+  // getFilteredJurys : retourne la liste des membres de jury filtrée en fonction du rôle à assigner (président ou 3ème membre)
   const getFilteredJurys = (role) => {
     const selectedValues = {
       encadreur: parseInt(assignForm.encadreur_id) || null,
       president: parseInt(assignForm.president_id) || null,
       membre3: parseInt(assignForm.membre3_id) || null
     };
+    // Encadrant : celui du formulaire ou celui déjà enregistré sur la soutenance
     const encadreurId = parseInt(assignForm.encadreur_id) || (assignModal?.encadreur_id ? parseInt(assignModal.encadreur_id) : null);
 
     const currentId = selectedValues[role === 'president' ? 'president' : 'membre3'];
     const currentMember = currentId ? jurys.find(j => j.id === currentId) : null;
 
     return jurys.filter(j => {
-      if (j.id === 1) return false;
-      if (encadreurId && j.id === encadreurId) return false;
+      if (j.id === 1) return false;// Exclut l'admin
+      if (encadreurId && j.id === encadreurId) return false;// Exclut l'encadrant
 
       if (role === 'encadreur') {
         return j.id !== selectedValues.president && j.id !== selectedValues.membre3;
@@ -251,7 +258,7 @@ export default function AdminSoutenances() {
       return true;
     });
   };
-
+  // handleSendResult : gère l'envoi des résultats de soutenance par email
   const handleSendResult = async (id) => {
     const soutenance = soutenances.find(s => s.id === id);
 
@@ -272,22 +279,23 @@ export default function AdminSoutenances() {
 
     try {
       await api.post("/admin/resultat/" + id + "/envoyer");
+      // Affiche la modale de succès avec le nom de l'étudiant
       setSuccessModal({ nom: soutenance.etudiant_nom });
     } catch (err) {
       setMsg("❌ Erreur lors de l'envoi de l'email");
     }
   };
-
+  // hasStageDossier : vérifie si la soutenance a un dossier de stage déposé (indispensable pour affecter le jury)
   const hasStageDossier = (s) =>
     s.has_stage_dossier === true || s.has_stage_dossier === 1 || s.has_stage_dossier === "1";
-
+  // canAssignJury : détermine si le bouton d'affectation du jury doit être actif en fonction du statut de la soutenance et de la présence d'un dossier de stage
   const canAssignJury = (s) => {
     if (s.statut === "terminee") return false;
     if (s.statut === "en_attente") return false;
     if (s.statut === "planifiee") return hasStageDossier(s);
     return false;
   };
-
+  // juryButtonTitle : génère le texte d'aide (tooltip) pour le bouton d'affectation du jury en fonction des conditions d'activation
   const juryButtonTitle = (s) => {
     if (s.statut === "terminee") return "Soutenance terminée — jury non modifiable.";
     if (s.statut === "en_attente") return "Planifiez la soutenance (date et statut) avant d'affecter le jury.";
@@ -295,13 +303,13 @@ export default function AdminSoutenances() {
       return "L'étudiant doit d'abord déposer un dossier de stage.";
     return "Affecter ou modifier le jury";
   };
-
+  // statusBadge : retourne un élément JSX représentant le badge de statut de la soutenance, avec une icône et une couleur différente selon le statut
   const statusBadge = (s) => {
     if (s === "planifiee") return <span className="badge badge-warning"><CalendarDays size={14} /> Planifiée</span>;
     if (s === "terminee") return <span className="badge badge-success"><CheckCircle size={14} /> Terminée</span>;
     return <span className="badge badge-danger"><Clock size={14} /> En attente</span>;
   };
-
+  // Affiche un spinner pendant le chargement initial
   if (loading) return <div className="spinner" />;
 
   return (
@@ -379,7 +387,7 @@ export default function AdminSoutenances() {
           </div>
         </div>
       )}
-
+      //EN-TÊTE DE PAGE : titre + barre de recherche
       <div className="page-header">
         <div>
           <h1>
@@ -456,6 +464,7 @@ export default function AdminSoutenances() {
                     </td>
                     <td>
                       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        {/* Bouton d'affectation du jury */}
                         <button
                           type="button"
                           className="btn btn-outline btn-sm"
@@ -464,6 +473,7 @@ export default function AdminSoutenances() {
                           style={!canAssignJury(s) ? { opacity: 0.5, cursor: "not-allowed" } : {}}
                           onClick={() => {
                             if (!canAssignJury(s)) return;
+                            // Pré-remplit le formulaire avec les membres déjà affectés
                             const encFromJurys = s.jurys?.find(j => j.role === 'encadreur')?.id;
                             const encId = s.encadreur_id || encFromJurys || "";
                             const presidentId = s.jurys?.find(j => j.role === 'president')?.id || "";
@@ -475,6 +485,7 @@ export default function AdminSoutenances() {
                         </button>
 
                         {s.statut === "terminee" && (() => {
+                          // Le bouton est actif seulement si jury complet ET toutes remarques renseignées
                           const pret = s.jurys?.length >= 3 &&
                             s.jurys.every(j => j.remarques && String(j.remarques).trim() !== "");
                           return (
@@ -498,6 +509,7 @@ export default function AdminSoutenances() {
                     </td>
                   </tr>
                 ))}
+                {/* Ligne vide si aucune soutenance ne correspond à la recherche */}
                 {filteredSoutenances.length === 0 && (
                   <tr>
                     <td colSpan={8} style={{ textAlign: "center", padding: "40px", color: "#a79caf" }}>
@@ -555,7 +567,7 @@ export default function AdminSoutenances() {
                 }))}
               />
             </div>
-
+            {/* Boutons Annuler / Confirmer */}
             <div className="modal-actions">
               <button className="btn btn-outline" onClick={() => setAssignModal(null)}>Annuler</button>
               <button className="btn btn-primary" onClick={handleAssign}>Confirmer</button>

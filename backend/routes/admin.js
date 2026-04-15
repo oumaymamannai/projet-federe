@@ -1,12 +1,25 @@
 const express = require("express");
 const router = express.Router();
+// Middleware d'authentification et de gestion des fichiers
 const { verifyToken, requireRole } = require("../middleware/auth");
+// Middleware pour gérer les uploads de fichiers (documents de soutenance)
 const upload = require("../middleware/upload");
+// Contrôleur pour les routes admin
 const ctrl = require("../controllers/adminController");
 
+// ============================================================
+// Ce fichier définit les routes accessibles uniquement par les administrateurs
+// MIDDLEWARE GLOBAL — toutes les routes ci-dessous exigent :
+//   1. Un token JWT valide (verifyToken)
+//   2. Le rôle "admin" (requireRole)
+// ============================================================
+
 router.use(verifyToken, requireRole("admin"));
-router.get("/dashboard", ctrl.getDashboard);
+// Routes pour la gestion des soutenances, du jury, des périodes, des réclamations, etc.
+router.get("/dashboard", ctrl.getDashboard);// GET  /api/admin/dashboard
+// Route pour obtenir la liste des soutenances (avec détails du jury, étudiants, etc.)
 router.get("/soutenances", ctrl.getSoutenances);
+// Route pour créer une soutenance (ex: via une soumission validée)
 router.post("/soutenances", ctrl.creerSoutenance);
 router.get("/jury/members", ctrl.getJuryMembers);
 // ========== GESTION DES MEMBRES DU JURY ==========       // GET /api/admin/jury/members
@@ -23,18 +36,17 @@ router.post("/reclamations/:id/repondre", ctrl.repondreReclamation);
 router.post("/resultat/:soutenance_id/envoyer", ctrl.envoyerResultats);
 router.post("/documents", upload.single("fichier"), ctrl.uploadDocument);
 router.get("/documents", ctrl.getDocuments);
-router.patch("/documents/:id/toggle", ctrl.toggleDocumentPublie);
+router.patch("/documents/:id/toggle", ctrl.toggleDocumentPublie);// PATCH /api/admin/documents/:id/toggle — Bascule la visibilité publié/non publié
 router.get("/soumissions", ctrl.getSoumissions);
 router.get("/etudiants", ctrl.getEtudiants);
 
-// ===== NOUVELLES ROUTES À AJOUTER ICI =====
-// 1. Traiter une réclamation et affecter tout le jury (cas sans encadreur)
+//Traiter une réclamation et affecter tout le jury (cas sans encadreur)
 router.post("/reclamations/traiter-avec-jury", ctrl.traiterReclamationAvecJury);
 
-// 2. Compléter un jury (cas avec encadreur figé)
+//Compléter un jury (cas avec encadreur figé)
 router.post("/soutenances/completer-jury", ctrl.completerJury);
 
-// 3. Obtenir la liste des soutenances à compléter
+//Obtenir la liste des soutenances à compléter
 router.get("/soutenances/a-completer", ctrl.getSoutenancesACompleter);
 router.post("/soumissions/:soumission_id/valider", ctrl.validerSoumission);
 router.get("/salles-disponibles", ctrl.getSallesDisponibles);

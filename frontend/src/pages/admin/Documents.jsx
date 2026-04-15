@@ -1,28 +1,29 @@
+// Importe les hooks useState, useEffect et useRef depuis la bibliothèque React
 import { useState, useEffect, useRef } from "react";
+// Importe l'instance Axios configurée pour communiquer avec l'API backend
 import api from "../../services/api";
 import {
   FileText, Upload, Eye, EyeOff, Trash2, Plus, X,
   FileCheck, Lock, Unlock, Calendar, User, File,
   AlertCircle, CheckCircle, FolderOpen,
 } from "lucide-react";
-
-// ── Helpers ──────────────────────────────────────────────────
+// Métadonnées pour les types de documents
 const TYPE_META = {
   general:  { label: "Général",  color: "#6b7280", bg: "#f3f4f6" },
   template: { label: "Template", color: "#5b21b6", bg: "#ede9fe" },
   stage:    { label: "Stage",    color: "#065f46", bg: "#d1fae5" },
 };
-
+// Formate une date au format "12 Mar 2024"
 const fmtDate = (d) =>
   d ? new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }) : "—";
-
+// Formate une taille de fichier (en octets) en une chaîne lisible (ex : "2.3 Mo")
 const fmtSize = (bytes) => {
   if (!bytes) return "";
   if (bytes < 1024) return bytes + " o";
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + " Ko";
   return (bytes / (1024 * 1024)).toFixed(1) + " Mo";
 };
-
+// Couleur principale pour les icônes de fichier
 const FILE_ICON_COLOR = "#7c3aed";
 
 // ── Composant TypeBadge ───────────────────────────────────────
@@ -43,7 +44,7 @@ function TypeBadge({ type }) {
 // ── Composant DocumentCard ────────────────────────────────────
 function DocumentCard({ doc, onToggle, onDelete }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
-
+  // Affiche les informations d'un document avec des actions pour voir, publier/masquer et supprimer
   return (
     <div style={{
       background: "#fff",
@@ -55,6 +56,7 @@ function DocumentCard({ doc, onToggle, onDelete }) {
       gap: 16,
       transition: "box-shadow .15s",
     }}
+    // Effet de survol pour mettre en avant la carte
       onMouseEnter={e => e.currentTarget.style.boxShadow = "0 4px 16px rgba(124,58,237,.08)"}
       onMouseLeave={e => e.currentTarget.style.boxShadow = "none"}
     >
@@ -84,11 +86,13 @@ function DocumentCard({ doc, onToggle, onDelete }) {
               </span>
           }
         </div>
+        // Affiche la description du document si elle existe
         {doc.description && (
           <p style={{ fontSize: 12, color: "#9ca3af", margin: "0 0 6px", lineHeight: 1.4 }}>
             {doc.description}
           </p>
         )}
+        // Affiche la date de création et le nom de l'uploader
         <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
           <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#9ca3af" }}>
             <Calendar size={11} />{fmtDate(doc.created_at)}
@@ -176,7 +180,7 @@ function UploadModal({ onClose, onSuccess }) {
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState("");
   const inputRef = useRef();
-
+  // Gère la sélection d'un fichier, que ce soit via le bouton ou le glisser-déposer
   const handleFile = (file) => {
     if (!file) return;
     const ext = file.name.split(".").pop().toLowerCase();
@@ -196,7 +200,7 @@ function UploadModal({ onClose, onSuccess }) {
     e.preventDefault(); setDragging(false);
     handleFile(e.dataTransfer.files[0]);
   };
-
+  // Gère la soumission du formulaire d'upload en envoyant les données au backend et en affichant les erreurs éventuelles
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!fichier) { setError("Sélectionnez un fichier."); return; }
@@ -262,6 +266,7 @@ function UploadModal({ onClose, onSuccess }) {
               value={form.titre}
               onChange={e => setForm({ ...form, titre: e.target.value })}
               onFocus={e => e.target.style.borderColor = "#7c3aed"}
+              // Remise à la couleur normale de la bord
               onBlur={e => e.target.style.borderColor = "#e5e0f8"}
               required
             />
@@ -309,7 +314,9 @@ function UploadModal({ onClose, onSuccess }) {
             </label>
             <div
               onClick={() => inputRef.current?.click()}
+              // Gère le glisser-déposer pour uploader un fichier
               onDragOver={e => { e.preventDefault(); setDragging(true); }}
+              // Remise à la normale si le fichier est déplacé en dehors de la zone
               onDragLeave={() => setDragging(false)}
               onDrop={handleDrop}
               style={{
@@ -412,12 +419,12 @@ export default function AdminDocuments() {
   const [showModal, setShowModal] = useState(false);
   const [filter, setFilter]     = useState("tous");
   const [toast, setToast]       = useState(null);
-
+  // Affiche un message temporaire (toast) pour informer l'utilisateur d'une action réussie ou d'une erreur
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3500);
   };
-
+  // Charge la liste des documents depuis le backend et gère les erreurs éventuelles
   const loadDocuments = () =>
     api.get("/admin/documents")
       .then(r => setDocs(r.data))
@@ -425,7 +432,7 @@ export default function AdminDocuments() {
       .finally(() => setLoading(false));
 
   useEffect(() => { loadDocuments(); }, []);
-
+// Gère le toggle de visibilité d'un document 
   const handleToggle = async (id) => {
     try {
       await api.patch(`/admin/documents/${id}/toggle`);
@@ -433,7 +440,7 @@ export default function AdminDocuments() {
       showToast("Visibilité mise à jour");
     } catch { showToast("Erreur lors de la modification", "error"); }
   };
-
+// Gère la suppression d'un document en affichant un message personnalisé avec le nom du document supprimé
 const handleDelete = async (id) => {
   // Récupérer le document avant suppression pour avoir son titre
   const docToDelete = docs.find(doc => doc.id === id);

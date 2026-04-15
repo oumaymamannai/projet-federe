@@ -5,13 +5,14 @@ import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Toolti
 import PlanificationWizard from './PlanificationWizard'
 import { 
   Calendar, Clock, CheckCircle, Clock3,
-  TrendingUp, AlertCircle, FileText, Award, Trophy, Medal, Star, Users,
-  LayoutDashboard
+  TrendingUp, AlertCircle, FileText, Award, Trophy, Medal, Star, Users
 } from 'lucide-react'
-
+// Enregistrement des composants Chart.js nécessaires au rendu du graphique en barres
+// (obligatoire avec Chart.js v3+ qui est "tree-shakable" : on n'importe que ce qu'on utilise)
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
-// ── Initiales depuis un nom complet ─────────────────────────────────────────
+// Génère les initiales d'un nom complet (ex: "Jean Dupont" → "JD")
+// Fallback sur les 2 premiers caractères si le nom est sur un seul mot
 function initiales(nom) {
   if (!nom) return '?'
   const parts = nom.trim().split(' ')
@@ -24,14 +25,15 @@ function initiales(nom) {
 const AVATAR_COLORS = ['#46215c', '#643981', '#8860b2', '#b690d6', '#46215c', '#643981']
 function avatarColor(id) { return AVATAR_COLORS[id % AVATAR_COLORS.length] }
 
-// ── Étiquette de rôle ────────────────────────────────────────────────────────
+// Mapping des rôles jury vers leurs libellés courts et couleurs d'affichage
 const ROLE_LABELS = {
   encadreur: { label: 'Enc.', color: '#ad77dd', bg: '#f5edfe' },
   president: { label: 'Prés.', color: '#864ab7', bg: '#f2e6ff' },
   membre:    { label: 'Mbr.', color: '#c5a9ec', bg: '#f7f2fe' },
 }
 
-// ── Mention depuis note ──────────────────────────────────────────────────────
+// Convertit une note numérique en mention textuelle
+// Retourne '—' si la note est absente (soutenance non encore notée)
 function getMention(note) {
   if (note == null) return '—'
   if (note >= 16) return 'Très bien'
@@ -42,12 +44,13 @@ function getMention(note) {
 }
 
 // ── Top performer card ───────────────────────────────────────────────────────
+//rank    {number}  — indice 0/1/2 → détermine l'icône et la couleur
 function TopCard({ rank, student }) {
   const icons    = [Trophy, Medal, Star]
   const colors   = ['#F59E0B', '#a494b8', '#C084FC']
   const bgColors = ['#FEF3C7', '#F1F5F9', '#FAF5FF']
   const Icon     = icons[rank]
-
+  // État vide : le rang existe mais aucun étudiant n'a de note
   if (!student) return (
     <div className="top-card top-card--empty">
       <div className="top-rank-icon" style={{ color: colors[rank], background: bgColors[rank] }}><Icon size={18} /></div>
@@ -63,29 +66,38 @@ function TopCard({ rank, student }) {
         <div className="top-name">{student.etudiant}</div>
         <div className="top-mention">{getMention(student.note_finale)}</div>
       </div>
+      {/* note_finale est une chaîne SQL, parseFloat assure le formatage correct */}
       <div className="top-note" style={{ color: colors[rank] }}>{parseFloat(student.note_finale).toFixed(1)}/20</div>
     </div>
   )
 }
-
-// ── Panneau Répartition par jury ─────────────────────────────────────────────
+// ============================================================
+// SOUS-COMPOSANT : JuryPanel
+// Affiche la liste des membres du jury avec leur charge de travail
+// sous forme de barres de progression segmentées par rôle.
+// Props :
+//   juryStats {Array} — tableau d'objets { id, nom, encadreur, president, membre, total }
+// ============================================================
 function JuryPanel({ juryStats }) {
+  // État vide : aucun jury affecté pour l'instant
   if (!juryStats || juryStats.length === 0) return (
     <div className="jury-empty">
       <Users size={32} style={{ opacity: 0.25 }} />
       <p>Aucun jury assigné pour le moment.</p>
     </div>
   )
-
+  // Valeur max utilisée pour normaliser la largeur des barres (évite division par 0)
   const max = Math.max(...juryStats.map(j => j.total), 1)
 
   return (
     <div className="jury-list">
       {juryStats.map((jury) => (
         <div key={jury.id} className="jury-row">
+          {/* Avatar circulaire avec initiales et couleur déterministe */}
           <div className="jury-avatar" style={{ background: avatarColor(jury.id) }}>
             {initiales(jury.nom)}
           </div>
+          {/* Nom + badges de rôles — un badge n'est rendu que si le compte > 0 */}
           <div className="jury-info">
             <div className="jury-name">{jury.nom}</div>
             <div className="jury-roles">
@@ -106,6 +118,8 @@ function JuryPanel({ juryStats }) {
               )}
             </div>
           </div>
+          {/* Barre de progression segmentée : chaque segment représente un rôle,
+              sa largeur est proportionnelle à son nombre par rapport au maximum global */}
           <div className="jury-bar-wrap">
             <div className="jury-bar">
               {jury.encadreur > 0 && (
@@ -119,39 +133,49 @@ function JuryPanel({ juryStats }) {
               )}
             </div>
           </div>
+          {/* Total des interventions toutes missions confondues */}
           <div className="jury-total">{jury.total}</div>
         </div>
       ))}
     </div>
   )
 }
-
+// COMPOSANT PRINCIPAL : AdminDashboard
+// Page d'accueil de l'espace administrateur.
+// Récupère les données agrégées depuis l'API et les présente en :
+//   - 4 cartes principales (totaux soutenances)
+//   - Graphique de distribution des notes (Chart.js)
+//   - Panneau de charge du jury (JuryPanel)
+//   - 4 statistiques secondaires (taux, moyenne, réclamations, docs)
+//   - Podium Top 3 étudiants (TopCard)
 export default function AdminDashboard() {
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(true)
-
+  const [data, setData] = useState(null)// Données renvoyées par GET /api/admin/dashboard
+  const [loading, setLoading] = useState(true) // Affiche le spinner pendant le fetch initial
+  // Fonction extraite pour pouvoir être rappelée après une action
+  // (ex: PlanificationWizard rappelle onDone une fois la planification terminée)
   const fetchData = () =>
     adminAPI.getDashboard()
       .then(res => setData(res.data))
       .finally(() => setLoading(false))
 
   useEffect(() => { fetchData() }, [])
-
+  // Spinner centré affiché tant que la requête n'est pas résolue
   if (loading) return (
     <div className="loading-center">
       <div className="loading-spinner" />
       <span>Chargement du tableau de bord...</span>
     </div>
   )
-
+  // Total des soutenances = somme des trois statuts possibles
   const total = (data?.en_attente || 0) + (data?.planifiees || 0) + (data?.terminees || 0)
+  // Objet contenant les compteurs par tranche de note (peut être vide si aucune note)
   const notesRepartition = data?.notesRepartition || {}
-
+  // Top 3 : on filtre les étudiants sans note, trie par note décroissante, prend les 3 premiers
   const top3 = [...(data?.notes || [])]
     .filter(n => n.note_finale != null)
     .sort((a, b) => b.note_finale - a.note_finale)
     .slice(0, 3)
-
+  // Intervalles de notes avec leur couleur pour le graphique et la légende
   const intervals = [
     { label: '< 10',  count: notesRepartition.moins_10     || 0, color: '#d6b3f4' },
     { label: '10-12', count: notesRepartition.entre_10_12  || 0, color: '#b690d6' },
@@ -159,7 +183,7 @@ export default function AdminDashboard() {
     { label: '14-16', count: notesRepartition.entre_14_16  || 0, color: '#643981' },
     { label: '≥ 16',  count: notesRepartition.plus_16      || 0, color: '#46215c' },
   ]
-
+  // Dataset Chart.js — une barre par tranche, couleur issue du tableau intervals
   const chartData = {
     labels: intervals.map(i => i.label),
     datasets: [{
@@ -169,11 +193,12 @@ export default function AdminDashboard() {
       borderRadius: 8, barPercentage: 0.65, categoryPercentage: 0.8,
     }]
   }
-
+  // Options Chart.js : légende masquée (gérée manuellement), tooltips stylisés,
+  // axes avec titres et grille minimaliste
   const chartOptions = {
     responsive: true, maintainAspectRatio: false,
     plugins: {
-      legend: { display: false },
+      legend: { display: false },// Légende personnalisée dans le card-header
       tooltip: {
         backgroundColor: '#1f2937', titleColor: '#f3f4f6', bodyColor: '#d1d5db',
         padding: 10, cornerRadius: 8,
@@ -183,7 +208,7 @@ export default function AdminDashboard() {
     scales: {
       y: { beginAtZero: true, grid: { color: '#e5e7eb', drawBorder: false },
            title: { display: true, text: "Nombre d'étudiants", color: '#6b7280', font: { size: 12 } },
-           ticks: { stepSize: 1, precision: 0 } },
+           ticks: { stepSize: 1, precision: 0 } },// Entiers uniquement (pas de "2.5 étudiants")
       x: { grid: { display: false },
            title: { display: true, text: 'Tranches de notes', color: '#6b7280', font: { size: 12 } },
            ticks: { font: { size: 12 } } }
@@ -215,9 +240,10 @@ export default function AdminDashboard() {
           </h1>
           <p className="dashboard-subtitle">Vue d'ensemble des soutenances et statistiques</p>
         </div>
+        {/* onDone = fetchData : rafraîchit le dashboard après une planification réussie */}
         <PlanificationWizard onDone={fetchData} />
       </div>
-
+      // Cartes principales
       <div className="cards-grid">
         {mainCards.map((card, i) => {
           const Icon = card.icon
@@ -234,7 +260,7 @@ export default function AdminDashboard() {
           )
         })}
       </div>
-
+      //graphique des notes + charge du jury
       <div className="two-columns">
         <div className="card">
           <div className="card-header">
@@ -255,13 +281,14 @@ export default function AdminDashboard() {
             <Bar data={chartData} options={chartOptions} />
           </div>
         </div>
-
+        //Panneau de charge des membres du jury
         <div className="card">
           <div className="card-header">
             <div className="card-title-wrapper">
               <Users size={18} className="card-icon" />
               <span className="card-title">Charge des membres du jury</span>
             </div>
+            //Légende des rôles en en-tête de carte
             <div className="jury-legend-header">
               {Object.entries(ROLE_LABELS).map(([key, r]) => (
                 <span key={key} className="role-badge" style={{ color: r.color, background: r.bg }}>{r.label}</span>
@@ -273,7 +300,7 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
-
+      //Statistiques secondaires : taux, moyenne, réclamations, documents
       <div className="secondary-cards">
         {secondaryStats.map((stat, i) => {
           const Icon = stat.icon
@@ -291,7 +318,7 @@ export default function AdminDashboard() {
           )
         })}
       </div>
-      
+      // Podium des 3 meilleurs étudiants
       <div className="card">
         <div className="card-header">
           <div className="card-title-wrapper">
@@ -302,11 +329,14 @@ export default function AdminDashboard() {
         </div>
         <div className="card-body">
           {top3.length === 0 ? (
+            //Aucune note enregistrée pour l'instant
             <div className="top-empty">
               <Trophy size={32} style={{ opacity: 0.25 }} />
               <p>Aucun résultat disponible pour le moment.</p>
             </div>
           ) : (
+            // On itère toujours sur [0,1,2] pour afficher les 3 rangs,
+            // même si top3 contient moins de 3 entrées (TopCard gère le cas null)
             <div className="top-list">
               {[0, 1, 2].map(rank => (
                 <TopCard key={rank} rank={rank} student={top3[rank] || null} />

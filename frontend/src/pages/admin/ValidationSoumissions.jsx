@@ -1,27 +1,29 @@
+// Importation des hooks React nécessaires
 import { useState, useEffect, useRef } from "react";
+// Service API pour les appels backend
 import api from "../../services/api";
 import { FileText, CheckCircle, AlertCircle, X, ChevronRight, Building2, User, BookOpen, AlignLeft, Paperclip, Calendar, Eye, Search, Clock } from "lucide-react";
-// ── Drawer de détail ─────────────────────────────────────────────────────────
+// ── Composant Drawer (tiroir latéral) pour afficher les détails d'une soumission ──
 function DetailDrawer({ soumission, onClose, onValider }) {
   const drawerRef = useRef(null);
-
+ // Effet pour fermer le drawer avec la touche Échap
   useEffect(() => {
     const handleKey = (e) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
   }, [onClose]);
-
+  // Si aucune soumission n'est fournie, ne rien afficher
   if (!soumission) return null;
-
+  // Décodage du champ 'fichiers' (stocké sous forme de chaîne JSON dans la base)
   let files = [];
   if (soumission.fichiers) {
     try {
       files = typeof soumission.fichiers === 'string'
-        ? JSON.parse(soumission.fichiers)
-        : soumission.fichiers;
+        ? JSON.parse(soumission.fichiers)// Convertir la chaîne JSON en tableau
+        : soumission.fichiers;//tableau deja
     } catch {}
   }
-
+  // Détermine si la soumission est en attente de validation (statut différent de 'traite')
   const isPending = soumission.statut !== 'traite';
 
   const formatDate = (d) => {
@@ -53,7 +55,7 @@ function DetailDrawer({ soumission, onClose, onValider }) {
           </div>
           <button className="drawer-close" onClick={onClose}><X size={18} /></button>
         </div>
-
+        {/* Corps du drawer : toutes les informations structurées */}
         <div className="drawer-body">
           <div className="drawer-meta-grid">
             <div className="meta-item">
@@ -92,7 +94,7 @@ function DetailDrawer({ soumission, onClose, onValider }) {
               </div>
             </div>
           </div>
-
+              {/* Section description détaillée */}
           <div className="drawer-section">
             <div className="drawer-section-title">
               <AlignLeft size={14} />
@@ -106,7 +108,7 @@ function DetailDrawer({ soumission, onClose, onValider }) {
               <div className="description-empty">Aucune description fournie.</div>
             )}
           </div>
-
+            {/* Section des fichiers joints */}
           {files.length > 0 && (
             <div className="drawer-section">
               <div className="drawer-section-title">
@@ -131,7 +133,7 @@ function DetailDrawer({ soumission, onClose, onValider }) {
             </div>
           )}
         </div>
-
+          //bouton de validation (uniquement si en attente)
         {isPending && (
           <div className="drawer-footer">
             <button
@@ -150,13 +152,13 @@ function DetailDrawer({ soumission, onClose, onValider }) {
 
 // ── Page principale ──────────────────────────────────────────────────────────
 export default function AdminSubmissions() {
-  const [soumissions, setSoumissions]   = useState([]);
-  const [loading, setLoading]           = useState(true);
-  const [selected, setSelected]         = useState(null);
+  const [soumissions, setSoumissions]   = useState([]);// Liste complète des soumissions
+  const [loading, setLoading]           = useState(true);// Indicateur de chargement
+  const [selected, setSelected]         = useState(null);// Soumission sélectionnée pour le drawer
   const [msg, setMsg]                   = useState('');
   const [error, setError]               = useState('');
   const [searchQuery, setSearchQuery]   = useState('');
-
+  // Charge la liste des soumissions depuis l'API
   const loadSoumissions = async () => {
     try {
       const response = await api.get('/admin/soumissions');
@@ -167,26 +169,26 @@ export default function AdminSubmissions() {
       setLoading(false);
     }
   };
-
+  // Effet de montage : charge les soumissions une seule fois
   useEffect(() => { loadSoumissions(); }, []);
-
+  // Valide une soumission (appel API) puis rafraîchit la liste
   const validerSoumission = async (id) => {
     try {
       await api.post(`/admin/soumissions/${id}/valider`);
-      await loadSoumissions();
+      await loadSoumissions();// Recharge pour mettre à jour le statut
       setMsg(' Soumission validée avec succès');
-      window.dispatchEvent(new Event('submissionUpdated'));
+      window.dispatchEvent(new Event('submissionUpdated'));// Notifie d'autres composants (ex: dashboard)
       setTimeout(() => setMsg(''), 4000);
     } catch (err) {
       setError(err.response?.data?.message || 'Erreur lors de la validation');
       setTimeout(() => setError(''), 4000);
     }
   };
-
+  // Filtre les soumissions selon le nom de l'étudiant (recherche insensible à la casse)
   const filteredSoumissions = soumissions.filter(s =>
     s.etudiant_nom?.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
+  // Compte les soumissions en attente (statut différent de 'traite')
   const pendingCount = soumissions.filter(s => s.statut !== 'traite').length;
 
   if (loading) return <div className="spinner" />;
@@ -243,7 +245,7 @@ export default function AdminSubmissions() {
           />
         </div>
       </div>
-
+            {/* Zone des messages temporaires (succès/erreur) */}
       <div className="page-content">
         {msg   && <div className="alert alert-success"><CheckCircle size={16} /> {msg}</div>}
         {error && <div className="alert alert-danger"><AlertCircle size={16} /> {error}</div>}
@@ -301,7 +303,7 @@ export default function AdminSubmissions() {
           </div>
         </div>
       </div>
-
+                {/* Drawer de détail : affiché uniquement si une soumission est sélectionnée */}
       {selected && (
         <DetailDrawer
           soumission={selected}

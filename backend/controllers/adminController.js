@@ -1,3 +1,4 @@
+// Contrôleur admin : gestion des soutenances, jury, réclamations, documents et emails
 const bcrypt = require("bcryptjs");
 const db = require("../config/db");
 const {
@@ -6,7 +7,7 @@ const {
 } = require("../config/email");
 const { DEFAULT_DEV_PASSWORD } = require("../config/defaultPassword");
 const { ensureSoutenanceRowsForEtudiants } = require("../utils/soutenanceHelpers");
-
+// Passe les soutenances planifiées passées en "terminee"
 async function syncSoutenanceStatuts() {
   await db.query(`
     UPDATE soutenances 
@@ -16,7 +17,7 @@ async function syncSoutenanceStatuts() {
       AND date_soutenance < NOW()
   `);
 }
-
+// Vérifie si l'affectation d'un jury est autorisée pour une soutenance donnée
 async function assertJuryAssignmentAllowed(soutenance_id) {
   const [rows] = await db.query(
     `SELECT s.statut,
@@ -54,7 +55,7 @@ async function assertJuryAssignmentAllowed(soutenance_id) {
   }
   return { ok: true };
 }
-
+// Tableau de bord : stats globales, répartition des notes, activité jury
 exports.getDashboard = async (req, res) => {
   try {
     await syncSoutenanceStatuts();
@@ -144,7 +145,7 @@ exports.getDashboard = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
+// Liste toutes les soutenances avec jury et dossier stage
 exports.getSoutenances = async (req, res) => {
   try {
     await syncSoutenanceStatuts();
@@ -184,6 +185,7 @@ exports.getSoutenances = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+// Membres disponibles pour le jury (role jury ou admin non-root)
 exports.getJuryMembers = async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -198,7 +200,7 @@ exports.getJuryMembers = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
+// Affecter le jury complet d'une soutenance
 exports.affecterJury = async (req, res) => {
   const { soutenance_id } = req.params;
   const { encadreur_id, president_id, membre3_id } = req.body;
@@ -236,7 +238,7 @@ exports.affecterJury = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
+// Traite une réclamation ET crée une nouvelle soutenance avec jury complet
 exports.traiterReclamationAvecJury = async (req, res) => {
   const {
     reclamation_id,
@@ -278,7 +280,7 @@ exports.traiterReclamationAvecJury = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
+// Complète le jury d'une soutenance dont l'encadreur est déjà figé
 exports.completerJury = async (req, res) => {
   const { soutenance_id, encadreur_id, president_id, membre3_id } = req.body;
 
@@ -348,7 +350,7 @@ exports.completerJury = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
+// Soutenances avec encadreur figé mais jury incomplet (< 2 membres restants)
 exports.getSoutenancesACompleter = async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -370,7 +372,7 @@ exports.getSoutenancesACompleter = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
+// Définit la période globale des soutenances et les salles disponibles
 exports.setPeriode = async (req, res) => {
   const { date_debut, date_fin, salles } = req.body;
   try {
@@ -402,7 +404,7 @@ exports.getPeriode = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
+// Affecte automatiquement dates et salles aux étudiants sans créneau
 exports.affecterDatesAuto = async (req, res) => {
   try {
     const [[periode]] = await db.query(
@@ -437,6 +439,7 @@ exports.affecterDatesAuto = async (req, res) => {
     let salleRotationIndex = 0;
 
     while (studentIndex < students.length && current <= endDate) {
+      // Ignorer week-ends
       if (current.getDay() === 0 || current.getDay() === 6) {
         current.setDate(current.getDate() + 1);
         continue;
@@ -446,7 +449,7 @@ exports.affecterDatesAuto = async (req, res) => {
       const month = String(current.getMonth() + 1).padStart(2, '0');
       const day = String(current.getDate()).padStart(2, '0');
       const dateStr = `${year}-${month}-${day}`;
-
+      // Vérifier les créneaux déjà pris ce jour
       const [existingForDay] = await db.query(
         `SELECT date_soutenance, salle FROM soutenances 
          WHERE DATE(date_soutenance) = ? 
@@ -493,7 +496,7 @@ exports.affecterDatesAuto = async (req, res) => {
 
         let salleDisponible = null;
         const sallesOccupees = existingSallesByTime[timeSlot] || [];
-
+        // Trouver une salle libre pour ce créneau par rotation
         for (let i = 0; i < salles.length; i++) {
           const salleIndex = (salleRotationIndex + i) % salles.length;
           const salle = salles[salleIndex];
@@ -542,7 +545,7 @@ exports.affecterDatesAuto = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
+// Liste les réclamations avec les jurys associés
 exports.getReclamations = async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -564,7 +567,7 @@ exports.getReclamations = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
+// Répond à une réclamation, optionnellement replanifie ou affecte un encadreur
 exports.repondreReclamation = async (req, res) => {
   const { id } = req.params;
   const { reponse, affecter_encadreur, encadreur_id, nouvelle_date, nouvelle_salle } = req.body;
@@ -635,7 +638,7 @@ exports.repondreReclamation = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
+// Envoie par email les résultats de soutenance à l'étudiant
 exports.envoyerResultats = async (req, res) => {
   const { soutenance_id } = req.params;
   try {
@@ -654,7 +657,7 @@ exports.envoyerResultats = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
+// Upload de documents administratifs (règlement, guide, etc.) avec publication/dépublication
 exports.uploadDocument = async (req, res) => {
   const { titre, description, type, publie } = req.body;
   const fichier_path = req.file ? req.file.filename : null;
@@ -676,7 +679,7 @@ exports.uploadDocument = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
+//lister les documents avec info uploader 
 exports.getDocuments = async (req, res) => {
   try {
     const [rows] = await db.query(
@@ -687,7 +690,7 @@ exports.getDocuments = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
+// Toggle publication d'un document (visible ou non pour les étudiants)
 exports.toggleDocumentPublie = async (req, res) => {
   const { id } = req.params;
   try {
@@ -699,7 +702,7 @@ exports.toggleDocumentPublie = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
+// Liste les soumissions de stage avec le nom de l'étudiant
 exports.getSoumissions = async (req, res) => {
   try {
     const [rows] = await db.query(
@@ -710,7 +713,7 @@ exports.getSoumissions = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
+// Liste les étudiants
 exports.getEtudiants = async (req, res) => {
   try {
     const [rows] = await db.query(
@@ -734,6 +737,7 @@ exports.creerSoutenance = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
 exports.validerSoumission = async (req, res) => {
   const { soumission_id } = req.params;
 
@@ -838,7 +842,7 @@ exports.getSallesDisponibles = async (req, res) => {
 
 const fs = require('fs');
 const path = require('path');
-
+// Supprime un document
 exports.deleteDocument = async (req, res) => {
   const { id } = req.params;
   
@@ -871,7 +875,7 @@ exports.deleteDocument = async (req, res) => {
 };
 
 // ==================== GESTION DES EMAILS DU JURY ====================
-
+// Envoie un email personnalisé à un membre du jury
 exports.sendEmailToMember = async (req, res) => {
   const { memberId, subject, message } = req.body;
   
@@ -933,7 +937,7 @@ exports.sendEmailToMember = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
+// Envoie un email groupé à tous les membres du jury
 exports.sendEmailToAllJury = async (req, res) => {
   const { subject, message } = req.body;
   

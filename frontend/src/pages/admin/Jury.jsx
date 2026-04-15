@@ -1,24 +1,30 @@
 import { useState, useEffect } from "react";
 import api from "../../services/api";
 import { Search, Users } from "lucide-react";
-
+/**
+ * Composant Modal pour envoyer un message à un membre du jury individuel.
+ * @param {Object} member - Les informations du membre destinataire
+ * @param {Function} onClose - Fonction pour fermer la modale
+ */
 function Modal({ member, onClose }) {
+  // État local du formulaire : objet, message, état d'envoi
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
-  const [sent, setSent] = useState(false);
-  const [sending, setSending] = useState(false);
-
+  const [sent, setSent] = useState(false);// Indique si l'envoi est terminé
+  const [sending, setSending] = useState(false);// Indique si l'envoi est en cours
+  // Envoi du message via l'API
   const handleSend = async () => {
-    if (!subject.trim() || !message.trim()) return;
+    if (!subject.trim() || !message.trim()) return;// Validation des champs
     setSending(true);
     try {
+      // Appel POST vers l'endpoint d'envoi individuel
       await api.post("/admin/jury/contact", {
         memberId: member.id,
         subject,
         message
       });
       await new Promise((r) => setTimeout(r, 500));
-      setSent(true);
+      setSent(true);// Affiche l'écran de confirmation
     } catch (error) {
       console.error("Erreur lors de l'envoi:", error);
       toast.error("Erreur lors de l'envoi du message");
@@ -80,6 +86,7 @@ function Modal({ member, onClose }) {
               }}>Fermer</button>
             </div>
           ) : (
+            // Formulaire de saisie du message
             <>
               <div style={{ marginBottom: 16 }}>
                 <label style={{ display: "block", fontSize: 13, fontWeight: 500, color: "#483751", marginBottom: 6 }}>
@@ -120,7 +127,7 @@ function Modal({ member, onClose }) {
                   onBlur={(e) => (e.target.style.borderColor = "#e5e7eb")}
                 />
               </div>
-
+              {/* Modèles rapides : pré-remplissent le message et l'objet */}
               <div style={{ marginBottom: 20 }}>
                 <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em" }}>
                   Modèles rapides
@@ -145,7 +152,7 @@ function Modal({ member, onClose }) {
                   ))}
                 </div>
               </div>
-
+              {/* Boutons Annuler / Envoyer */}
               <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
                 <button onClick={onClose} style={{
                   background: "transparent", border: "1px solid #e5e7eb",
@@ -175,14 +182,17 @@ function Modal({ member, onClose }) {
     </div>
   );
 }
-
+/**
+ * Composant principal pour la gestion des membres du jury (administration).
+ * Affiche la liste, permet la recherche, l'envoi individuel ou groupé.
+ */
 export default function AdminJury() {
   const [juryMembers, setJuryMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
   const [hovered, setHovered] = useState(null);
   const [search, setSearch] = useState("");
-  
+  // États pour l'envoi à tous les membres
   const [allSubject, setAllSubject] = useState("");
   const [allMessage, setAllMessage] = useState("");
   const [allSent, setAllSent] = useState(false);
@@ -215,7 +225,7 @@ export default function AdminJury() {
 
     loadJuryMembers();
   }, []);
-
+  // Envoi d'un message à tous les membres du jury
   const handleSendToAll = async () => {
     if (!allSubject.trim() || !allMessage.trim()) return;
     setAllSending(true);
@@ -234,13 +244,13 @@ export default function AdminJury() {
     }
   };
 
-  // ✅ MODIFICATION : Recherche uniquement par nom et prénom (sans email)
+ // ✅ Filtrage des membres : uniquement par nom ou prénom (l'email n'est pas recherché)
   const filtered = juryMembers.filter(
     (m) =>
       (m.nom?.toLowerCase().includes(search.toLowerCase()) || false) ||
       (m.prenom?.toLowerCase().includes(search.toLowerCase()) || false)
   );
-
+  // Affichage d'un spinner pendant le chargement
   if (loading) {
     return (
       <div style={{ minHeight: "100vh", background: "#f8f7ff", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -277,7 +287,7 @@ export default function AdminJury() {
           </div>
         </div>
       </div>
-
+      {/* Barre de recherche et bouton "Contacter tous" */}
       <div style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
         <div style={{ flex: 1, minWidth: 200, position: "relative" }}>
           <span style={{
@@ -310,7 +320,7 @@ export default function AdminJury() {
           ✉ Contacter tous
         </button>
       </div>
-
+      {/* Tableau des membres */}
       <div style={{ 
         background: "#fff", 
         borderRadius: 14, 
@@ -408,11 +418,11 @@ export default function AdminJury() {
           </tbody>
         </table>
       </div>
-
+      {/* Indicateur du nombre de résultats filtrés */}
       <div style={{ marginTop: 12, fontSize: 13, color: "#a79caf" }}>
         {filtered.length} membre{filtered.length > 1 ? "s" : ""} affiché{filtered.length > 1 ? "s" : ""}
       </div>
-
+      {/* Modale pour un membre individuel (si selected et non "tous") */}
       {selected && !selected.isAll && (
         <Modal member={selected} onClose={() => setSelected(null)} />
       )}
@@ -446,6 +456,7 @@ export default function AdminJury() {
             </div>
             <div style={{ padding: 24 }}>
               {allSent ? (
+                // Écran de confirmation après envoi groupé réussi
                 <div style={{ textAlign: "center", padding: "24px 0" }}>
                   <div style={{
                     width: 56, height: 56, borderRadius: "50%", background: "#e8faf3",
@@ -470,7 +481,9 @@ export default function AdminJury() {
                   }}>Fermer</button>
                 </div>
               ) : (
+                // Formulaire d'envoi groupé
                 <>
+                  {/* Liste des destinataires sous forme de badges */}
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
                     {juryMembers.map((m) => (
                       <div key={m.id} style={{

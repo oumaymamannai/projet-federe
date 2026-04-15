@@ -1,6 +1,6 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
-
+// Définition des éléments de navigation du menu latéral
 const navItems = [
   { to: '/etudiant', label: 'Ma Soutenance', icon: 'home', end: true },
   { to: '/etudiant/formulaire', label: 'Formulaire de Stage', icon: 'formulaire' },
@@ -8,7 +8,7 @@ const navItems = [
   { to: '/etudiant/reclamation', label: 'Réclamations', icon: 'reclamations' },
   { to: '/etudiant/resultats', label: 'Mes Résultats', icon: 'resultats' },
 ]
-
+// Mapping des chemins vers les titres affichés dans l'en-tête
 const titles = {
   '/etudiant': 'Ma Soutenance',
   '/etudiant/formulaire': 'Formulaire de Stage',
@@ -16,7 +16,7 @@ const titles = {
   '/etudiant/reclamation': 'Réclamations',
   '/etudiant/resultats': 'Mes Résultats',
 }
-
+// EtudiantLayout encadre toutes les pages de l’espace étudiant : un menu latéral fixe, une en-tête dynamique (titre + date), et un espace pour afficher la page sélectionnée.
 export default function EtudiantLayout() {
   const { pathname } = useLocation()
   return (

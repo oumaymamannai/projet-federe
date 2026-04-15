@@ -1,20 +1,22 @@
+/*AdminLayout encadre toutes les pages d’administration 
+un menu latéral fixe,
+une en-tête dynamique (titre + date),
+et un espace pour afficher la page sélectionnée.*/
 import { Outlet, useLocation } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
-
+// Définition des éléments de navigation du menu latéral
 const navItems = [
   { to: '/admin', label: 'Tableau de bord', icon: 'dashboard', end: true },
   { to: '/admin/soutenances', label: 'Soutenances', icon: 'soutenances' },
-  { to: '/admin/periode', label: 'Période & Dates', icon: 'periode' },
   { to: '/admin/utilisateurs', label: 'Utilisateurs', icon: 'utilisateurs' },
   { to: '/admin/formulaires', label: 'Formulaires Stage', icon: 'formulaires' },
   { to: '/admin/documents', label: 'Documents', icon: 'documents' },
   { to: '/admin/reclamations', label: 'Réclamations', icon: 'reclamations' },
 ]
-
+// Mapping des chemins vers les titres affichés dans l'en-tête
 const titles = {
   '/admin': 'Tableau de bord',
   '/admin/soutenances': 'Soutenances',
-  '/admin/periode': 'Période & Dates',
   '/admin/utilisateurs': 'Utilisateurs',
   '/admin/formulaires': 'Formulaires Stage',
   '/admin/documents': 'Documents',
