@@ -22,12 +22,12 @@ const studentNav = [ // Définition des éléments de navigation pour l'étudian
   { to: '/student/reclamations', icon: <Bell size={17} />, label: 'Réclamations' },
 ];
 const juryNav = [ // Définition des éléments de navigation pour le jury
-  { to: '/jury/dashboard', icon: <LayoutDashboard size={18} />, label: 'Dashboard' },
+  { to: '/jury/dashboard', icon: <LayoutDashboard size={18} />, label: 'Tableau de bord' },
   { to: '/jury', icon: <Calendar size={18} />, label: 'Planning et Evaluations'},
   { to: '/jury/messages', icon: <MessageSquare size={18} />, label: 'Messages' },
 ];
 const adminNav = [ // Définition des éléments de navigation pour l'administrateur
-  { to: '/admin', icon: <LayoutDashboard size={17} />, label: 'Dashboard' },
+  { to: '/admin', icon: <LayoutDashboard size={17} />, label: 'Tableau de bord' },
   { to: '/admin/soutenances', icon: <Calendar size={17} />, label: 'Soutenances' },
   { to: '/admin/jury', icon: <Users size={17} />, label: 'Jury' },
   { to: '/admin/submissions', icon: <CheckCircle size={17} />, label: 'Soumissions' },
