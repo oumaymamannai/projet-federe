@@ -1,6 +1,9 @@
-const nodemailer = require('nodemailer');
+// email.js — Configuration et envoi d'emails (Nodemailer)
+// Rôle : Envoyer les résultats de soutenance par email aux étudiants
+const nodemailer = require('nodemailer'); // Librairie pour envoyer des emails depuis Node.js
 require('dotenv').config();
 
+// Configuration du transporteur SMTP (connexion au serveur Gmail)
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
   port: process.env.EMAIL_PORT,
@@ -10,19 +13,20 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASS
   }
 });
-
+// Envoi de l'email de résultats
 const sendResultatEmail = async (to, etudiant, soutenance, jurys) => {
+  // Construire le tableau HTML des jurys et leurs remarques
   const juryRows = jurys.map(j => `
     <tr>
       <td style="padding:8px;border:1px solid #ddd;">${j.role}</td>
       <td style="padding:8px;border:1px solid #ddd;">${j.prenom} ${j.nom}</td>
       <td style="padding:8px;border:1px solid #ddd;">${j.remarques ?? '—'}</td>
     </tr>`).join('');
-
+// Envoyer l'email avec le résumé de la soutenance, la note finale et les remarques des jurys
   await transporter.sendMail({
-    from: process.env.EMAIL_FROM,
-    to,
-    subject: `GradFlow — Résultats de votre soutenance`,
+    from: process.env.EMAIL_FROM, // Adresse d'expédition définie dans .env
+    to,// Destinataire (email de l'étudiant)
+    subject: `GradFlow — Résultats de votre soutenance`, // Objet de l'email
     html: `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;">
         <div style="background:#2d1b69;padding:20px;border-radius:8px 8px 0 0;">
@@ -60,7 +64,8 @@ const sendResultatEmail = async (to, etudiant, soutenance, jurys) => {
       </div>`
   });
 };
+// Exporter la fonction d'envoi d'email et le transporteur pour les tests
 module.exports = { 
   sendResultatEmail,
-  transporter  // Ajoutez cette ligne
+  transporter  
 };

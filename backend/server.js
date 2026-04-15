@@ -1,4 +1,6 @@
-const express = require('express');
+// server.js — Point d'entrée principal de l'API Express
+// Rôle : Configurer le serveur, les middlewares, les routes, et démarrer l'écoute
+const express = require('express'); 
 const cors = require('cors');
 const path = require('path');
 const bcrypt = require('bcryptjs');
@@ -9,17 +11,19 @@ require('dotenv').config();
 
 const app = express();
 
-// CORS : autoriser le front Vite (localhost ou 127.0.0.1, tout port)
+// CORS : Permet au frontend de communiquer avec le backend
+// origin: true = accepte toutes les origines 
 app.use(
   cors({
     origin: true,
     credentials: true,
   })
 );
+// Middleware pour parser le JSON et les données URL-encoded
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Créer les dossiers nécessaires s'ils n'existent pas
+// Créer automatiquement les dossiers nécessaires s'ils n'existent pas 
 const createUploadDirectories = () => {
   const dirs = [
     'uploads',
@@ -57,7 +61,7 @@ const ensureMessagesTable = async () => {
         CONSTRAINT messages_expediteur_fk FOREIGN KEY (expediteur_id) REFERENCES users(id) ON DELETE CASCADE
       ) ENGINE=InnoDB;
     `);
-
+// Vérifier si la colonne piece_jointe existe déjà (pour éviter les erreurs d'ALTER TABLE)
     const [[col]] = await db.query(
       `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
        WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'messages' AND COLUMN_NAME = 'piece_jointe'`,
@@ -75,7 +79,8 @@ const ensureMessagesTable = async () => {
 // Appeler la fonction au démarrage
 createUploadDirectories();
 
-// Servir les fichiers statiques avec affichage inline pour PDF/images
+// Servir les fichiers statiques (uploads) avec les bons headers pour l'affichage
+// Permet d'ouvrir les PDF/images dans le navigateur au lieu de les télécharger
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
   setHeaders: (res, filePath) => {
     const ext = path.extname(filePath).toLowerCase();
@@ -83,15 +88,14 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
     // Permettre l'affichage inline pour les fichiers des réclamations
     if (filePath.includes('reclamations')) {
       if (ext === '.pdf') {
-        res.setHeader('Content-Disposition', 'inline');
+        res.setHeader('Content-Disposition', 'inline');   // Afficher dans le navigateur
         res.setHeader('Content-Type', 'application/pdf');
       } else if (['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'].includes(ext)) {
-        res.setHeader('Content-Disposition', 'inline');
+        res.setHeader('Content-Disposition', 'inline');  // Afficher l'image
       } else {
-        res.setHeader('Content-Disposition', 'attachment');
+        res.setHeader('Content-Disposition', 'attachment');  // Télécharger les autres types de fichiers
       }
     } else {
-      // Pour les autres fichiers
       if (ext === '.pdf') {
         res.setHeader('Content-Disposition', 'inline');
       } else if (['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'].includes(ext)) {
@@ -101,8 +105,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
       }
     }
     
-    // Sécurité : empêcher le MIME type sniffing
-    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Content-Type-Options', 'nosniff'); //sécurité
   }
 }));
 
@@ -117,17 +120,16 @@ app.get('/api/reclamations/fichier/:filename', (req, res) => {
     res.status(404).json({ message: 'Fichier non trouvé' });
   }
 });
-
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/etudiant', require('./routes/etudiant'));
+//Routes API (toutes commencent par /api/...)
+app.use('/api/auth', require('./routes/auth'));  //authentification
+app.use('/api/etudiant', require('./routes/etudiant'));  //espace étudiant
 app.use('/api/jury', require('./routes/jury'));
 app.use('/api/admin', require('./routes/admin'));
-app.use('/api/documents', require('./routes/documents'));
-// Après vos autres routes existantes
+app.use('/api/documents', require('./routes/documents')); //gestion des documents (soutenance, etc.)
 app.use('/api/messages', require('./routes/messageRoutes'));
-app.get('/', (req, res) => res.json({ message: 'GradFlow API v1.0' }));
+app.get('/', (req, res) => res.json({ message: 'GradFlow API v1.0' }));// Route de test pour vérifier que le serveur fonctionne
 
-// Middleware de gestion des erreurs
+// Middleware de gestion des erreurs (attrape les erreurs des routes précédentes)
 app.use((err, req, res, next) => {
   console.error('❌ Erreur:', err);
   
@@ -143,8 +145,8 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: err.message || 'Erreur interne du serveur' });
 });
 
-
-/** Réaligne les mots de passe si le dump SQL a d'anciens hash (sinon connexion impossible). Tous les rôles : mot de passe unique (voir config/defaultPassword.js). */
+// Synchronisation des mots de passe pour les comptes existants
+// Permet d'avoir le même mot de passe pour tous les comptes de développement
 async function ensurePasswords() {
   try {
     const [rows] = await db.query("SELECT id, password FROM users WHERE role='admin' LIMIT 1");
@@ -159,11 +161,11 @@ async function ensurePasswords() {
     console.error('⚠️ ensurePasswords:', err.message);
   }
 }
-
+// Démarrage du serveur
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, async () => {
   console.log(`✅ GradFlow API running on port ${PORT}`);
   console.log(`📁 Uploads directory: ${path.join(__dirname, 'uploads')}`);
-  await ensureMessagesTable();
-  await ensurePasswords();
+  await ensureMessagesTable(); // Crée la table messages si besoin
+  await ensurePasswords(); // Synchroniser les mots de passe au démarrage pour que tous les comptes aient le même mdp
 });

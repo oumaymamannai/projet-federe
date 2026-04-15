@@ -1,8 +1,13 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import { Eye, EyeOff, ArrowLeft } from "lucide-react";
+// LoginPage.jsx — Interface de connexion en 2 étapes
+// Étape 1 : l'utilisateur choisit son rôle (Étudiant / Jury / Responsable)
+// Étape 2 : il saisit son email + mot de passe
 
+import { useState } from "react";// Gestion du formulaire de connexion
+import { useNavigate } from "react-router-dom";// Redirige vers le dashboard approprié après connexion
+import { useAuth } from "../context/AuthContext";// Fournit la fonction de connexion login()
+import { Eye, EyeOff, ArrowLeft } from "lucide-react";// Icônes pour le formulaire
+
+//Configuration des 3 rôles disponibles (icône, couleur, label, description)
 const roles = [
   {
     key: "etudiant",
@@ -28,7 +33,7 @@ const roles = [
 ];
 
 export default function LoginPage() {
-  const [selectedRole, setSelectedRole] = useState(null);
+  const [selectedRole, setSelectedRole] = useState(null); // null = affiche les cartes de rôle
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -36,12 +41,13 @@ export default function LoginPage() {
   const [loading, setLoading]   = useState(false);
   const { login } = useAuth();
   const navigate  = useNavigate();
-
+// Fonction de gestion de la soumission du formulaire de connexion
   const handleLogin = async e => {
     e.preventDefault();
     setError(""); setLoading(true);
     try {
       const user = await login(email.trim(), password, selectedRole);
+      // Redirection selon le rôle
       navigate(
         user.role === "admin" ? "/admin"
         : user.role === "jury" ? "/jury/dashboard"
@@ -56,7 +62,7 @@ export default function LoginPage() {
       setError(msg);
     } finally { setLoading(false); }
   };
-
+// Fonction pour revenir à l'étape 1 (choix du rôle) et réinitialiser le formulaire
   const goBack = () => { setSelectedRole(null); setError(""); setEmail(""); setPassword(""); };
 
   return (
@@ -164,7 +170,7 @@ export default function LoginPage() {
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPass(v => !v)}
+                  onClick={() => setShowPass(v => !v)} 
                   aria-label={showPass ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
                   style={{
                     position: 'absolute',
