@@ -86,13 +86,13 @@ function DocumentCard({ doc, onToggle, onDelete }) {
               </span>
           }
         </div>
-        // Affiche la description du document si elle existe
+        {/* Affiche la description du document si elle existe */}
         {doc.description && (
           <p style={{ fontSize: 12, color: "#9ca3af", margin: "0 0 6px", lineHeight: 1.4 }}>
             {doc.description}
           </p>
         )}
-        // Affiche la date de création et le nom de l'uploader
+        {/* Affiche la date de création et le nom de l'uploader */}
         <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
           <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#9ca3af" }}>
             <Calendar size={11} />{fmtDate(doc.created_at)}

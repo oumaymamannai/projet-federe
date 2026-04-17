@@ -387,7 +387,7 @@ export default function AdminSoutenances() {
           </div>
         </div>
       )}
-      //EN-TÊTE DE PAGE : titre + barre de recherche
+      {/* EN-TÊTE DE PAGE : titre + barre de recherche */}
       <div className="page-header">
         <div>
           <h1>

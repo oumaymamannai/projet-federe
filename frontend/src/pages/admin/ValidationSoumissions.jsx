@@ -133,7 +133,7 @@ function DetailDrawer({ soumission, onClose, onValider }) {
             </div>
           )}
         </div>
-          //bouton de validation (uniquement si en attente)
+          {/* bouton de validation (uniquement si en attente) */}
         {isPending && (
           <div className="drawer-footer">
             <button

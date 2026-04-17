@@ -243,7 +243,7 @@ export default function AdminDashboard() {
         {/* onDone = fetchData : rafraîchit le dashboard après une planification réussie */}
         <PlanificationWizard onDone={fetchData} />
       </div>
-      // Cartes principales
+      {/* Cartes principales */}
       <div className="cards-grid">
         {mainCards.map((card, i) => {
           const Icon = card.icon
@@ -260,7 +260,7 @@ export default function AdminDashboard() {
           )
         })}
       </div>
-      //graphique des notes + charge du jury
+      {/* graphique des notes + charge du jury */}
       <div className="two-columns">
         <div className="card">
           <div className="card-header">
@@ -281,14 +281,14 @@ export default function AdminDashboard() {
             <Bar data={chartData} options={chartOptions} />
           </div>
         </div>
-        //Panneau de charge des membres du jury
+        {/* Panneau de charge des membres du jury */}
         <div className="card">
           <div className="card-header">
             <div className="card-title-wrapper">
               <Users size={18} className="card-icon" />
               <span className="card-title">Charge des membres du jury</span>
             </div>
-            //Légende des rôles en en-tête de carte
+            {/* Légende des rôles en en-tête de carte */}
             <div className="jury-legend-header">
               {Object.entries(ROLE_LABELS).map(([key, r]) => (
                 <span key={key} className="role-badge" style={{ color: r.color, background: r.bg }}>{r.label}</span>
@@ -300,7 +300,7 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
-      //Statistiques secondaires : taux, moyenne, réclamations, documents
+      {/* Statistiques secondaires : taux, moyenne, réclamations, documents */}
       <div className="secondary-cards">
         {secondaryStats.map((stat, i) => {
           const Icon = stat.icon
@@ -318,7 +318,7 @@ export default function AdminDashboard() {
           )
         })}
       </div>
-      // Podium des 3 meilleurs étudiants
+      {/* Podium des 3 meilleurs étudiants */}
       <div className="card">
         <div className="card-header">
           <div className="card-title-wrapper">
