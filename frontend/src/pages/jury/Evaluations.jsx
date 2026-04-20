@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import { Save, Calendar, ArrowLeft, ClipboardCheck, HelpCircle, ChevronDown, ChevronUp, CheckCircle } from "lucide-react";
 
 export default function JuryEvaluations() {
   const { soutenanceId } = useParams();
+  const navigate = useNavigate();
   const [soutenances, setSoutenances] = useState([]);
   const [forms, setForms] = useState({});
   const [msgs, setMsgs] = useState({});
@@ -12,6 +13,10 @@ export default function JuryEvaluations() {
   const [loading, setLoading] = useState(true);
   const [showBareme, setShowBareme] = useState({});
   const [criteriaNotes, setCriteriaNotes] = useState({});
+  const [fieldErrors, setFieldErrors] = useState({});
+  
+  // État pour la modale de confirmation
+  const [confirmModal, setConfirmModal] = useState({ show: false, soutenance: null });
 
   useEffect(() => {
     api.get("/jury/soutenances").then(r => {
@@ -31,28 +36,73 @@ export default function JuryEvaluations() {
       });
       setForms(f);
       setCriteriaNotes(c);
+      setFieldErrors({});
     }).finally(() => setLoading(false));
   }, [soutenanceId]);
 
-  const handleSave = async (s) => {
+  // Validation des champs avant d'ouvrir la modale
+  const validateBeforeConfirm = (s) => {
     setMsgs(m => ({...m, [s.id]: ""}));
     setErrors(e => ({...e, [s.id]: ""}));
+    setFieldErrors(f => ({...f, [s.id]: {}}));
 
-    // Contrôle de saisie avant envoi
-    if (s.mon_role === "president") {
-      const noteVal = parseFloat(forms[s.id]?.note);
-      if (forms[s.id]?.note !== "" && (isNaN(noteVal) || noteVal < 0 || noteVal > 20)) {
-        setErrors(e => ({...e, [s.id]: "La note doit être comprise entre 0 et 20."}));
-        return;
+    const remarques = forms[s.id]?.remarques?.trim() || "";
+    const isPresident = s.mon_role === "president";
+    let noteVal = null;
+    let hasError = false;
+    const newFieldErrors = {};
+
+    if (remarques === "") {
+      newFieldErrors.remarques = "Champ obligatoire";
+      hasError = true;
+    }
+
+    if (isPresident) {
+      noteVal = forms[s.id]?.note !== "" ? parseFloat(forms[s.id]?.note) : NaN;
+      if (isNaN(noteVal) || noteVal < 0 || noteVal > 20) {
+        newFieldErrors.note = "Champ obligatoire (0-20)";
+        hasError = true;
       }
     }
 
+    if (hasError) {
+      setFieldErrors(f => ({...f, [s.id]: newFieldErrors}));
+      return false;
+    }
+    return true;
+  };
+
+  // Ouvre la modale après validation réussie
+  const handleOpenConfirm = (s) => {
+    if (validateBeforeConfirm(s)) {
+      setConfirmModal({ show: true, soutenance: s });
+    }
+  };
+
+  // Enregistrement effectif et redirection
+  const handleConfirmSave = async () => {
+    const s = confirmModal.soutenance;
+    if (!s) return;
+
+    const remarques = forms[s.id]?.remarques?.trim() || "";
+    const isPresident = s.mon_role === "president";
+    let noteVal = null;
+
+    if (isPresident) {
+      noteVal = parseFloat(forms[s.id]?.note);
+    }
+
     try {
-      const payload = { remarques: forms[s.id]?.remarques };
-      if (s.mon_role === "president") payload.note = parseFloat(forms[s.id]?.note);
+      const payload = { remarques };
+      if (isPresident) payload.note = noteVal;
       await api.post("/jury/evaluer/" + s.id, payload);
-      setMsgs(m => ({...m, [s.id]: "Évaluation enregistrée !"}));
-    } catch (err) { setErrors(e => ({...e, [s.id]: err.response?.data?.message || "Erreur"})); }
+      setConfirmModal({ show: false, soutenance: null });
+      // Redirection vers le planning jury
+      navigate("/jury");
+    } catch (err) {
+      setErrors(e => ({...e, [s.id]: err.response?.data?.message || "Erreur"}));
+      setConfirmModal({ show: false, soutenance: null });
+    }
   };
 
   const toggleBareme = (id) => {
@@ -71,7 +121,6 @@ export default function JuryEvaluations() {
       }
     }));
     
-    // Calculer la note totale
     const coeffs = {
       memoire: 0.3,
       presentation: 0.25,
@@ -132,7 +181,6 @@ export default function JuryEvaluations() {
     return null;
   };
 
-  // Barème indicatif pour le président
   const BaremeIndicatif = ({ soutenanceId }) => {
     const [isOpen, setIsOpen] = useState(showBareme[soutenanceId] || false);
     const totalNote = getCalculatedTotal(soutenanceId);
@@ -327,6 +375,40 @@ export default function JuryEvaluations() {
 
   return (
     <div>
+      {/* MODALE DE CONFIRMATION */}
+      {confirmModal.show && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          zIndex: 1000, backdropFilter: "blur(2px)",
+        }}>
+          <div style={{
+            background: "white", borderRadius: 20, width: 420, maxWidth: "90vw",
+            padding: 24, textAlign: "center", boxShadow: "0 24px 48px rgba(0,0,0,0.2)",
+          }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}><CheckCircle size={48} /></div>
+            <h3 style={{ marginBottom: 8, color: "#1a1033" }}>Confirmer l'évaluation</h3>
+            <p style={{ color: "#6b7280", marginBottom: 24 }}>
+              Voulez-vous enregistrer cette évaluation pour <strong>{confirmModal.soutenance?.prenom} {confirmModal.soutenance?.nom}</strong> ?
+            </p>
+            <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+              <button
+                className="btn btnsecondary"
+                onClick={() => setConfirmModal({ show: false, soutenance: null })}
+              >
+                Annuler
+              </button>
+              <button
+                className="btn btn-danger"
+                onClick={handleConfirmSave}
+              >
+                Confirmer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="page-header">
         <div>
           <h1><span className="icon-squircle page-title-icon" aria-hidden><ClipboardCheck size={22} /></span> {soutenanceId ? "Évaluation" : "Évaluations"}</h1>
@@ -340,7 +422,7 @@ export default function JuryEvaluations() {
       </div>
       <div className="page-content">
         {soutenances.length === 0 ? (
-          <div className="alert alert-info">ℹ️ Aucune soutenance à évaluer.</div>
+          <div className="alert alert-info"><CheckCircle size={16} /> Aucune soutenance à évaluer.</div>
         ) : (
           soutenances.map(s => (
             <div key={s.id} className="card" style={{ marginBottom: 20 }}>
@@ -363,14 +445,15 @@ export default function JuryEvaluations() {
               </div>
 
               {msgs[s.id] && <div className="alert alert-success"><CheckCircle size={16} /> {msgs[s.id]}</div>}
-              {errors[s.id] && <div className="alert alert-danger">⚠️ {errors[s.id]}</div>}
+              {errors[s.id] && <div className="alert alert-danger">⚠ {errors[s.id]}</div>}
 
-              {/* Barème indicatif pour le président */}
               {s.mon_role === "president" && <BaremeIndicatif soutenanceId={s.id} />}
 
               {s.mon_role === "president" && (
                 <div className="form-group">
-                  <label className="form-label">Note /20</label>
+                  <label className="form-label">
+                    Note /20 <span style={{ color: "#dc2626" }}>*</span>
+                  </label>
                   <input
                     type="number"
                     min="0"
@@ -379,39 +462,54 @@ export default function JuryEvaluations() {
                     className="form-control"
                     style={{
                       maxWidth: 160,
-                      borderColor:
-                        forms[s.id]?.note !== "" &&
-                        (parseFloat(forms[s.id]?.note) < 0 || parseFloat(forms[s.id]?.note) > 20)
-                          ? "#dc2626"
-                          : undefined,
+                      borderColor: fieldErrors[s.id]?.note ? "#dc2626" : undefined,
                     }}
                     value={forms[s.id]?.note || ""}
                     onChange={e => {
                       const val = e.target.value;
-                      // Autoriser la saisie libre mais bloquer les valeurs hors [0, 20]
                       if (val === "" || (parseFloat(val) >= 0 && parseFloat(val) <= 20)) {
                         setForms(f => ({...f, [s.id]: {...f[s.id], note: val}}));
+                        if (fieldErrors[s.id]?.note) {
+                          setFieldErrors(fe => ({...fe, [s.id]: {...fe[s.id], note: undefined}}));
+                        }
                       }
                     }}
                   />
-                  {forms[s.id]?.note !== "" &&
-                    (parseFloat(forms[s.id]?.note) < 0 || parseFloat(forms[s.id]?.note) > 20) && (
-                      <div style={{ color: "#dc2626", fontSize: 12, marginTop: 4 }}>
-                        ⚠️ La note doit être comprise entre 0 et 20.
-                      </div>
+                  {fieldErrors[s.id]?.note && (
+                    <div style={{ color: "#dc2626", fontSize: 12, marginTop: 4 }}>
+                      ⚠ {fieldErrors[s.id].note}
+                    </div>
                   )}
                 </div>
               )}
 
               <div className="form-group">
-                <label className="form-label">Remarques</label>
-                <textarea className="form-control" rows={3}
+                <label className="form-label">
+                  Remarques <span style={{ color: "#dc2626" }}>*</span>
+                </label>
+                <textarea
+                  className="form-control"
+                  rows={3}
                   placeholder={s.mon_role === "president" ? "Remarques du président..." : "Vos remarques sur la soutenance..."}
                   value={forms[s.id]?.remarques || ""}
-                  onChange={e => setForms(f => ({...f, [s.id]: {...f[s.id], remarques: e.target.value}}))} />
+                  onChange={e => {
+                    setForms(f => ({...f, [s.id]: {...f[s.id], remarques: e.target.value}}));
+                    if (fieldErrors[s.id]?.remarques) {
+                      setFieldErrors(fe => ({...fe, [s.id]: {...fe[s.id], remarques: undefined}}));
+                    }
+                  }}
+                  style={{
+                    borderColor: fieldErrors[s.id]?.remarques ? "#dc2626" : undefined,
+                  }}
+                />
+                {fieldErrors[s.id]?.remarques && (
+                  <div style={{ color: "#dc2626", fontSize: 12, marginTop: 4 }}>
+                    ⚠ {fieldErrors[s.id].remarques}
+                  </div>
+                )}
               </div>
 
-              <button className="btn btn-primary btn-sm" onClick={() => handleSave(s)}>
+              <button className="btn btn-primary btn-sm" onClick={() => handleOpenConfirm(s)}>
                 <Save size={14} /> {s.mon_role === "president" ? "Enregistrer la note" : "Enregistrer les remarques"}
               </button>
 

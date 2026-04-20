@@ -285,24 +285,24 @@ export default function AdminSoutenances() {
       setMsg("❌ Erreur lors de l'envoi de l'email");
     }
   };
-  // hasStageDossier : vérifie si la soutenance a un dossier de stage déposé (indispensable pour affecter le jury)
-  const hasStageDossier = (s) =>
-    s.has_stage_dossier === true || s.has_stage_dossier === 1 || s.has_stage_dossier === "1";
+  // hasStageDossier : vérifie si la soutenance a un dossier de stage déposé valide (indispensable pour affecter le jury)
+  const hasStageDossierValide = (s) =>
+  s.stage_dossier_valide === true || s.stage_dossier_valide === 1 || s.stage_dossier_valide === "1";
   // canAssignJury : détermine si le bouton d'affectation du jury doit être actif en fonction du statut de la soutenance et de la présence d'un dossier de stage
   const canAssignJury = (s) => {
-    if (s.statut === "terminee") return false;
-    if (s.statut === "en_attente") return false;
-    if (s.statut === "planifiee") return hasStageDossier(s);
-    return false;
-  };
-  // juryButtonTitle : génère le texte d'aide (tooltip) pour le bouton d'affectation du jury en fonction des conditions d'activation
-  const juryButtonTitle = (s) => {
-    if (s.statut === "terminee") return "Soutenance terminée — jury non modifiable.";
-    if (s.statut === "en_attente") return "Planifiez la soutenance (date et statut) avant d'affecter le jury.";
-    if (s.statut === "planifiee" && !hasStageDossier(s))
-      return "L'étudiant doit d'abord déposer un dossier de stage.";
-    return "Affecter ou modifier le jury";
-  };
+  if (s.statut === "terminee") return false;
+  if (s.statut === "en_attente") return false;
+  if (s.statut === "planifiee") return hasStageDossierValide(s);
+  return false;
+};
+// juryButtonTitle : retourne le texte d'aide (title) à afficher au survol du bouton d'affectation du jury, en fonction des conditions d'activation du bouton
+const juryButtonTitle = (s) => {
+  if (s.statut === "terminee") return "Soutenance terminée — jury non modifiable.";
+  if (s.statut === "en_attente") return "Planifiez la soutenance (date et statut) avant d'affecter le jury.";
+  if (s.statut === "planifiee" && !hasStageDossierValide(s))
+    return "Le dossier de stage de l'étudiant doit d'abord être validé pour affecter le jury.";
+  return "Affecter ou modifier le jury";
+};
   // statusBadge : retourne un élément JSX représentant le badge de statut de la soutenance, avec une icône et une couleur différente selon le statut
   const statusBadge = (s) => {
     if (s === "planifiee") return <span className="badge badge-warning"><CalendarDays size={14} /> Planifiée</span>;

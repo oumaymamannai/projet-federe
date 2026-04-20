@@ -12,6 +12,7 @@ import {
   BarChart2,
   Star,
   ChevronRight,
+  PartyPopper,
 } from 'lucide-react';
 
 /* ─── Animated progress bar ─── */
@@ -85,12 +86,20 @@ function StatCard({ icon: Icon, value, label, color, badge, delay = 0 }) {
 
 /* ─── Timeline item ─── */
 function TimelineItem({ soutenance, index }) {
-  const date    = new Date(soutenance.date_soutenance);
+  const date = new Date(soutenance.date_soutenance);
   const isToday = date.toDateString() === new Date().toDateString();
-  const isSoon  = !isToday && (date - new Date()) < 1000 * 60 * 60 * 48;
-  const deja_note = soutenance.ma_note !== null && soutenance.ma_note !== undefined;
+  const isSoon = !isToday && (date - new Date()) < 1000 * 60 * 60 * 48;
 
-  /* Sujet vide ou valeur brute d'1 caractère → fallback lisible en italique gris */
+  // ✅ Évaluation complète selon le rôle
+  const estComplete = () => {
+    if (soutenance.mon_role === 'president') {
+      return soutenance.ma_note !== null && soutenance.ma_note !== undefined;
+    } else {
+      return soutenance.mes_remarques !== null && soutenance.mes_remarques !== '';
+    }
+  };
+  const dejaNote = estComplete();
+
   const sujet = soutenance.sujet && soutenance.sujet.trim().length > 1
     ? soutenance.sujet
     : null;
@@ -134,7 +143,6 @@ function TimelineItem({ soutenance, index }) {
           )}
         </div>
 
-        {/* Sujet : fallback explicite si vide */}
         <div style={{
           fontSize: 12,
           color: sujet ? '#6b7280' : '#d1d5db',
@@ -160,13 +168,13 @@ function TimelineItem({ soutenance, index }) {
             padding: '6px 12px', borderRadius: 8,
             fontSize: 12, fontWeight: 600, textDecoration: 'none',
             transition: 'all 0.15s',
-            background: deja_note ? '#f0fdf4' : '#f5f3ff',
-            color:      deja_note ? '#10b981' : '#7c3aed',
-            border: `1px solid ${deja_note ? '#d1fae5' : '#e8e0ff'}`,
+            background: dejaNote ? '#f0fdf4' : '#f5f3ff',
+            color: dejaNote ? '#10b981' : '#7c3aed',
+            border: `1px solid ${dejaNote ? '#d1fae5' : '#e8e0ff'}`,
           }}
         >
-          {deja_note
-            ? <><CheckCircle size={13} /> Noté</>
+          {dejaNote
+            ? <><CheckCircle size={13} /> {soutenance.mon_role === 'president' ? 'Noté' : 'Remarque donnée'}</>
             : <><Star size={13} /> Évaluer</>
           }
         </Link>
@@ -180,12 +188,12 @@ function TimelineItem({ soutenance, index }) {
 ══════════════════════════════════════════ */
 export default function JuryDashboard() {
   const { user } = useAuth();
-  const [stats, setStats]                             = useState(null);
+  const [stats, setStats] = useState(null);
   const [soutenancesRecentes, setSoutenancesRecentes] = useState([]);
-  const [urgentes, setUrgentes]                       = useState([]);
-  const [loading, setLoading]                         = useState(true);
-  const [error, setError]                             = useState('');
-  const [greeting, setGreeting]                       = useState('');
+  const [urgentes, setUrgentes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [greeting, setGreeting] = useState('');
 
   useEffect(() => {
     const h = new Date().getHours();
@@ -196,23 +204,34 @@ export default function JuryDashboard() {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      const res         = await api.get('/jury/soutenances');
+      const res = await api.get('/jury/soutenances');
       const soutenances = res.data;
-      const now         = new Date();
+      const now = new Date();
 
-      const totalAssignees  = soutenances.length;
-      const evaluees        = soutenances.filter(s => s.ma_note !== null && s.ma_note !== undefined).length;
-      const enAttenteNote   = soutenances.filter(s => !s.ma_note).length;
+      // ✅ Évaluation complète selon le rôle
+      const estComplete = (s) => {
+        if (s.mon_role === 'president') {
+          return s.ma_note !== null && s.ma_note !== undefined;
+        } else {
+          return s.mes_remarques !== null && s.mes_remarques !== '';
+        }
+      };
+
+      const totalAssignees = soutenances.length;
+      const evaluees = soutenances.filter(estComplete).length;
+      const enAttenteNote = totalAssignees - evaluees;
       const aujourdhuiCount = soutenances.filter(
         s => new Date(s.date_soutenance).toDateString() === now.toDateString()
       ).length;
 
       setStats({
-        totalAssignees, evaluees, enAttenteNote, aujourdhuiCount,
+        totalAssignees,
+        evaluees,
+        enAttenteNote,
+        aujourdhuiCount,
         tauxEvaluation: totalAssignees > 0 ? Math.round((evaluees / totalAssignees) * 100) : 0,
       });
 
-      /* 3 prochaines uniquement — règle mémoire court terme (7±2) */
       setSoutenancesRecentes(
         soutenances
           .filter(s => s.date_soutenance && new Date(s.date_soutenance) >= now)
@@ -220,11 +239,10 @@ export default function JuryDashboard() {
           .slice(0, 3)
       );
 
-      /* Urgentes : < 48 h, sans note */
       setUrgentes(
         soutenances.filter(s => {
           const d = new Date(s.date_soutenance);
-          return d > now && (d - now) < 1000 * 60 * 60 * 48 && !s.ma_note;
+          return d > now && (d - now) < 1000 * 60 * 60 * 48 && !estComplete(s);
         })
       );
     } catch {
@@ -242,7 +260,7 @@ export default function JuryDashboard() {
   );
   if (error) return <div className="alert alert-danger">{error}</div>;
 
-  const pct     = stats?.tauxEvaluation ?? 0;
+  const pct = stats?.tauxEvaluation ?? 0;
   const termine = pct === 100;
 
   return (
@@ -257,28 +275,19 @@ export default function JuryDashboard() {
       `}</style>
 
       <div>
-        {/* ══ Header ══ */}
-        <div className="page-header" style={{ paddingBottom: 24 }}>
-          <div>
-            <h1 style={{ fontSize: 24, fontWeight: 800, color: '#1a1033', display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{
-                width: 40, height: 40, borderRadius: 12,
-                background: 'linear-gradient(135deg,#7c3aed,#9d5eff)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <Award size={20} color="white" />
-              </div>
-              {greeting}, {user?.prenom} 
-            </h1>
-            <p style={{ color: '#6b7280', fontSize: 14, marginTop: 4 }}>
-              {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-            </p>
-          </div>
-        </div>
+<div className="page-header" style={{ paddingBottom: 24 }}>
+  <div>
+    <h1 style={{ fontSize: 24, fontWeight: 800, color: '#1a1033', display: 'flex', alignItems: 'center', gap: 10 }}>
+      <Award size={24} color="#7c3aed" />
+      {greeting}, {user?.prenom}
+    </h1>
+    <p style={{ color: '#6b7280', fontSize: 14, marginTop: 4 }}>
+      {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+    </p>
+  </div>
+</div>
 
         <div className="page-content" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-
-          {/* ══ Alerte urgence ══ */}
           {urgentes.length > 0 && (
             <div style={{
               background: '#fffbeb', border: '1px solid #fde68a',
@@ -306,10 +315,6 @@ export default function JuryDashboard() {
             </div>
           )}
 
-          {/* ══ 3 stat cards ══
-              Assignées · Évaluées · En attente
-              "À venir" et "Avec remarques" supprimés : redondants ou non actionnables.
-              "Aujourd'hui" intégré comme badge sur la carte "En attente".          */}
           <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
             <StatCard
               icon={Users}
@@ -329,7 +334,7 @@ export default function JuryDashboard() {
             <StatCard
               icon={Clock}
               value={stats?.enAttenteNote ?? 0}
-              label="En attente de note"
+              label="En attente d'évaluation"
               color={stats?.enAttenteNote > 0 ? '#f59e0b' : '#9ca3af'}
               badge={
                 stats?.enAttenteNote > 0 && stats?.aujourdhuiCount > 0
@@ -340,11 +345,6 @@ export default function JuryDashboard() {
             />
           </div>
 
-          {/* ══ 1 seule barre de progression ══
-              Les 4 barres secondaires ont été supprimées car :
-              - "En attente" pleine à 100 % = barre pleine = signal de succès
-                dans toute convention UX, mais ici c'est l'inverse voulu.
-              - Redondance directe avec les 3 stat cards ci-dessus.          */}
           <div className="card section-card" style={{ animationDelay: '180ms' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -376,14 +376,13 @@ export default function JuryDashboard() {
               )}
             </div>
 
-            {/* Félicitations */}
             {termine && (
               <div style={{
                 marginTop: 16, padding: '10px 14px',
                 background: '#f0fdf4', border: '1px solid #d1fae5',
                 borderRadius: 10, display: 'flex', alignItems: 'center', gap: 10,
               }}>
-                <span style={{ fontSize: 18 }}>🎉</span>
+                <span style={{ fontSize: 18 }}><PartyPopper size={14} /></span>
                 <div>
                   <div style={{ fontWeight: 700, fontSize: 13, color: '#065f46' }}>Toutes les évaluations sont terminées !</div>
                   <div style={{ fontSize: 12, color: '#047857' }}>Excellent travail, vous êtes à jour.</div>
@@ -392,9 +391,6 @@ export default function JuryDashboard() {
             )}
           </div>
 
-          {/* ══ Prochaines soutenances — 3 max ══
-              Réduit de 6 à 3 : au-delà, l'utilisateur consulte la page Planning.
-              Sujet vide remplacé par "Sujet non renseigné" (italique gris clair). */}
           <div className="card section-card" style={{ animationDelay: '260ms' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -423,7 +419,6 @@ export default function JuryDashboard() {
               ))
             )}
           </div>
-
         </div>
       </div>
     </>
