@@ -4,22 +4,31 @@ import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import { 
   GraduationCap, Calendar, Clock, MapPin, Users, CheckCircle, 
-  AlertCircle, FileText, Star, Hourglass, BookOpen, FileCheck, MessageSquare 
+  AlertCircle, FileText, Star, Hourglass, BookOpen, FileCheck, MessageSquare ,Bell
 } from "lucide-react";
 
 function getCountdownStatus(dateStr) {
   if (!dateStr) return null;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+
+  const now = new Date();
   const soutenanceDate = new Date(dateStr);
-  soutenanceDate.setHours(0, 0, 0, 0);
-  
-  const diff = soutenanceDate - today;
-  const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-  
-  if (days === 0) return { status: "today", label: "Aujourd'hui", days: 0 };
-  if (days < 0) return { status: "done", label: "Terminé", days: days };
-  return { status: "pending", label: `-${days} jour${days > 1 ? "s" : ""}`, days: days };
+
+  // ✅ Si la date + heure est déjà passée → Terminé
+  if (soutenanceDate < now) {
+    return { status: "done", label: "Terminé", days: null };
+  }
+
+  // Comparaison des dates (sans heure) pour "Aujourd'hui" ou "J-?"
+  const todayMidnight = new Date();
+  todayMidnight.setHours(0, 0, 0, 0);
+  const soutenanceMidnight = new Date(dateStr);
+  soutenanceMidnight.setHours(0, 0, 0, 0);
+  const diffDays = Math.ceil((soutenanceMidnight - todayMidnight) / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) {
+    return { status: "today", label: "Aujourd'hui", days: 0 };
+  }
+  return { status: "pending", label: `${diffDays} jour${diffDays > 1 ? "s" : ""}`, days: diffDays };
 }
 
 function statusBadge(s) {
@@ -107,7 +116,7 @@ export default function StudentDashboard() {
       numero: 3,
       titre: "Faire une réclamation",
       description: "En cas de problème ou d'absence d'encadreur",
-      icone: MessageSquare,
+      icone: Bell,
       lien: "/student/reclamations",
       fait: hasReclamation
     }

@@ -31,7 +31,7 @@ function ConfirmModal({ isOpen, onConfirm, onCancel, title, message }) {
   return (
     <div className="modal-overlay">
       <div className="modal-container">
-        <h3>{title}</h3>
+        <h3><AlertCircle size={20} /> {title}</h3>
         <p>{message}</p>
         <div className="modal-buttons">
           <button type="button" className="btn btn-secondary" onClick={onCancel}>
@@ -270,7 +270,7 @@ export default function StudentStage() {
                 {/* Encadrant pédagogique → Liste déroulante */}
                 <Field
                   label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><GraduationCap size={14} color="#534AB7" /> Encadrant pédagogique <span style={{ fontSize: 11, color: '#7F77DD', fontWeight: 400 }}>(faculté)</span></span>}
-                  hint={<>⚠️ Si aucun encadrant n’est listé, soumettez une réclamation depuis la page <Link to="/student/reclamations" style={{ color: "#7c3aed", textDecoration: "underline" }}>Réclamations</Link></>}
+                  hint={<span style={{ color: "#d97706" }}>⚠ Si aucun encadrant n’est listé, soumettez une réclamation depuis la page <Link to="/student/reclamations" style={{ color: "#d97706", textDecoration: "underline" }}>Réclamations</Link></span>}
                 >
                   <select
                     className="form-control"
@@ -463,7 +463,7 @@ export default function StudentStage() {
         onConfirm={confirmSubmit}
         onCancel={cancelSubmit}
         title="Confirmation de soumission"
-        message=" ⚠ Vous ne pourrez soumettre qu'une seule fois. Voulez-vous vraiment envoyer votre dossier de stage ?"
+        message="  Vous ne pourrez soumettre qu'une seule fois. Voulez-vous vraiment envoyer votre dossier de stage ?"
       />
 
       <style>{`
