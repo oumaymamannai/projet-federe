@@ -4,7 +4,8 @@ import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import { 
   GraduationCap, Calendar, Clock, MapPin, Users, CheckCircle, 
-  AlertCircle, FileText, Star, Hourglass, BookOpen, FileCheck, MessageSquare ,Bell,FolderOpen
+  AlertCircle, FileText, Star, Hourglass, BookOpen, FileCheck, MessageSquare ,Bell,FolderOpen,
+  Route
 } from "lucide-react";
 
 function getCountdownStatus(dateStr) {
@@ -115,7 +116,7 @@ export default function StudentDashboard() {
     { 
       numero: 3,
       titre: "Faire une réclamation",
-      description: "En cas de problème ou d'absence d'encadreur",
+      description:"Signalez tout problème (absence d'encadreur, date, etc.)",
       icone: Bell,
       lien: "/student/reclamations",
       fait: hasReclamation
@@ -233,7 +234,7 @@ export default function StudentDashboard() {
           </div>
           <div className="stat-card">
             <div className="stat-icon icon-squircle"><Calendar size={22} /></div>
-            <div className="stat-value" style={{ color: soutenance?.statut === "terminee" ? "#10b981" : soutenance?.statut === "planifiee" ? "#7c3aed" : "#9ca3af" }}>
+            <div className="stat-value" style={{ color: soutenance?.statut === "terminee" ? "#07532d" : soutenance?.statut === "planifiee" ? "#7c3aed" : "#9ca3af" }}>
               {soutenance?.statut === "terminee" ? "✓" : soutenance?.statut === "planifiee" ? "Oui" : "—"}
             </div>
             <div className="stat-label">{soutenance?.statut === "terminee" ? "Soutenance terminée" : soutenance?.statut === "planifiee" ? "Soutenance planifiée" : "Soutenance en attente"}</div>
@@ -275,7 +276,7 @@ export default function StudentDashboard() {
         {/* 3. EN BAS : Les 3 étapes */}
         <div>
           <h3 style={{ marginBottom: 20, fontSize: 16, fontWeight: 600, color: "#374151" }}>
-            📍 Prochaines étapes
+            <Route size={16} style={{ color: "red" }}/>  Prochaines étapes
           </h3>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {steps.map((step) => {
