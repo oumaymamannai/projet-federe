@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import api from "../../services/api";
-import { MessageSquare, CheckCircle, UserPlus, Calendar, FileText, Eye, Mail, Clock, Users, AlertCircle, ChevronDown } from "lucide-react";
+import { MessageSquare, CheckCircle, UserPlus, Calendar, FileText, Eye, Mail, Clock, Users, AlertCircle, ChevronDown ,Bell} from "lucide-react";
 
 /* ─────────────────────────────────────────────
    CustomSelect : dropdown en position:fixed
@@ -235,7 +235,7 @@ export default function AdminReclamations() {
     <div>
       <div className="page-header">
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <div className="icon-squircle"><AlertCircle size={22} color="#7c3aed" /></div>
+          <div className="icon-squircle"><Bell size={22} color="#7c3aed" /></div>
           <div>
             <h1 style={{ margin: 0, display: "flex", alignItems: "center", gap: "10px" }}>
               Gestion des réclamations

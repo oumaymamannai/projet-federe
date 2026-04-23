@@ -4,7 +4,7 @@ import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import { 
   GraduationCap, Calendar, Clock, MapPin, Users, CheckCircle, 
-  AlertCircle, FileText, Star, Hourglass, BookOpen, FileCheck, MessageSquare ,Bell
+  AlertCircle, FileText, Star, Hourglass, BookOpen, FileCheck, MessageSquare ,Bell,FolderOpen
 } from "lucide-react";
 
 function getCountdownStatus(dateStr) {
@@ -227,7 +227,7 @@ export default function StudentDashboard() {
         {/* 2. AU MILIEU : 3 cartes statistiques */}
         <div className="stats-grid" style={{ marginBottom: 32 }}>
           <div className="stat-card">
-            <div className="stat-icon icon-squircle"><FileText size={22} /></div>
+            <div className="stat-icon icon-squircle"><FolderOpen size={22} /></div>
             <div className="stat-value" style={{ color: "#7c3aed" }}>{docs.length}</div>
             <div className="stat-label">Documents disponibles</div>
           </div>

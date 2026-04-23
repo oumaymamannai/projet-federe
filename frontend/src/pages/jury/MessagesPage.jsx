@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { messageAPI, getMessageFileUrl } from '../../services/messageService';
-import { Search, X, ArrowLeft } from 'lucide-react';
+import { Search, X, ArrowLeft, MessageSquare } from 'lucide-react';
 
 const token = localStorage.getItem('gradflow_token');
 const userId = token ? JSON.parse(atob(token.split('.')[1])).id : null;
@@ -405,7 +405,7 @@ export default function MessagesPage() {
               <div style={{ textAlign:'center' }}>
                 <p style={{ fontSize:17, fontWeight:700, color:C.text, marginBottom:6 }}>Sélectionnez une conversation</p>
                 <p style={{ fontSize:13, color:C.textMuted, lineHeight:1.65 }}>
-                  {userRole === 'etudiant' ? 'Échangez avec votre encadreur de mémoire' : 'Échangez avec vos étudiants encadrés'}
+                  {userRole === 'etudiant' ? 'Échangez avec votre encadreur de soutenance' : 'Échangez avec vos étudiants encadrés'}
                 </p>
               </div>
             </div>

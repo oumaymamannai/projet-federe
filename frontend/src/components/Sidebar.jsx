@@ -12,13 +12,13 @@ import {
   ClipboardList,
   CheckCircle, // Importation de CheckCircle
   MessageSquare,
-  X,
+  X,FolderOpen,
 } from 'lucide-react'; // Importation de X
 
 const studentNav = [ // Définition des éléments de navigation pour l'étudiant
   { to: '/student', icon: <LayoutDashboard size={17} />, label: 'Tableau de bord' },
   { to: '/student/stage', icon: <FileText size={17} />, label: 'Dépôt dossier' },
-  { to: '/student/documents', icon: <ClipboardList size={17} />, label: 'Documents' },
+  { to: '/student/documents', icon: <FolderOpen size={17} />, label: 'Documents' },
   { to: '/student/reclamations', icon: <Bell size={17} />, label: 'Réclamations' },
 ];
 const juryNav = [ // Définition des éléments de navigation pour le jury
@@ -30,9 +30,9 @@ const adminNav = [ // Définition des éléments de navigation pour l'administra
   { to: '/admin', icon: <LayoutDashboard size={17} />, label: 'Dashboard' },
   { to: '/admin/soutenances', icon: <Calendar size={17} />, label: 'Soutenances' },
   { to: '/admin/jury', icon: <Users size={17} />, label: 'Jury' },
-  { to: '/admin/submissions', icon: <CheckCircle size={17} />, label: 'Soumissions' },
+  { to: '/admin/submissions', icon: <FileText size={17} />, label: 'Soumissions' },
   { to: '/admin/reclamations', icon: <Bell size={17} />, label: 'Réclamations' },
-  { to: '/admin/documents', icon: <FileText size={17} />, label: 'Documents' },
+  { to: '/admin/documents', icon: <FolderOpen size={17} />, label: 'Documents' },
 ];
 const roleLabels = { etudiant: 'ÉTUDIANT', jury: 'JURY', admin: 'RESPONSABLE' }; // Définition des labels des rôles   
 const MESSAGE_PATHS = ['/jury/messages', '/student/messages']; // Définition des chemins des pages de messages

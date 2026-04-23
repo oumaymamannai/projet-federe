@@ -13,6 +13,9 @@ import {
   Star,
   ChevronRight,
   PartyPopper,
+  LayoutList,
+  ClipboardCheckIcon,
+  ClipboardList,Layers,
 } from 'lucide-react';
 
 /* ─── Animated progress bar ─── */
@@ -317,7 +320,7 @@ export default function JuryDashboard() {
 
           <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
             <StatCard
-              icon={Users}
+              icon={Layers}
               value={stats?.totalAssignees ?? 0}
               label="Soutenances assignées"
               color="#7c3aed"
